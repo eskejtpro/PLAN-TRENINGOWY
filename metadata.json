@@ -1,0 +1,7 @@
+{
+  "name": "GymTracker Windows Desktop & Python Plan",
+  "description": "Program na siłownię do planu treningowego, progresu ciężaru, wagi, statystyk, kalendarza dawek/HCG, estymatora stężenia we krwi (farmakokinetyka), wskaźnika progresywnego przeładowania oraz raportu podsumowującego mezocykl.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
+
