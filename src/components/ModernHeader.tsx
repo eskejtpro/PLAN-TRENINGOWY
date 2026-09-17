@@ -96,6 +96,9 @@ export const ModernHeader: React.FC<ModernHeaderProps> = ({
         <div>
           <h1 className="text-base sm:text-lg font-extrabold tracking-tight flex items-center gap-2">
             <span>{currentViewMeta.title}</span>
+            <span id="app-version-badge" className={`text-[10px] font-mono font-semibold px-1.5 py-0.5 rounded border ${isDark ? 'text-emerald-300 border-emerald-500/30 bg-emerald-500/10' : 'text-emerald-700 border-emerald-300 bg-emerald-50'}`}>
+              v{__APP_VERSION__}
+            </span>
           </h1>
           <p className={`text-xs font-medium truncate max-w-md ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>
             {currentViewMeta.subtitle}

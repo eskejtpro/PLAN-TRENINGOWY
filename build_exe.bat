@@ -13,12 +13,11 @@ if %errorlevel% neq 0 (
     exit /b 1
 )
 
-echo [1/3] Sprawdzanie i instalacja PyInstaller...
-pip install --upgrade pyinstaller
+echo [1/3] Sprawdzanie i instalacja wymaganych bibliotek z requirements.txt...
+pip install -r requirements.txt --upgrade
 if %errorlevel% neq 0 (
-    echo [BLAD] Nie udalo sie zainstalowac PyInstaller.
-    pause
-    exit /b 1
+    echo [OSTRZEZENIE] Niektore biblioteki z requirements.txt nie mogly zostac pobrane. Proba instalacji PyInstaller...
+    pip install --upgrade pyinstaller
 )
 
 echo.

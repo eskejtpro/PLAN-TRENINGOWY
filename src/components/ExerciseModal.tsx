@@ -74,6 +74,7 @@ export const ExerciseModal: React.FC<ExerciseModalProps> = ({
   const [sets, setSets] = useState(4);
   const [reps, setReps] = useState(8);
   const [weight, setWeight] = useState(60);
+  const [goalWeight, setGoalWeight] = useState<number | undefined>(undefined);
   const [rpe, setRpe] = useState(8);
   const [notes, setNotes] = useState('');
   
@@ -88,6 +89,7 @@ export const ExerciseModal: React.FC<ExerciseModalProps> = ({
       setSets(exerciseToEdit.sets);
       setReps(exerciseToEdit.reps);
       setWeight(exerciseToEdit.weight);
+      setGoalWeight(exerciseToEdit.goalWeight);
       setRpe(exerciseToEdit.rpe || 8);
       setNotes(exerciseToEdit.notes || '');
       setShowPresets(false);
@@ -97,6 +99,7 @@ export const ExerciseModal: React.FC<ExerciseModalProps> = ({
       setSets(4);
       setReps(8);
       setWeight(60);
+      setGoalWeight(undefined);
       setRpe(8);
       setNotes('');
       setShowPresets(true);
@@ -147,6 +150,7 @@ export const ExerciseModal: React.FC<ExerciseModalProps> = ({
         sets: Math.max(1, Number(sets)),
         reps: Math.max(1, Number(reps)),
         weight: Math.max(0, Number(weight)),
+        goalWeight: goalWeight && goalWeight > 0 ? goalWeight : undefined,
         rpe: Number(rpe),
         notes: notes.trim(),
         history: baseHistory
@@ -418,6 +422,10 @@ export const ExerciseModal: React.FC<ExerciseModalProps> = ({
                 </div>
               </div>
             </div>
+
+            <label className="block text-xs font-semibold text-slate-300">Cel ciężaru ({unit}, opcjonalnie)
+              <input id="input-exercise-goal-weight" type="number" min="0" step="0.5" value={goalWeight ?? ''} onChange={e=>setGoalWeight(e.target.value === '' ? undefined : Math.max(0, Number(e.target.value)||0))} className="ml-2 w-28 h-9 px-2 rounded-lg bg-slate-900 border border-emerald-500/40 text-emerald-300 font-mono" />
+            </label>
 
             {/* Live KPI Indicators Pill Row */}
             <div className="grid grid-cols-2 gap-3 pt-1 border-t border-slate-800/80">

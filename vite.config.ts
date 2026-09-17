@@ -1,10 +1,17 @@
 import tailwindcss from '@tailwindcss/vite';
 import react from '@vitejs/plugin-react';
 import path from 'path';
+import { readFileSync } from 'node:fs';
 import {defineConfig} from 'vite';
+
+const packageMetadata = JSON.parse(readFileSync(new URL('./package.json', import.meta.url), 'utf8')) as { version?: string };
 
 export default defineConfig(() => {
   return {
+    define: {
+      __APP_VERSION__: JSON.stringify(packageMetadata.version || '0.0.0'),
+    },
+    base: './',
     plugins: [react(), tailwindcss()],
     resolve: {
       alias: {

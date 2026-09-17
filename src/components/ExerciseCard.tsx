@@ -51,6 +51,16 @@ interface ExerciseCardProps {
   onDelete: (weekId: string, dayId: string, exerciseId: string) => void;
 }
 
+const initialLoggedSets = (exercise: Exercise): LoggedSet[] => {
+  if (exercise.loggedSets && exercise.loggedSets.length > 0) return exercise.loggedSets;
+  return Array.from({ length: exercise.sets || 3 }, (_, index) => ({
+    setNumber: index + 1,
+    weight: exercise.weight ?? 60,
+    reps: exercise.reps || 8,
+    completed: false,
+  }));
+};
+
 export const ExerciseCard: React.FC<ExerciseCardProps> = ({
   exercise,
   index,
@@ -66,7 +76,7 @@ export const ExerciseCard: React.FC<ExerciseCardProps> = ({
 }) => {
   const [sets, setSets] = useState<number>(exercise.sets || 3);
   const [reps, setReps] = useState<number>(exercise.reps || 8);
-  const [weight, setWeight] = useState<number>(exercise.weight || 60);
+  const [weight, setWeight] = useState<number>(exercise.weight ?? 60);
   const [isTrackerOpen, setIsTrackerOpen] = useState<boolean>(false);
   const [savedSuccess, setSavedSuccess] = useState<boolean>(false);
 
@@ -85,31 +95,14 @@ export const ExerciseCard: React.FC<ExerciseCardProps> = ({
   }, [exercise.name]);
 
   // Initialize individual set logs
-  const [detailedSets, setDetailedSets] = useState<LoggedSet[]>(() => {
-    if (exercise.loggedSets && exercise.loggedSets.length > 0) {
-      return exercise.loggedSets;
-    }
-    const initialCount = exercise.sets || 3;
-    const initialSets: LoggedSet[] = [];
-    for (let i = 1; i <= initialCount; i++) {
-      initialSets.push({
-        setNumber: i,
-        weight: exercise.weight || 60,
-        reps: exercise.reps || 8,
-        completed: false
-      });
-    }
-    return initialSets;
-  });
+  const [detailedSets, setDetailedSets] = useState<LoggedSet[]>(() => initialLoggedSets(exercise));
 
   // Sync state if exercise changes from outside
   useEffect(() => {
     setSets(exercise.sets || 3);
     setReps(exercise.reps || 8);
-    setWeight(exercise.weight || 60);
-    if (exercise.loggedSets && exercise.loggedSets.length > 0) {
-      setDetailedSets(exercise.loggedSets);
-    }
+    setWeight(exercise.weight ?? 60);
+    setDetailedSets(initialLoggedSets(exercise));
   }, [exercise.id, exercise.sets, exercise.reps, exercise.weight, exercise.loggedSets]);
 
   // Adjusters for quick buttons

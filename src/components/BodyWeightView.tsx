@@ -1,12 +1,18 @@
 import React, { useState } from 'react';
 import { Scale, Plus, Trash2, TrendingDown, TrendingUp, Calendar, AlertCircle } from 'lucide-react';
-import { BodyWeightEntry } from '../types';
+import { BodyWeightEntry, CircumferenceEntry, TrainingWeek } from '../types';
 import { getTodayDateString } from '../utils/calculations';
+import { CircumferenceProgressPanel } from './CircumferenceProgressPanel';
 
 interface BodyWeightViewProps {
   bodyWeights: BodyWeightEntry[];
   onAddBodyWeight: (entry: Omit<BodyWeightEntry, 'id'>) => void;
   onDeleteBodyWeight: (id: string) => void;
+  circumferences: CircumferenceEntry[];
+  weeks: TrainingWeek[];
+  onAddCircumference: (entry: Omit<CircumferenceEntry, 'id'>) => void;
+  onUpdateCircumference: (entry: CircumferenceEntry) => void;
+  onDeleteCircumference: (id: string) => void;
   unit: 'kg' | 'lbs';
 }
 
@@ -14,6 +20,11 @@ export const BodyWeightView: React.FC<BodyWeightViewProps> = ({
   bodyWeights,
   onAddBodyWeight,
   onDeleteBodyWeight,
+  circumferences,
+  weeks,
+  onAddCircumference,
+  onUpdateCircumference,
+  onDeleteCircumference,
   unit
 }) => {
   const [date, setDate] = useState(getTodayDateString());
@@ -298,6 +309,16 @@ export const BodyWeightView: React.FC<BodyWeightViewProps> = ({
           </div>
         </div>
       </div>
+
+      <CircumferenceProgressPanel
+        circumferences={circumferences}
+        bodyWeights={bodyWeights}
+        weeks={weeks}
+        unit={unit}
+        onAdd={onAddCircumference}
+        onUpdate={onUpdateCircumference}
+        onDelete={onDeleteCircumference}
+      />
     </div>
   );
 };

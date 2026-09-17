@@ -11,29 +11,37 @@ import { ExerciseManagerView } from './components/ExerciseManagerView';
 import { CycleProtocolView } from './components/CycleProtocolView';
 import { ExerciseModal } from './components/ExerciseModal';
 import { ExerciseHistoryModal } from './components/ExerciseHistoryModal';
-import { GymData, TrainingWeek, TrainingDay, Exercise, ExerciseHistoryPoint, BodyWeightEntry, AppSettings, LoggedSet, BackupEntry, ProtocolEntry } from './types';
+import { GymData, TrainingWeek, TrainingDay, Exercise, ExerciseHistoryPoint, BodyWeightEntry, CircumferenceEntry, AppSettings, LoggedSet, BackupEntry, ProtocolEntry } from './types';
 import { initialGymData } from './data/initialData';
 import { PYTHON_SOURCE_CODE, BAT_SCRIPT_CODE, REQUIREMENTS_TXT, INSTALL_BAT_CODE } from './data/pythonSource';
 import { getTodayDateString } from './utils/calculations';
+import { persistence } from './utils/persistence';
 
 const STORAGE_KEY = 'gymtracker_windows_data_v1';
 const BACKUPS_STORAGE_KEY = 'gymtracker_autobackups_v1';
+const normalizeGymData = (raw: GymData): GymData => ({ ...raw, circumferences: Array.isArray(raw.circumferences) ? raw.circumferences : [] });
 
 export default function App() {
   const [data, setData] = useState<GymData>(() => {
     try {
-      const saved = localStorage.getItem(STORAGE_KEY);
+      const saved = persistence.getItem(STORAGE_KEY);
       if (saved) {
         const parsed = JSON.parse(saved);
-        if (parsed && parsed.weeks) return parsed;
+        if (parsed && parsed.weeks) return normalizeGymData(parsed);
       }
     } catch (e) {
+      if (window.gymDesktop) throw e;
       console.warn('Could not load from localStorage, using initial data');
     }
-    return initialGymData;
+    return normalizeGymData(initialGymData);
   });
 
-  const [activeView, setActiveView] = useState<string>('plan');
+  const [activeView, setActiveView] = useState<string>(data.settings.startupView || 'plan');
+  useEffect(() => {
+    if (data.settings.rememberLastView && data.settings.startupView !== activeView) {
+      setData(prev => ({ ...prev, settings: { ...prev.settings, startupView: activeView as AppSettings['startupView'] } }));
+    }
+  }, [activeView, data.settings.rememberLastView, data.settings.startupView]);
   const [selectedWeekId, setSelectedWeekId] = useState<string>(data.weeks[0]?.id || 'week-1');
   const [selectedDayId, setSelectedDayId] = useState<string>(data.weeks[0]?.days[0]?.id || 'w1-d1');
   const [autoSaveStatus, setAutoSaveStatus] = useState<string>('Zapisano w JSON');
@@ -45,7 +53,7 @@ export default function App() {
   // Backups state
   const [backups, setBackups] = useState<BackupEntry[]>(() => {
     try {
-      const saved = localStorage.getItem(BACKUPS_STORAGE_KEY);
+      const saved = persistence.getItem(BACKUPS_STORAGE_KEY);
       if (saved) return JSON.parse(saved);
     } catch (e) {
       console.warn('Could not load backups from localStorage');
@@ -65,8 +73,8 @@ export default function App() {
   const createAutoBackup = (targetData: GymData, triggerReason: string = 'auto') => {
     try {
       const jsonStr = JSON.stringify(targetData);
-      if (jsonStr === lastBackupStringRef.current) return; // Skip duplicate backup of identical data
-      lastBackupStringRef.current = jsonStr;
+      const fingerprint = JSON.stringify({...targetData, settings: {...targetData.settings, lastBackupTime: undefined}});
+      if (triggerReason !== 'manual' && fingerprint === lastBackupStringRef.current) return;
 
       const now = new Date();
       const dateTag = now.toISOString().slice(0, 10).replace(/-/g, '');
@@ -86,11 +94,12 @@ export default function App() {
 
       const maxCount = targetData.settings.maxBackupFiles || 15;
       const updatedBackups = [newBackup, ...backups].slice(0, maxCount);
+      persistence.setItem(BACKUPS_STORAGE_KEY, JSON.stringify(updatedBackups));
+      lastBackupStringRef.current = fingerprint;
       setBackups(updatedBackups);
-      localStorage.setItem(BACKUPS_STORAGE_KEY, JSON.stringify(updatedBackups));
 
       // Update last backup time setting
-      setData((prev) => ({
+      setData((prev) => prev.settings.lastBackupTime === formattedTimestamp ? prev : ({
         ...prev,
         settings: {
           ...prev.settings,
@@ -99,14 +108,15 @@ export default function App() {
       }));
     } catch (err) {
       console.error('Failed to create auto backup', err);
+      throw err;
     }
   };
 
   // Persistence to localStorage & Auto-Backup on Save
   useEffect(() => {
     try {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
-      setAutoSaveStatus(`Zapisano w JSON (${new Date().toLocaleTimeString()})`);
+      persistence.setItem(STORAGE_KEY, JSON.stringify(data));
+      setAutoSaveStatus(data.settings.autoSave === false && window.gymDesktop ? 'Zapis przy zamknięciu' : `Zapisano w JSON (${new Date().toLocaleTimeString()})`);
 
       // Trigger Auto Backup on Save if enabled
       if (data.settings.autoBackupEnabled !== false && data.settings.backupOnSave !== false) {
@@ -138,9 +148,9 @@ export default function App() {
             data
           };
 
-          const existingBackups: BackupEntry[] = JSON.parse(localStorage.getItem(BACKUPS_STORAGE_KEY) || '[]');
+          const existingBackups: BackupEntry[] = JSON.parse(persistence.getItem(BACKUPS_STORAGE_KEY) || '[]');
           const updated = [exitBackup, ...existingBackups].slice(0, data.settings.maxBackupFiles || 15);
-          localStorage.setItem(BACKUPS_STORAGE_KEY, JSON.stringify(updated));
+          persistence.setItem(BACKUPS_STORAGE_KEY, JSON.stringify(updated));
         } catch (e) {
           console.error('Error creating exit backup', e);
         }
@@ -155,12 +165,16 @@ export default function App() {
 
   // Backup actions
   const handleCreateManualBackup = () => {
-    createAutoBackup(data, 'manual');
-    alert('Kopia zapasowa została pomyślnie utworzona i zapisana!');
+    try {
+      createAutoBackup(data, 'manual');
+      alert('Kopia zapasowa została pomyślnie utworzona i zapisana!');
+    } catch { alert('Błąd zapisu kopii zapasowej. Sprawdź dostęp do dysku.'); }
   };
 
   const handleRestoreBackup = (backup: BackupEntry) => {
     if (backup && backup.data && Array.isArray(backup.data.weeks)) {
+      if (window.gymDesktop) window.gymDesktop.validate(JSON.stringify(backup.data));
+      createAutoBackup(data, 'manual');
       setData(backup.data);
       if (backup.data.weeks.length > 0) {
         setSelectedWeekId(backup.data.weeks[0].id);
@@ -185,8 +199,8 @@ export default function App() {
 
   const handleDeleteBackup = (backupId: string) => {
     const updated = backups.filter((b) => b.id !== backupId);
+    persistence.setItem(BACKUPS_STORAGE_KEY, JSON.stringify(updated));
     setBackups(updated);
-    localStorage.setItem(BACKUPS_STORAGE_KEY, JSON.stringify(updated));
   };
 
   // Ensure selected week/day are valid
@@ -273,15 +287,11 @@ export default function App() {
             ...ex,
             id: `ex-${Date.now()}-${Math.random().toString(36).substr(2, 5)}`,
             weight: updatedWeight,
-            history: [
-              ...(ex.history || []),
-              {
-                date: getTodayDateString(),
-                weight: updatedWeight,
-                reps: ex.reps,
-                sets: ex.sets
-              }
-            ]
+            // A duplicated week is a new, uncompleted session. Keep the
+            // exercise history as reference, but never carry completed set
+            // checkmarks into the new session's execution analysis.
+            loggedSets: undefined,
+            history: [...(ex.history || [])]
           };
         })
       }))
@@ -297,6 +307,7 @@ export default function App() {
 
   const handleDeleteWeek = (weekId: string) => {
     if (data.weeks.length <= 1) return;
+    if (data.settings.confirmBeforeDelete !== false && !window.confirm('Czy na pewno chcesz usunąć cały tydzień?')) return;
     setData((prev) => ({
       ...prev,
       weeks: prev.weeks.filter((w) => w.id !== weekId)
@@ -326,6 +337,7 @@ export default function App() {
   };
 
   const handleDeleteDay = (weekId: string, dayId: string) => {
+    if (data.settings.confirmBeforeDelete !== false && !window.confirm('Czy na pewno chcesz usunąć dzień?')) return;
     setData((prev) => ({
       ...prev,
       weeks: prev.weeks.map((w) =>
@@ -335,7 +347,6 @@ export default function App() {
   };
 
   const handleToggleDayCompleted = (weekId: string, dayId: string) => {
-    const today = getTodayDateString();
     setData((prev) => ({
       ...prev,
       weeks: prev.weeks.map((w) => {
@@ -347,23 +358,9 @@ export default function App() {
             const newCompleted = !d.completed;
             let updatedExercises = d.exercises;
             if (newCompleted) {
-              // Auto log history for each exercise if not logged today yet
-              updatedExercises = d.exercises.map((ex) => {
-                const hasTodayLog = ex.history?.some((h) => h.date === today);
-                if (hasTodayLog) return ex;
-                const newPoint: ExerciseHistoryPoint = {
-                  date: today,
-                  weight: ex.weight,
-                  reps: ex.reps,
-                  sets: ex.sets,
-                  rpe: ex.rpe,
-                  loggedSets: ex.loggedSets
-                };
-                return {
-                  ...ex,
-                  history: [...(ex.history || []), newPoint]
-                };
-              });
+              // Never fabricate execution from planned values. History is created
+              // only after the user explicitly saves performance.
+              updatedExercises = d.exercises;
             }
             return {
               ...d,
@@ -451,7 +448,7 @@ export default function App() {
         return {
           ...w,
           days: w.days.map((d) => {
-            if (d.id !== dayId) return w as any;
+            if (d.id !== dayId) return d;
             return {
               ...d,
               exercises: d.exercises.map((ex) => {
@@ -504,10 +501,32 @@ export default function App() {
     }));
   };
 
+  const handleRenameWeek = (weekId: string, newName: string) => {
+    if (!newName.trim()) return;
+    setData((prev) => ({
+      ...prev,
+      weeks: prev.weeks.map((w) => (w.id === weekId ? { ...w, name: newName.trim() } : w))
+    }));
+  };
+
+  const handleRenameDay = (weekId: string, dayId: string, newName: string) => {
+    if (!newName.trim()) return;
+    setData((prev) => ({
+      ...prev,
+      weeks: prev.weeks.map((w) => {
+        if (w.id !== weekId) return w;
+        return {
+          ...w,
+          days: w.days.map((d) => (d.id === dayId ? { ...d, name: newName.trim() } : d))
+        };
+      })
+    }));
+  };
+
   // Exercise Add / Edit
   const handleSaveExercise = (exerciseData: Omit<Exercise, 'id'>, exerciseId?: string) => {
-    const currentWeek = data.weeks.find((w) => w.id === selectedWeekId);
-    const currentDay = currentWeek?.days.find((d) => d.id === selectedDayId);
+    const currentWeek = data.weeks.find((w) => exerciseId ? w.days.some(d => d.exercises.some(ex => ex.id === exerciseId)) : w.id === selectedWeekId);
+    const currentDay = currentWeek?.days.find((d) => exerciseId ? d.exercises.some(ex => ex.id === exerciseId) : d.id === selectedDayId);
     if (!currentWeek || !currentDay) return;
 
     if (exerciseId) {
@@ -523,7 +542,7 @@ export default function App() {
               return {
                 ...d,
                 exercises: d.exercises.map((ex) =>
-                  ex.id === exerciseId ? { ...exerciseData, id: exerciseId } : ex
+                  ex.id === exerciseId ? { ...ex, ...exerciseData, id: exerciseId } : ex
                 )
               };
             })
@@ -556,6 +575,7 @@ export default function App() {
   };
 
   const handleDeleteExercise = (weekId: string, dayId: string, exerciseId: string) => {
+    if (data.settings.confirmBeforeDelete !== false && !window.confirm('Czy na pewno chcesz usunąć ćwiczenie?')) return;
     setData((prev) => ({
       ...prev,
       weeks: prev.weeks.map((w) => {
@@ -618,6 +638,19 @@ export default function App() {
       ...prev,
       bodyWeights: prev.bodyWeights.filter((bw) => bw.id !== id)
     }));
+  };
+
+  const handleAddCircumference = (entry: Omit<CircumferenceEntry, 'id'>) => {
+    const newEntry: CircumferenceEntry = { ...entry, id: `circ-${Date.now()}-${Math.random().toString(36).slice(2, 6)}` };
+    setData((prev) => ({ ...prev, circumferences: [...(prev.circumferences || []), newEntry] }));
+  };
+
+  const handleUpdateCircumference = (entry: CircumferenceEntry) => {
+    setData((prev) => ({ ...prev, circumferences: (prev.circumferences || []).map((item) => item.id === entry.id ? entry : item) }));
+  };
+
+  const handleDeleteCircumference = (id: string) => {
+    setData((prev) => ({ ...prev, circumferences: (prev.circumferences || []).filter((item) => item.id !== id) }));
   };
 
   // Protocol entries (Sterydy, HCG, itp.)
@@ -704,6 +737,8 @@ export default function App() {
   };
 
   const handleImportJson = (imported: GymData) => {
+    if (window.gymDesktop) window.gymDesktop.validate(JSON.stringify(imported));
+    createAutoBackup(data, 'manual');
     setData(imported);
     if (imported.weeks.length > 0) {
       setSelectedWeekId(imported.weeks[0].id);
@@ -724,7 +759,7 @@ export default function App() {
   const currentDay = currentWeek?.days.find((d) => d.id === selectedDayId) || currentWeek?.days[0];
 
   return (
-    <div className={`min-h-screen ${isDark ? 'bg-slate-950 text-slate-100' : 'bg-slate-50 text-slate-900'} flex font-sans selection:bg-emerald-500 selection:text-white`}>
+    <div className={`min-h-screen ${isDark ? 'bg-slate-950 text-slate-100' : 'bg-slate-50 text-slate-900'} ${data.settings.reducedMotion ? 'reduce-motion' : ''} flex font-sans selection:bg-emerald-500 selection:text-white`}>
       {/* Modern Desktop Sidebar (Left Side) */}
       <div className="hidden md:flex shrink-0">
         <ModernSidebar
@@ -778,6 +813,9 @@ export default function App() {
               onUpdateExerciseWeight={handleUpdateExerciseWeight}
               onSaveExercisePerformance={handleSaveExercisePerformance}
               onRenameExercise={handleRenameExercise}
+              onRenameWeek={handleRenameWeek}
+              onUpdateWeekStartDate={handleUpdateWeekStartDate}
+              onRenameDay={handleRenameDay}
               onOpenAddExerciseModal={() => {
                 setExerciseToEdit(null);
                 setIsExerciseModalOpen(true);
@@ -800,11 +838,44 @@ export default function App() {
               weeks={data.weeks}
               bodyWeights={data.bodyWeights || []}
               unit={data.settings.unit}
+              analysisOnlyCompleted={data.settings.analysisOnlyCompleted !== false}
+              analysisHideEmptyGroups={data.settings.analysisHideEmptyGroups !== false}
+              analysisIncludePartialHistory={data.settings.analysisIncludePartialHistory === true}
+              analysisStartWeek={data.settings.analysisStartWeek || 1}
+              analysisEndWeek={data.settings.analysisEndWeek || 999}
+              analysisDefaultMetric={data.settings.analysisDefaultMetric || 'progressPct'}
+              analysisShowDataQualityWarnings={data.settings.analysisShowDataQualityWarnings !== false}
+              analysisRequireHistoryForCompleted={data.settings.analysisRequireHistoryForCompleted !== false} analysisWarnVolumeJumpPct={data.settings.analysisWarnVolumeJumpPct || 30}
+              analysisMinExecutedSets={data.settings.analysisMinExecutedSets || 1}
+              analysisWarnMissingHistory={data.settings.analysisWarnMissingHistory !== false}
+              analysisShowExecutionSummary={data.settings.analysisShowExecutionSummary !== false}
+              analysisShowWeekComparison={data.settings.analysisShowWeekComparison !== false}
+              analysisShowWeeklyTonnage={data.settings.analysisShowWeeklyTonnage !== false}
+              analysisShowWeeklyMetrics={data.settings.analysisShowWeeklyMetrics !== false}
+              analysisShowExecutedDays={data.settings.analysisShowExecutedDays !== false}
+              analysisShowExecutedExercises={data.settings.analysisShowExecutedExercises !== false}
+              analysisShowExecutedSets={data.settings.analysisShowExecutedSets !== false}
+              analysisShowExecutedReps={data.settings.analysisShowExecutedReps !== false}
+              analysisShowVolumeDelta={data.settings.analysisShowVolumeDelta !== false}
+              analysisShowDataConfidence={data.settings.analysisShowDataConfidence !== false}
+              analysisShowBestE1RM={data.settings.analysisShowBestE1RM !== false}
+              analysisShowLatestResult={data.settings.analysisShowLatestResult !== false}
+              analysisShowTrendLine={data.settings.analysisShowTrendLine !== false}
+              analysisShowPRMarkers={data.settings.analysisShowPRMarkers !== false}
+              analysisPRMetric={data.settings.analysisPRMetric || 'e1RM'}
+              analysisStagnationWindow={data.settings.analysisStagnationWindow || 4}
+              analysisStagnationMinSessions={data.settings.analysisStagnationMinSessions || 3}
+              analysisShowRegularity={data.settings.analysisShowRegularity !== false}
+              analysisRegularityTargetPct={data.settings.analysisRegularityTargetPct || 80}
+              analysisShowMonthlyComparison={data.settings.analysisShowMonthlyComparison !== false}
+              analysisMonthlyMetric={data.settings.analysisMonthlyMetric || 'volume'}
+              analysisShowPeriodComparison={data.settings.analysisShowPeriodComparison !== false}
+              analysisPeriodComparisonMetric={data.settings.analysisPeriodComparisonMetric || 'volume'}
             />
           )}
 
           {activeView === 'muscle' && (
-            <MuscleProgressView weeks={data.weeks} unit={data.settings.unit} />
+              <MuscleProgressView weeks={data.weeks} unit={data.settings.unit} analysisOnlyCompleted={data.settings.analysisOnlyCompleted !== false} analysisHideEmptyGroups={data.settings.analysisHideEmptyGroups !== false} analysisIncludePartialHistory={data.settings.analysisIncludePartialHistory === true} analysisStartWeek={data.settings.analysisStartWeek || 1} analysisEndWeek={data.settings.analysisEndWeek || 999} analysisDefaultMetric={data.settings.analysisDefaultMetric || 'progressPct'} analysisShowDataQualityWarnings={data.settings.analysisShowDataQualityWarnings !== false} analysisRequireHistoryForCompleted={data.settings.analysisRequireHistoryForCompleted !== false} analysisMinExecutedSets={data.settings.analysisMinExecutedSets || 1} analysisWarnMissingHistory={data.settings.analysisWarnMissingHistory !== false} analysisShowExecutionSummary={data.settings.analysisShowExecutionSummary !== false} analysisShowMuscleFrequency={data.settings.analysisShowMuscleFrequency !== false} />
           )}
 
           {activeView === 'weight' && (
@@ -812,6 +883,11 @@ export default function App() {
               bodyWeights={data.bodyWeights}
               onAddBodyWeight={handleAddBodyWeight}
               onDeleteBodyWeight={handleDeleteBodyWeight}
+              circumferences={data.circumferences || []}
+              weeks={data.weeks}
+              onAddCircumference={handleAddCircumference}
+              onUpdateCircumference={handleUpdateCircumference}
+              onDeleteCircumference={handleDeleteCircumference}
               unit={data.settings.unit}
             />
           )}
@@ -839,7 +915,12 @@ export default function App() {
                 setExerciseToEdit(ex);
                 setIsExerciseModalOpen(true);
               }}
-              onDeleteExercise={handleDeleteExercise}
+              onDeleteExercise={(exerciseId) => {
+                for (const week of data.weeks) {
+                  const day = week.days.find(d => d.exercises.some(ex => ex.id === exerciseId));
+                  if (day) { handleDeleteExercise(week.id, day.id, exerciseId); return; }
+                }
+              }}
               unit={data.settings.unit}
             />
           )}

@@ -16,11 +16,24 @@ import {
   Sparkles
 } from 'lucide-react';
 import { TrainingWeek, ExerciseHistoryPoint, Exercise } from '../types';
-import { calculate1RM, calculateVolume } from '../utils/calculations';
+import { calculate1RM } from '../utils/calculations';
+import { AnalysisExecutionOptions, analysisOptionsForWeek, dedupeHistory, executedSets, executedVolume, historyForAnalysis, includeExerciseInAnalysis, scopeAnalysisWeeks, summarizeExecution, summarizeMuscleFrequency } from '../utils/analysis';
 
 interface MuscleProgressViewProps {
   weeks: TrainingWeek[];
   unit: 'kg' | 'lbs';
+  analysisOnlyCompleted?: boolean;
+  analysisHideEmptyGroups?: boolean;
+  analysisIncludePartialHistory?: boolean;
+  analysisStartWeek?: number;
+  analysisEndWeek?: number;
+  analysisDefaultMetric?: 'progressPct' | 'volume' | 'executedSets';
+  analysisShowDataQualityWarnings?: boolean;
+  analysisRequireHistoryForCompleted?: boolean;
+  analysisMinExecutedSets?: number;
+  analysisWarnMissingHistory?: boolean;
+  analysisShowExecutionSummary?: boolean;
+  analysisShowMuscleFrequency?: boolean;
 }
 
 export type MuscleGroupId = 'klatka' | 'plecy' | 'biceps' | 'triceps' | 'barki' | 'nogi';
@@ -96,27 +109,28 @@ interface AggregatedExercise {
   history: ExerciseHistoryPoint[];
 }
 
-export const MuscleProgressView: React.FC<MuscleProgressViewProps> = ({ weeks, unit }) => {
+export const MuscleProgressView: React.FC<MuscleProgressViewProps> = ({ weeks, unit, analysisOnlyCompleted = true, analysisHideEmptyGroups = true, analysisIncludePartialHistory = false, analysisStartWeek = 1, analysisEndWeek = 999, analysisDefaultMetric = 'progressPct', analysisShowDataQualityWarnings = true, analysisRequireHistoryForCompleted = false, analysisMinExecutedSets = 1, analysisWarnMissingHistory = true, analysisShowExecutionSummary = true, analysisShowMuscleFrequency = true }) => {
   const [selectedGroup, setSelectedGroup] = useState<MuscleGroupId | 'all'>('all');
+  const scopedWeeks = useMemo(() => scopeAnalysisWeeks(weeks, analysisStartWeek, analysisEndWeek), [weeks, analysisStartWeek, analysisEndWeek]);
+  const analysisOptions = useMemo<AnalysisExecutionOptions>(() => ({
+    onlyCompleted: analysisOnlyCompleted,
+    includePartialHistory: analysisIncludePartialHistory,
+    requireHistoryForCompleted: analysisRequireHistoryForCompleted,
+    minExecutedSets: analysisMinExecutedSets,
+    startDate: scopedWeeks[0]?.startDate,
+  }), [analysisOnlyCompleted, analysisIncludePartialHistory, analysisRequireHistoryForCompleted, analysisMinExecutedSets, scopedWeeks]);
 
   // Aggregate all exercises from weeks & days
   const allAggregatedExercises = useMemo(() => {
     const map = new Map<string, AggregatedExercise>();
 
-    weeks.forEach((week) => {
+    scopedWeeks.forEach((week, weekIndex) => {
+      const weekOptions = analysisOptionsForWeek(week, analysisOptions, scopedWeeks[weekIndex + 1]?.startDate);
       week.days.forEach((day) => {
         day.exercises.forEach((ex) => {
+          if (!includeExerciseInAnalysis(day, ex, weekOptions)) return;
           const existing = map.get(ex.name);
-          const combinedHistory = [...(existing?.history || []), ...(ex.history || [])];
-
-          // Deduplicate history by date
-          const uniqueHistoryMap = new Map<string, ExerciseHistoryPoint>();
-          combinedHistory.forEach((h) => {
-            uniqueHistoryMap.set(h.date, h);
-          });
-          const sortedHistory = Array.from(uniqueHistoryMap.values()).sort((a, b) =>
-            a.date.localeCompare(b.date)
-          );
+          const sortedHistory = dedupeHistory([...(existing?.history || []), ...historyForAnalysis(ex, weekOptions)], analysisOptions.startDate);
 
           const weights = sortedHistory.map((h) => h.weight);
           const repsArr = sortedHistory.map((h) => h.reps);
@@ -129,15 +143,8 @@ export const MuscleProgressView: React.FC<MuscleProgressViewProps> = ({ weeks, u
           const bestPoint = sortedHistory.find((p) => p.weight === maxW) || { weight: maxW, reps: ex.reps };
           const best1RM = calculate1RM(bestPoint.weight, bestPoint.reps);
 
-          const currentVol = (existing?.totalVolume || 0) + calculateVolume(ex.sets, ex.reps, ex.weight);
-
-          let addedExecutedSets = 0;
-          if (sortedHistory.length > 0) {
-            addedExecutedSets = sortedHistory.reduce((sum, h) => sum + (h.sets || ex.sets), 0);
-          } else if (day.completed) {
-            addedExecutedSets = ex.sets;
-          }
-          const currentExecutedSets = (existing?.executedSets || 0) + addedExecutedSets;
+          const currentVol = (existing?.totalVolume || 0) + executedVolume(day, ex, weekOptions);
+          const currentExecutedSets = (existing?.executedSets || 0) + executedSets(day, ex, weekOptions);
 
           map.set(ex.name, {
             name: ex.name,
@@ -161,7 +168,7 @@ export const MuscleProgressView: React.FC<MuscleProgressViewProps> = ({ weeks, u
     });
 
     return Array.from(map.values());
-  }, [weeks]);
+  }, [scopedWeeks, analysisOptions]);
 
   // Helper to match exercise to muscle group
   const matchesGroup = (exName: string, group: MuscleGroupDef): boolean => {
@@ -215,7 +222,7 @@ export const MuscleProgressView: React.FC<MuscleProgressViewProps> = ({ weeks, u
   }, [allAggregatedExercises]);
 
   // Chart Metric state & Hover state
-  const [chartMetric, setChartMetric] = useState<'progressPct' | 'volume' | 'executedSets'>('progressPct');
+  const [chartMetric, setChartMetric] = useState<'progressPct' | 'volume' | 'executedSets'>(analysisDefaultMetric);
   const [hoveredBarId, setHoveredBarId] = useState<MuscleGroupId | null>(null);
 
   // Group metrics & aggregated progress
@@ -231,20 +238,21 @@ export const MuscleProgressView: React.FC<MuscleProgressViewProps> = ({ weeks, u
 
     return MUSCLE_GROUPS.map((group) => {
       const exercises = groupedData[group.id];
-      const totalVolume = exercises.reduce((sum, e) => sum + e.totalVolume, 0);
-      const totalExecutedSets = exercises.reduce((sum, e) => sum + e.executedSets, 0);
-      const withWeight = exercises.filter((e) => e.initialWeight > 0);
+      const executedExercises = exercises.filter((e) => e.executedSets > 0);
+      const totalVolume = executedExercises.reduce((sum, e) => sum + e.totalVolume, 0);
+      const totalExecutedSets = executedExercises.reduce((sum, e) => sum + e.executedSets, 0);
+      const withWeight = executedExercises.filter((e) => e.initialWeight > 0);
       const avgGainPct = withWeight.length > 0
         ? Math.round((withWeight.reduce((sum, e) => sum + e.weightGainPct, 0) / withWeight.length) * 10) / 10
         : 0;
-      const totalGainKg = Math.round(exercises.reduce((sum, e) => sum + e.weightGain, 0) * 10) / 10;
-      const topEx = exercises.slice().sort((a, b) => b.weightGain - a.weightGain)[0];
+      const totalGainKg = Math.round(executedExercises.reduce((sum, e) => sum + e.weightGain, 0) * 10) / 10;
+      const topEx = executedExercises.slice().sort((a, b) => b.weightGain - a.weightGain)[0];
 
       return {
         id: group.id,
         name: group.name,
         icon: group.icon,
-        exerciseCount: exercises.length,
+        exerciseCount: executedExercises.length,
         totalVolume,
         totalExecutedSets,
         avgGainPct,
@@ -260,6 +268,22 @@ export const MuscleProgressView: React.FC<MuscleProgressViewProps> = ({ weeks, u
   const totalExecutedSetsAll = useMemo(() => {
     return groupMetrics.reduce((sum, g) => sum + g.totalExecutedSets, 0);
   }, [groupMetrics]);
+
+  // v1.2 analysis contract: groups with no executed history are not analysis data.
+  const activeGroupMetrics = useMemo(() => analysisHideEmptyGroups ? groupMetrics.filter((g) => g.exerciseCount > 0 && g.totalExecutedSets > 0) : groupMetrics, [groupMetrics, analysisHideEmptyGroups]);
+
+  const dataQuality = useMemo(() => {
+    const execution = summarizeExecution(scopedWeeks, analysisOptions);
+    const sortedWeeks = execution.executedWeekNumbers;
+    const gaps = sortedWeeks.length > 1 ? sortedWeeks.slice(1).filter((n, i) => n - sortedWeeks[i] > 1).length : 0;
+    return { ...execution, gaps };
+  }, [scopedWeeks, analysisOptions]);
+
+  const muscleFrequency = useMemo(() => summarizeMuscleFrequency(scopedWeeks, analysisOptions, (exercise) => {
+    if (exercise.category) return exercise.category;
+    const lower = exercise.name.toLowerCase();
+    return MUSCLE_GROUPS.find((group) => group.keywords.some((keyword) => lower.includes(keyword)))?.id;
+  }), [scopedWeeks, analysisOptions]);
 
   // Structural Balance Calculation (Push vs Pull vs Legs)
   const structuralBalance = useMemo(() => {
@@ -308,7 +332,7 @@ export const MuscleProgressView: React.FC<MuscleProgressViewProps> = ({ weeks, u
       };
     }
 
-    const activeGroups = groupMetrics.filter((g) => g.exerciseCount > 0);
+    const activeGroups = groupMetrics.filter((g) => g.totalExecutedSets > 0);
     const bestGrowth = activeGroups.slice().sort((a, b) => b.avgGainPct - a.avgGainPct)[0];
     const lowestGrowth = activeGroups.slice().sort((a, b) => a.avgGainPct - b.avgGainPct)[0];
 
@@ -355,10 +379,43 @@ export const MuscleProgressView: React.FC<MuscleProgressViewProps> = ({ weeks, u
           <div className="w-px h-6 bg-slate-800" />
           <div>
             <span className="text-[10px] text-slate-500 block uppercase">Tygodni w cyklu:</span>
-            <span className="font-bold text-emerald-400 text-sm">{weeks.length}</span>
+            <span className="font-bold text-emerald-400 text-sm">{scopedWeeks.length}</span>
           </div>
         </div>
       </div>
+
+      {analysisShowDataQualityWarnings && analysisWarnMissingHistory && (dataQuality.missingHistoryDays > 0 || dataQuality.gaps > 0) && (
+        <div className="px-4 py-3 rounded-xl bg-amber-950/30 border border-amber-800/50 text-xs text-amber-200" id="analysis-quality-warning">
+          <strong>Kontrola jakości danych:</strong> {dataQuality.missingHistoryDays > 0 && `${dataQuality.missingHistoryDays} ukończonych dni bez historii serii. `}{dataQuality.gaps > 0 && `${dataQuality.gaps} przerw w wykonanych tygodniach.`} Analiza nie uzupełnia braków domysłami.
+        </div>
+      )}
+
+      {analysisShowExecutionSummary && (
+        <div className="flex flex-wrap gap-3 text-[11px] text-slate-400" id="analysis-execution-summary">
+          <span>Wykonane dni: <strong className="text-emerald-300">{dataQuality.completedDays}</strong></span>
+          <span>Dni częściowe: <strong className="text-cyan-300">{dataQuality.partialDays}</strong></span>
+          <span>Ćwiczenia z wykonaniem: <strong className="text-emerald-300">{dataQuality.executedExercises}</strong></span>
+        </div>
+      )}
+
+      {analysisShowMuscleFrequency && (
+        <div className="bg-slate-900 border border-slate-800 rounded-xl p-4 sm:p-5 shadow-sm space-y-3" id="analysis-muscle-frequency">
+          <div>
+            <h3 className="text-sm font-bold text-slate-100 flex items-center gap-2"><Activity className="w-4 h-4 text-sky-400" />Częstotliwość partii mięśniowych</h3>
+            <p className="text-xs text-slate-400 mt-0.5">Sesje i serie wykonane w wybranym zakresie tygodni.</p>
+          </div>
+          {muscleFrequency.length === 0 ? <div className="text-xs text-slate-500">Brak wystarczających danych wykonania.</div> : (
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2" id="muscle-frequency-grid">
+              {muscleFrequency.map((metric) => (
+                <div key={metric.category} className="rounded-lg bg-slate-950 border border-slate-800 px-3 py-2" data-frequency-category={metric.category}>
+                  <div className="flex items-center justify-between text-xs"><span className="font-bold text-slate-200">{metric.category}</span><span className="font-mono text-emerald-300">{metric.activeWeeks} tyg.</span></div>
+                  <div className="mt-1 text-[11px] text-slate-400">{metric.sessions} sesji · {metric.executedSets} serii</div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
 
       {/* Partitions / Navigation Filter Tabs */}
       <div className="flex flex-wrap gap-2 pb-1 border-b border-slate-800">
@@ -375,7 +432,7 @@ export const MuscleProgressView: React.FC<MuscleProgressViewProps> = ({ weeks, u
           <span>🌐 Wszystkie Partie</span>
         </button>
 
-        {MUSCLE_GROUPS.map((group) => {
+        {MUSCLE_GROUPS.filter((group) => !analysisHideEmptyGroups || groupedData[group.id].length > 0).map((group) => {
           const count = groupedData[group.id].length;
           const isSelected = selectedGroup === group.id;
           return (
@@ -468,10 +525,10 @@ export const MuscleProgressView: React.FC<MuscleProgressViewProps> = ({ weeks, u
             const padBottom = 48;
             const innerW = chartW - padLeft - padRight;
             const innerH = chartH - padTop - padBottom;
-            const slotW = innerW / groupMetrics.length;
+            const slotW = innerW / Math.max(1, activeGroupMetrics.length);
             const barW = 46;
 
-            const values = groupMetrics.map((g) =>
+            const values = activeGroupMetrics.map((g) =>
               chartMetric === 'progressPct'
                 ? g.avgGainPct
                 : chartMetric === 'executedSets'
@@ -516,7 +573,7 @@ export const MuscleProgressView: React.FC<MuscleProgressViewProps> = ({ weeks, u
                   })}
 
                   {/* Bars for Each Muscle Group */}
-                  {groupMetrics.map((g, i) => {
+                  {activeGroupMetrics.map((g, i) => {
                     const val =
                       chartMetric === 'progressPct'
                         ? g.avgGainPct
@@ -745,9 +802,9 @@ export const MuscleProgressView: React.FC<MuscleProgressViewProps> = ({ weeks, u
 
         {/* Horizontal SVG / Visual Progress Bar Chart */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 pt-1">
-          {groupMetrics.map((g) => {
+          {activeGroupMetrics.map((g) => {
             const pctOfTotal = totalExecutedSetsAll > 0 ? Math.round((g.totalExecutedSets / totalExecutedSetsAll) * 100) : 0;
-            const maxGroupSets = Math.max(1, ...groupMetrics.map((m) => m.totalExecutedSets));
+            const maxGroupSets = Math.max(1, ...activeGroupMetrics.map((m) => m.totalExecutedSets));
             const barFillPct = maxGroupSets > 0 ? Math.max(5, (g.totalExecutedSets / maxGroupSets) * 100) : 0;
             const isSelected = selectedGroup === g.id;
 
@@ -916,7 +973,7 @@ export const MuscleProgressView: React.FC<MuscleProgressViewProps> = ({ weeks, u
 
       {/* Main Muscle Groups Grid */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-        {MUSCLE_GROUPS.filter((g) => selectedGroup === 'all' || selectedGroup === g.id).map((group) => {
+        {MUSCLE_GROUPS.filter((g) => (selectedGroup === 'all' || selectedGroup === g.id) && (!analysisHideEmptyGroups || groupedData[g.id].length > 0)).map((group) => {
           const exercises = groupedData[group.id];
           const totalGroupVol = exercises.reduce((acc, e) => acc + e.totalVolume, 0);
           const totalGroupExecutedSets = exercises.reduce((acc, e) => acc + e.executedSets, 0);

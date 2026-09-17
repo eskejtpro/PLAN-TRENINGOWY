@@ -66,20 +66,18 @@ def create_default_data() -> dict:
             {
                 "id": "week-1",
                 "number": 1,
-                "name": "Tydzień 1 - Start Cyklu",
+                "name": "Tydzień 1 - Rozpoczęcie Cyklu (Push / Pull / Legs)",
                 "days": [
                     {
                         "id": "w1-d1",
-                        "name": "Poniedziałek - Push (Klatka / Barki / Triceps)",
+                        "name": "Poniedziałek – Plan A: Push (Klatka, Barki Przód/Bok, Triceps)",
                         "completed": True,
+                        "notes": "Trening Push ukończony. Dobre czucie mięśniowe i stabilizacja.",
                         "exercises": [
                             {
-                                "name": "Wyciskanie sztangi leżąc",
-                                "sets": 4,
-                                "reps": 8,
-                                "weight": 85.0,
-                                "rpe": 8.0,
-                                "notes": "Pauza na klatce",
+                                "name": "Wyciskanie sztangi na ławce płaskiej",
+                                "sets": 4, "reps": 8, "weight": 85.0, "rpe": 8.0,
+                                "notes": "Pauza na klatce, stabilny mostek",
                                 "history": [
                                     {"date": "2026-08-18", "weight": 80.0, "reps": 8, "sets": 4},
                                     {"date": "2026-08-25", "weight": 82.5, "reps": 8, "sets": 4},
@@ -87,12 +85,9 @@ def create_default_data() -> dict:
                                 ]
                             },
                             {
-                                "name": "Wyciskanie hantli skos",
-                                "sets": 3,
-                                "reps": 10,
-                                "weight": 30.0,
-                                "rpe": 8.5,
-                                "notes": "Kąt 30 stopni",
+                                "name": "Wyciskanie hantli na skosie dodatnim (30–45°)",
+                                "sets": 3, "reps": 10, "weight": 30.0, "rpe": 8.5,
+                                "notes": "Kąt 30 stopni, głębokie rozciągnięcie",
                                 "history": [
                                     {"date": "2026-08-18", "weight": 26.0, "reps": 10, "sets": 3},
                                     {"date": "2026-08-25", "weight": 28.0, "reps": 10, "sets": 3},
@@ -100,69 +95,259 @@ def create_default_data() -> dict:
                                 ]
                             },
                             {
-                                "name": "Wznosy bokiem",
-                                "sets": 4,
-                                "reps": 12,
-                                "weight": 12.5,
-                                "rpe": 9.0,
-                                "notes": "Bez bujania tułowiem",
+                                "name": "Rozpiętki na bramce / wyciągu",
+                                "sets": 3, "reps": 12, "weight": 15.0, "rpe": 8.0,
+                                "notes": "Przytrzymanie w szczycie skurczu",
+                                "history": [
+                                    {"date": "2026-08-18", "weight": 12.5, "reps": 12, "sets": 3},
+                                    {"date": "2026-08-25", "weight": 13.5, "reps": 12, "sets": 3},
+                                    {"date": "2026-09-01", "weight": 15.0, "reps": 12, "sets": 3}
+                                ]
+                            },
+                            {
+                                "name": "OHP (Wyciskanie żołnierskie sztangi stojąc)",
+                                "sets": 4, "reps": 6, "weight": 55.0, "rpe": 8.5,
+                                "notes": "Napięty pośladek i brzuch",
+                                "history": [
+                                    {"date": "2026-08-18", "weight": 50.0, "reps": 6, "sets": 4},
+                                    {"date": "2026-08-25", "weight": 52.5, "reps": 6, "sets": 4},
+                                    {"date": "2026-09-01", "weight": 55.0, "reps": 6, "sets": 4}
+                                ]
+                            },
+                            {
+                                "name": "Wznosy bokiem z hantlami lub na wyciągu",
+                                "sets": 4, "reps": 12, "weight": 12.5, "rpe": 9.0,
+                                "notes": "Wolna faza negatywna",
                                 "history": [
                                     {"date": "2026-08-18", "weight": 10.0, "reps": 12, "sets": 4},
-                                    {"date": "2026-08-25", "weight": 12.0, "reps": 12, "sets": 4},
+                                    {"date": "2026-08-25", "weight": 11.5, "reps": 12, "sets": 4},
                                     {"date": "2026-09-01", "weight": 12.5, "reps": 12, "sets": 4}
+                                ]
+                            },
+                            {
+                                "name": "Prostowanie ramion z linką za głowy (French)",
+                                "sets": 3, "reps": 12, "weight": 25.0, "rpe": 8.0,
+                                "notes": "Długa głowa tricepsa",
+                                "history": [
+                                    {"date": "2026-08-18", "weight": 20.0, "reps": 12, "sets": 3},
+                                    {"date": "2026-08-25", "weight": 22.5, "reps": 12, "sets": 3},
+                                    {"date": "2026-09-01", "weight": 25.0, "reps": 12, "sets": 3}
+                                ]
+                            },
+                            {
+                                "name": "Prostowanie ramion na linkach wyciągu górnego",
+                                "sets": 3, "reps": 12, "weight": 30.0, "rpe": 8.5,
+                                "notes": "Rozchylenie linek w dole",
+                                "history": [
+                                    {"date": "2026-08-18", "weight": 25.0, "reps": 12, "sets": 3},
+                                    {"date": "2026-08-25", "weight": 27.5, "reps": 12, "sets": 3},
+                                    {"date": "2026-09-01", "weight": 30.0, "reps": 12, "sets": 3}
+                                ]
+                            },
+                            {
+                                "name": "Plank (Deska)",
+                                "sets": 3, "reps": 60, "weight": 0.0, "rpe": 8.0,
+                                "notes": "60 sekund izometrii",
+                                "history": [
+                                    {"date": "2026-08-18", "weight": 0.0, "reps": 45, "sets": 3},
+                                    {"date": "2026-08-25", "weight": 0.0, "reps": 50, "sets": 3},
+                                    {"date": "2026-09-01", "weight": 0.0, "reps": 60, "sets": 3}
                                 ]
                             }
                         ]
                     },
                     {
                         "id": "w1-d2",
-                        "name": "Środa - Pull (Plecy / Tył barku / Biceps)",
-                        "completed": False,
+                        "name": "Wtorek – Plan B: Pull (Plecy, Tył Barku, Biceps)",
+                        "completed": True,
+                        "notes": "Mocny grzbiet i biceps przepracowany.",
                         "exercises": [
                             {
-                                "name": "Martwy ciąg klasyczny",
-                                "sets": 4,
-                                "reps": 5,
-                                "weight": 140.0,
-                                "rpe": 8.5,
-                                "notes": "Pasek i kreda",
+                                "name": "Podciąganie na drążku (Nachwyt / Podchwyt)",
+                                "sets": 4, "reps": 8, "weight": 0.0, "rpe": 8.0,
+                                "notes": "Pełen zakres ruchu do brody",
                                 "history": [
-                                    {"date": "2026-08-20", "weight": 130.0, "reps": 5, "sets": 4},
-                                    {"date": "2026-08-27", "weight": 135.0, "reps": 5, "sets": 4},
-                                    {"date": "2026-09-03", "weight": 140.0, "reps": 5, "sets": 4}
+                                    {"date": "2026-08-19", "weight": 0.0, "reps": 6, "sets": 4},
+                                    {"date": "2026-08-26", "weight": 0.0, "reps": 7, "sets": 4},
+                                    {"date": "2026-09-02", "weight": 0.0, "reps": 8, "sets": 4}
                                 ]
                             },
                             {
-                                "name": "Podciąganie nachwytem",
-                                "sets": 3,
-                                "reps": 8,
-                                "weight": 0.0,
-                                "rpe": 8.0,
-                                "notes": "Masa własna",
+                                "name": "Wiosłowanie sztangą w opadzie tułowia",
+                                "sets": 4, "reps": 8, "weight": 75.0, "rpe": 8.0,
+                                "notes": "Przyciąganie do pępka, opad 45°",
                                 "history": [
-                                    {"date": "2026-08-20", "weight": 0.0, "reps": 6, "sets": 3},
-                                    {"date": "2026-08-27", "weight": 0.0, "reps": 7, "sets": 3},
-                                    {"date": "2026-09-03", "weight": 0.0, "reps": 8, "sets": 3}
+                                    {"date": "2026-08-19", "weight": 70.0, "reps": 8, "sets": 4},
+                                    {"date": "2026-08-26", "weight": 72.5, "reps": 8, "sets": 4},
+                                    {"date": "2026-09-02", "weight": 75.0, "reps": 8, "sets": 4}
+                                ]
+                            },
+                            {
+                                "name": "Wiosłowanie jednorącz na wyciągu dolnym do biodra",
+                                "sets": 3, "reps": 10, "weight": 35.0, "rpe": 8.0,
+                                "notes": "Łokieć blisko biodra",
+                                "history": [
+                                    {"date": "2026-08-19", "weight": 30.0, "reps": 10, "sets": 3},
+                                    {"date": "2026-08-26", "weight": 32.5, "reps": 10, "sets": 3},
+                                    {"date": "2026-09-02", "weight": 35.0, "reps": 10, "sets": 3}
+                                ]
+                            },
+                            {
+                                "name": "Pull-over (Przenoszenie drążka na wyciągu)",
+                                "sets": 3, "reps": 12, "weight": 27.5, "rpe": 8.0,
+                                "notes": "Izolacja najszerszego",
+                                "history": [
+                                    {"date": "2026-08-19", "weight": 22.5, "reps": 12, "sets": 3},
+                                    {"date": "2026-08-26", "weight": 25.0, "reps": 12, "sets": 3},
+                                    {"date": "2026-09-02", "weight": 27.5, "reps": 12, "sets": 3}
+                                ]
+                            },
+                            {
+                                "name": "Face Pulls (Przyciąganie linki do twarzy)",
+                                "sets": 4, "reps": 15, "weight": 20.0, "rpe": 8.5,
+                                "notes": "Rotatory i tył barku",
+                                "history": [
+                                    {"date": "2026-08-19", "weight": 15.0, "reps": 15, "sets": 4},
+                                    {"date": "2026-08-26", "weight": 17.5, "reps": 15, "sets": 4},
+                                    {"date": "2026-09-02", "weight": 20.0, "reps": 15, "sets": 4}
+                                ]
+                            },
+                            {
+                                "name": "Wznosy hantli w opadzie leżąc przodem (30–45°)",
+                                "sets": 3, "reps": 12, "weight": 10.0, "rpe": 8.5,
+                                "notes": "Klatka na ławce",
+                                "history": [
+                                    {"date": "2026-08-19", "weight": 8.0, "reps": 12, "sets": 3},
+                                    {"date": "2026-08-26", "weight": 9.0, "reps": 12, "sets": 3},
+                                    {"date": "2026-09-02", "weight": 10.0, "reps": 12, "sets": 3}
+                                ]
+                            },
+                            {
+                                "name": "Uginanie ramion ze sztangą łamaną stojąc",
+                                "sets": 3, "reps": 10, "weight": 35.0, "rpe": 8.5,
+                                "notes": "Czysta technika bez bujania",
+                                "history": [
+                                    {"date": "2026-08-19", "weight": 30.0, "reps": 10, "sets": 3},
+                                    {"date": "2026-08-26", "weight": 32.5, "reps": 10, "sets": 3},
+                                    {"date": "2026-09-02", "weight": 35.0, "reps": 10, "sets": 3}
+                                ]
+                            },
+                            {
+                                "name": "Uginanie hantli z supinacją na ławce skośnej",
+                                "sets": 3, "reps": 10, "weight": 14.0, "rpe": 8.0,
+                                "notes": "Pełna supinacja",
+                                "history": [
+                                    {"date": "2026-08-19", "weight": 12.0, "reps": 10, "sets": 3},
+                                    {"date": "2026-08-26", "weight: 13.0, "reps": 10, "sets": 3},
+                                    {"date": "2026-09-02", "weight": 14.0, "reps": 10, "sets": 3}
+                                ]
+                            },
+                            {
+                                "name": "Uginanie młotkowe (Hantle / Linka)",
+                                "sets": 3, "reps": 12, "weight": 16.0, "rpe": 8.5,
+                                "notes": "Praca ramienno-promieniowego",
+                                "history": [
+                                    {"date": "2026-08-19", "weight": 12.0, "reps": 12, "sets": 3},
+                                    {"date": "2026-08-26", "weight": 14.0, "reps": 12, "sets": 3},
+                                    {"date": "2026-09-02", "weight": 16.0, "reps": 12, "sets": 3}
+                                ]
+                            },
+                            {
+                                "name": "Plank (Deska)",
+                                "sets": 3, "reps": 60, "weight": 0.0, "rpe": 8.0,
+                                "notes": "60 sekund izometrii",
+                                "history": [
+                                    {"date": "2026-08-19", "weight": 0.0, "reps": 50, "sets": 3},
+                                    {"date": "2026-08-26", "weight": 0.0, "reps": 55, "sets": 3},
+                                    {"date": "2026-09-02", "weight": 0.0, "reps": 60, "sets": 3}
                                 ]
                             }
                         ]
                     },
                     {
                         "id": "w1-d3",
-                        "name": "Piątek - Legs (Przysiad / Dwugłowe / Łydki)",
+                        "name": "Środa – Plan C: Legs & Abs (Nogi, Brzuch)",
                         "completed": False,
+                        "notes": "Mocny trening nóg i brzucha",
                         "exercises": [
                             {
-                                "name": "Przysiad ze sztangą (Squat)",
-                                "sets": 4,
-                                "reps": 6,
-                                "weight": 115.0,
-                                "rpe": 8.0,
-                                "notes": "Głęboki przysiad",
+                                "name": "Prostowanie nóg na maszynie siedząc",
+                                "sets": 3, "reps": 12, "weight": 50.0, "rpe": 8.0,
+                                "notes": "Wstępne zmęczenie czworogłowych",
                                 "history": [
-                                    {"date": "2026-08-22", "weight": 105.0, "reps": 6, "sets": 4},
-                                    {"date": "2026-08-29", "weight": 110.0, "reps": 6, "sets": 4},
-                                    {"date": "2026-09-05", "weight": 115.0, "reps": 6, "sets": 4}
+                                    {"date": "2026-08-20", "weight": 40.0, "reps": 12, "sets": 3},
+                                    {"date": "2026-08-27", "weight": 45.0, "reps": 12, "sets": 3},
+                                    {"date": "2026-09-03", "weight": 50.0, "reps": 12, "sets": 3}
+                                ]
+                            },
+                            {
+                                "name": "Przysiady ze sztangą na plecach (Back Squat)",
+                                "sets": 4, "reps": 6, "weight": 115.0, "rpe": 8.5,
+                                "notes": "Głębokość poniżej równoległości",
+                                "history": [
+                                    {"date": "2026-08-20", "weight": 105.0, "reps": 6, "sets": 4},
+                                    {"date": "2026-08-27", "weight": 110.0, "reps": 6, "sets": 4},
+                                    {"date": "2026-09-03", "weight": 115.0, "reps": 6, "sets": 4}
+                                ]
+                            },
+                            {
+                                "name": "RDL – Rumuński Martwy Ciąg ze sztangą",
+                                "sets": 4, "reps": 8, "weight": 95.0, "rpe": 8.0,
+                                "notes": "Biodra w tył, rozciągnięcie dwugłowych",
+                                "history": [
+                                    {"date": "2026-08-20", "weight": 85.0, "reps": 8, "sets": 4},
+                                    {"date": "2026-08-27", "weight": 90.0, "reps": 8, "sets": 4},
+                                    {"date": "2026-09-03", "weight": 95.0, "reps": 8, "sets": 4}
+                                ]
+                            },
+                            {
+                                "name": "Wykroki chodzone z hantlami",
+                                "sets": 3, "reps": 10, "weight": 18.0, "rpe": 8.5,
+                                "notes": "10 kroków na nogę",
+                                "history": [
+                                    {"date": "2026-08-20", "weight": 14.0, "reps": 10, "sets": 3},
+                                    {"date": "2026-08-27", "weight": 16.0, "reps": 10, "sets": 3},
+                                    {"date": "2026-09-03", "weight": 18.0, "reps": 10, "sets": 3}
+                                ]
+                            },
+                            {
+                                "name": "Wspięcia na palce stojąc",
+                                "sets": 4, "reps": 15, "weight": 60.0, "rpe": 9.0,
+                                "notes": "Przytrzymanie 2 sekundy na górze",
+                                "history": [
+                                    {"date": "2026-08-20", "weight": 50.0, "reps": 15, "sets": 4},
+                                    {"date": "2026-08-27", "weight": 55.0, "reps": 15, "sets": 4},
+                                    {"date": "2026-09-03", "weight": 60.0, "reps": 15, "sets": 4}
+                                ]
+                            },
+                            {
+                                "name": "Unoszenie nóg w wiszeniu na drążku",
+                                "sets": 3, "reps": 12, "weight": 0.0, "rpe": 8.5,
+                                "notes": "Podwijanie miednicy do klatki",
+                                "history": [
+                                    {"date": "2026-08-20", "weight": 0.0, "reps": 10, "sets": 3},
+                                    {"date": "2026-08-27", "weight": 0.0, "reps": 12, "sets": 3},
+                                    {"date": "2026-09-03", "weight": 0.0, "reps": 12, "sets": 3}
+                                ]
+                            },
+                            {
+                                "name": "Allahy na bramce / wyciągu górnym",
+                                "sets": 3, "reps": 15, "weight": 35.0, "rpe": 8.0,
+                                "notes": "Spięcie brzucha na dole",
+                                "history": [
+                                    {"date": "2026-08-20", "weight": 27.5, "reps": 15, "sets": 3},
+                                    {"date": "2026-08-27", "weight": 30.0, "reps": 15, "sets": 3},
+                                    {"date": "2026-09-03", "weight": 35.0, "reps": 15, "sets": 3}
+                                ]
+                            },
+                            {
+                                "name": "Plank (Deska)",
+                                "sets": 3, "reps": 60, "weight": 0.0, "rpe": 8.0,
+                                "notes": "60 sekund izometrii",
+                                "history": [
+                                    {"date": "2026-08-20", "weight": 0.0, "reps": 50, "sets": 3},
+                                    {"date": "2026-08-27", "weight": 0.0, "reps": 55, "sets": 3},
+                                    {"date": "2026-09-03", "weight": 0.0, "reps": 60, "sets": 3}
                                 ]
                             }
                         ]
@@ -249,14 +434,14 @@ class GymTrackerApp:
         self.refresh_plan_view()
 
     def setup_theme(self):
-        """Konfiguracja nowoczesnej palety barw Windows Dark Mode."""
-        self.bg_color = "#18181b"       # Zinc-900
-        self.card_bg = "#27272a"        # Zinc-800
-        self.accent_color = "#3b82f6"   # Blue-500
-        self.accent_hover = "#2563eb"   # Blue-600
-        self.text_color = "#f4f4f5"     # Zinc-100
-        self.text_muted = "#a1a1aa"     # Zinc-400
-        self.border_color = "#3f3f46"   # Zinc-700
+        """Konfiguracja nowoczesnej palety barw Windows Dark Mode (Slate & Emerald)."""
+        self.bg_color = "#0f172a"       # Slate-900
+        self.card_bg = "#1e293b"        # Slate-800
+        self.accent_color = "#10b981"   # Emerald-500
+        self.accent_hover = "#059669"   # Emerald-600
+        self.text_color = "#f8fafc"     # Slate-50
+        self.text_muted = "#94a3b8"     # Slate-400
+        self.border_color = "#334155"   # Slate-700
         self.success_color = "#10b981"  # Emerald-500
 
         self.root.configure(bg=self.bg_color)
@@ -268,8 +453,8 @@ class GymTrackerApp:
         self.style.map("TNotebook.Tab", background=[("selected", self.accent_color)], foreground=[("selected", "#ffffff")])
         
         self.style.configure("Treeview", background=self.card_bg, foreground=self.text_color, fieldbackground=self.card_bg, rowheight=30, bordercolor=self.border_color)
-        self.style.configure("Treeview.Heading", background="#3f3f46", foreground="#ffffff", font=("Segoe UI", 10, "bold"))
-        self.style.map("Treeview", background=[("selected", "#1e3a8a")])
+        self.style.configure("Treeview.Heading", background="#334155", foreground="#ffffff", font=("Segoe UI", 10, "bold"))
+        self.style.map("Treeview", background=[("selected", "#065f46")])
 
     def create_widgets(self):
         # Górny pasek nagłówka

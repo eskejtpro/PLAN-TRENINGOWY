@@ -1,0 +1,12 @@
+# GymTracker Pro - Lista zależności pip dla Windows 10/11 x64
+# =============================================================
+# Wymagane narzędzia kompilacji do pliku .EXE oraz rozszerzonego interfejsu GUI
+
+# Budowanie pliku wykonywalnego Windows .EXE
+pyinstaller>=6.4.0
+
+# Wsparcie ikon i przetwarzania obrazów PNG/ICO w Tkinter / PySide6
+pillow>=10.2.0
+
+# Opcjonalna biblioteka GUI PySide6 (dla zaawansowanego Fluent Design Windows)
+pyside6>=6.6.0

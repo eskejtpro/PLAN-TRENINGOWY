@@ -5,6 +5,7 @@ export const initialGymData: GymData = {
     unit: 'kg',
     theme: 'dark',
     autoSave: true,
+    reducedMotion: false,
     athleteName: 'Zawodnik',
     windowsPath: '%LOCALAPPDATA%\\GymTracker\\workout_data.json',
     soundFeedback: true,
@@ -13,29 +14,73 @@ export const initialGymData: GymData = {
     backupOnSave: true,
     backupOnClose: true,
     maxBackupFiles: 15,
+    analysisOnlyCompleted: true,
+    analysisHideEmptyGroups: true,
+    analysisIncludePartialHistory: false,
+    analysisStartWeek: 1,
+    analysisEndWeek: 999,
+    analysisDefaultMetric: 'progressPct',
+    analysisShowAlerts: true,
+    analysisShowBodyWeight: true,
+    analysisShow1RM: true,
+    analysisRoundValues: true,
+    analysisAutoRefresh: true,
+    analysisShowDataQualityWarnings: true,
+    analysisRequireHistoryForCompleted: true,
+    analysisMinExecutedSets: 1,
+    analysisWarnMissingHistory: true,
+    analysisWarnVolumeJumpPct: 30,
+    analysisTrendWindowWeeks: 4,
+    confirmBeforeDelete: true,
+    startupView: 'plan',
+    rememberLastView: false,
+    analysisShowExecutionSummary: true,
+    analysisShowWeekComparison: true,
+    analysisShowWeeklyTonnage: true,
+    analysisShowWeeklyMetrics: true,
+    analysisShowExecutedDays: true,
+    analysisShowExecutedExercises: true,
+    analysisShowExecutedSets: true,
+    analysisShowExecutedReps: true,
+    analysisShowVolumeDelta: true,
+    analysisShowDataConfidence: true,
+    analysisShowBestE1RM: true,
+    analysisShowLatestResult: true,
+    analysisShowTrendLine: true,
+    analysisShowPRMarkers: true,
+    analysisPRMetric: 'e1RM',
+    analysisStagnationWindow: 4,
+    analysisStagnationMinSessions: 3,
+    analysisShowRegularity: true,
+    analysisRegularityTargetPct: 80,
+    analysisShowMuscleFrequency: true,
+    analysisShowMonthlyComparison: true,
+    analysisMonthlyMetric: 'volume',
+    analysisShowPeriodComparison: true,
+    analysisPeriodComparisonMetric: 'volume',
     lastBackupTime: undefined
   },
   weeks: [
     {
       id: 'week-1',
       number: 1,
-      name: 'Tydzień 1 - Rozpoczęcie Cyklu',
+      name: 'Tydzień 1 - Rozpoczęcie Cyklu (Push / Pull / Legs)',
       startDate: '2026-09-01',
       days: [
         {
           id: 'w1-d1',
-          name: 'Poniedziałek - Push (Klatka / Barki / Triceps)',
+          name: 'Poniedziałek – Plan A: Push (Klatka, Barki Przód/Bok, Triceps)',
           completed: true,
-          notes: 'Dobre czucie mięśniowe, mocne pobudzenie',
+          notes: 'Trening Push ukończony. Świetna pompa mięśniowa, dobre spięcie na klatce i barkach.',
           exercises: [
             {
-              id: 'ex-1',
-              name: 'Wyciskanie sztangi leżąc (Bench Press)',
+              id: 'ex-push-1',
+              name: 'Wyciskanie sztangi na ławce płaskiej',
               sets: 4,
               reps: 8,
               weight: 85,
               rpe: 8,
-              notes: 'Pauza na klatce, stabilne łopatki',
+              notes: 'Pauza na klatce piersiowej, stabilny mostek',
               history: [
                 { date: '2026-08-18', weight: 80, reps: 8, sets: 4, rpe: 7.5 },
                 { date: '2026-08-25', weight: 82.5, reps: 8, sets: 4, rpe: 8 },
@@ -43,13 +88,13 @@ export const initialGymData: GymData = {
               ]
             },
             {
-              id: 'ex-2',
-              name: 'Wyciskanie hantli na skosie dodatnim',
+              id: 'ex-push-2',
+              name: 'Wyciskanie hantli na skosie dodatnim (30–45°)',
               sets: 3,
               reps: 10,
               weight: 30,
               rpe: 8.5,
-              notes: 'Kąt ławki 30 stopni',
+              notes: 'Kąt ławki 30°, głębokie rozciągnięcie w fazie negatywnej',
               history: [
                 { date: '2026-08-18', weight: 26, reps: 10, sets: 3 },
                 { date: '2026-08-25', weight: 28, reps: 10, sets: 3 },
@@ -57,131 +102,355 @@ export const initialGymData: GymData = {
               ]
             },
             {
-              id: 'ex-3',
-              name: 'Wznosy hantli bokiem (barki)',
+              id: 'ex-push-3',
+              name: 'Rozpiętki na bramce / wyciągu',
+              sets: 3,
+              reps: 12,
+              weight: 15,
+              rpe: 8,
+              notes: 'Spięcie mięśniowe w szczytowej fazie (1 sec holding)',
+              history: [
+                { date: '2026-08-18', weight: 12.5, reps: 12, sets: 3 },
+                { date: '2026-08-25', weight: 13.5, reps: 12, sets: 3 },
+                { date: '2026-09-01', weight: 15, reps: 12, sets: 3 }
+              ]
+            },
+            {
+              id: 'ex-push-4',
+              name: 'OHP (Wyciskanie żołnierskie sztangi stojąc)',
+              sets: 4,
+              reps: 6,
+              weight: 55,
+              rpe: 8.5,
+              notes: 'Napięty pośladek i brzuch, sztanga blisko twarzy',
+              history: [
+                { date: '2026-08-18', weight: 50, reps: 6, sets: 4 },
+                { date: '2026-08-25', weight: 52.5, reps: 6, sets: 4 },
+                { date: '2026-09-01', weight: 55, reps: 6, sets: 4 }
+              ]
+            },
+            {
+              id: 'ex-push-5',
+              name: 'Wznosy bokiem z hantlami lub na wyciągu',
               sets: 4,
               reps: 12,
               weight: 12.5,
               rpe: 9,
-              notes: 'Kontrolowana faza negatywna',
+              notes: 'Prowadzenie łokcia w górę, wolne opuszczanie',
               history: [
                 { date: '2026-08-18', weight: 10, reps: 12, sets: 4 },
-                { date: '2026-08-25', weight: 12, reps: 12, sets: 4 },
+                { date: '2026-08-25', weight: 11.5, reps: 12, sets: 4 },
                 { date: '2026-09-01', weight: 12.5, reps: 12, sets: 4 }
               ]
             },
             {
-              id: 'ex-4',
-              name: 'Dipsy na poręczach (triceps)',
+              id: 'ex-push-6',
+              name: 'Prostowanie ramion z linką za głowy (French)',
               sets: 3,
-              reps: 10,
-              weight: 10,
+              reps: 12,
+              weight: 25,
               rpe: 8,
-              notes: 'Obciążenie na pasie',
+              notes: 'Akcent na długą głowę tricepsa',
               history: [
-                { date: '2026-08-18', weight: 5, reps: 10, sets: 3 },
-                { date: '2026-08-25', weight: 7.5, reps: 10, sets: 3 },
-                { date: '2026-09-01', weight: 10, reps: 10, sets: 3 }
+                { date: '2026-08-18', weight: 20, reps: 12, sets: 3 },
+                { date: '2026-08-25', weight: 22.5, reps: 12, sets: 3 },
+                { date: '2026-09-01', weight: 25, reps: 12, sets: 3 }
+              ]
+            },
+            {
+              id: 'ex-push-7',
+              name: 'Prostowanie ramion na linkach wyciągu górnego',
+              sets: 3,
+              reps: 12,
+              weight: 30,
+              rpe: 8.5,
+              notes: 'Rozchylenie linek w końcowej fazie ruchu',
+              history: [
+                { date: '2026-08-18', weight: 25, reps: 12, sets: 3 },
+                { date: '2026-08-25', weight: 27.5, reps: 12, sets: 3 },
+                { date: '2026-09-01', weight: 30, reps: 12, sets: 3 }
+              ]
+            },
+            {
+              id: 'ex-push-8',
+              name: 'Plank (Deska)',
+              sets: 3,
+              reps: 60,
+              weight: 0,
+              rpe: 8,
+              notes: 'Izometria brzucha 60 sekund',
+              history: [
+                { date: '2026-08-18', weight: 0, reps: 45, sets: 3 },
+                { date: '2026-08-25', weight: 0, reps: 50, sets: 3 },
+                { date: '2026-09-01', weight: 0, reps: 60, sets: 3 }
               ]
             }
           ]
         },
         {
           id: 'w1-d2',
-          name: 'Środa - Pull (Plecy / Tył barku / Biceps)',
+          name: 'Wtorek – Plan B: Pull (Plecy, Tył Barku, Biceps)',
           completed: true,
-          notes: 'Mocny grzbiet, chwyt wytrzymał',
+          notes: 'Trening Pull ukończony. Plecy i biceps solidnie przepracowane.',
           exercises: [
             {
-              id: 'ex-5',
-              name: 'Martwy ciąg klasyczny (Deadlift)',
+              id: 'ex-pull-1',
+              name: 'Podciąganie na drążku (Nachwyt / Podchwyt)',
               sets: 4,
-              reps: 5,
-              weight: 140,
-              rpe: 8.5,
-              notes: 'Pas zapięty od 3 serii',
-              history: [
-                { date: '2026-08-20', weight: 130, reps: 5, sets: 4 },
-                { date: '2026-08-27', weight: 135, reps: 5, sets: 4 },
-                { date: '2026-09-03', weight: 140, reps: 5, sets: 4 }
-              ]
-            },
-            {
-              id: 'ex-6',
-              name: 'Podciąganie na drążku (nachwyt)',
-              sets: 3,
               reps: 8,
               weight: 0,
               rpe: 8,
-              notes: 'Pełen zakres ruchu do brody',
+              notes: 'Pełen zakres ruchu od wyprostu do brody nad drążek',
               history: [
-                { date: '2026-08-20', weight: 0, reps: 6, sets: 3 },
-                { date: '2026-08-27', weight: 0, reps: 7, sets: 3 },
-                { date: '2026-09-03', weight: 0, reps: 8, sets: 3 }
+                { date: '2026-08-19', weight: 0, reps: 6, sets: 4 },
+                { date: '2026-08-26', weight: 0, reps: 7, sets: 4 },
+                { date: '2026-09-02', weight: 0, reps: 8, sets: 4 }
               ]
             },
             {
-              id: 'ex-7',
-              name: 'Wiosłowanie hantlem w oparciu',
+              id: 'ex-pull-2',
+              name: 'Wiosłowanie sztangą w opadzie tułowia',
+              sets: 4,
+              reps: 8,
+              weight: 75,
+              rpe: 8,
+              notes: 'Przyciąganie sztangi do pępka, kąt opadu ok. 45°',
+              history: [
+                { date: '2026-08-19', weight: 70, reps: 8, sets: 4 },
+                { date: '2026-08-26', weight: 72.5, reps: 8, sets: 4 },
+                { date: '2026-09-02', weight: 75, reps: 8, sets: 4 }
+              ]
+            },
+            {
+              id: 'ex-pull-3',
+              name: 'Wiosłowanie jednorącz na wyciągu dolnym do biodra',
               sets: 3,
               reps: 10,
-              weight: 36,
+              weight: 35,
               rpe: 8,
-              notes: 'Rozciągnięcie najszerszego',
+              notes: 'Prowadzenie łokcia tuż przy biodrze, głęboki rozciąg',
               history: [
-                { date: '2026-08-20', weight: 32, reps: 10, sets: 3 },
-                { date: '2026-08-27', weight: 34, reps: 10, sets: 3 },
-                { date: '2026-09-03', weight: 36, reps: 10, sets: 3 }
+                { date: '2026-08-19', weight: 30, reps: 10, sets: 3 },
+                { date: '2026-08-26', weight: 32.5, reps: 10, sets: 3 },
+                { date: '2026-09-02', weight: 35, reps: 10, sets: 3 }
               ]
             },
             {
-              id: 'ex-biceps-1',
-              name: 'Uginanie przedramion ze sztangą (Biceps)',
+              id: 'ex-pull-4',
+              name: 'Pull-over (Przenoszenie drążka na wyciągu)',
+              sets: 3,
+              reps: 12,
+              weight: 27.5,
+              rpe: 8,
+              notes: 'Izolacja najszerszego grzbietu na prostych ramionach',
+              history: [
+                { date: '2026-08-19', weight: 22.5, reps: 12, sets: 3 },
+                { date: '2026-08-26', weight: 25, reps: 12, sets: 3 },
+                { date: '2026-09-02', weight: 27.5, reps: 12, sets: 3 }
+              ]
+            },
+            {
+              id: 'ex-pull-5',
+              name: 'Face Pulls (Przyciąganie linki do twarzy)',
+              sets: 4,
+              reps: 15,
+              weight: 20,
+              rpe: 8.5,
+              notes: 'Akcent na rotatory i tył akromionu',
+              history: [
+                { date: '2026-08-19', weight: 15, reps: 15, sets: 4 },
+                { date: '2026-08-26', weight: 17.5, reps: 15, sets: 4 },
+                { date: '2026-09-02', weight: 20, reps: 15, sets: 4 }
+              ]
+            },
+            {
+              id: 'ex-pull-6',
+              name: 'Wznosy hantli w opadzie leżąc przodem (30–45°)',
+              sets: 3,
+              reps: 12,
+              weight: 10,
+              rpe: 8.5,
+              notes: 'Klatka oparta o ławkę skośną',
+              history: [
+                { date: '2026-08-19', weight: 8, reps: 12, sets: 3 },
+                { date: '2026-08-26', weight: 9, reps: 12, sets: 3 },
+                { date: '2026-09-02', weight: 10, reps: 12, sets: 3 }
+              ]
+            },
+            {
+              id: 'ex-pull-7',
+              name: 'Uginanie ramion ze sztangą łamaną stojąc',
               sets: 3,
               reps: 10,
               weight: 35,
               rpe: 8.5,
-              notes: 'Czysta technika bez bujania tułowiem',
+              notes: 'Stabilny tułów bez cheatingu',
               history: [
-                { date: '2026-08-20', weight: 30, reps: 10, sets: 3 },
-                { date: '2026-08-27', weight: 32.5, reps: 10, sets: 3 },
-                { date: '2026-09-03', weight: 35, reps: 10, sets: 3 }
+                { date: '2026-08-19', weight: 30, reps: 10, sets: 3 },
+                { date: '2026-08-26', weight: 32.5, reps: 10, sets: 3 },
+                { date: '2026-09-02', weight: 35, reps: 10, sets: 3 }
+              ]
+            },
+            {
+              id: 'ex-pull-8',
+              name: 'Uginanie hantli z supinacją na ławce skośnej',
+              sets: 3,
+              reps: 10,
+              weight: 14,
+              rpe: 8,
+              notes: 'Pełny rozciąg w dolnej pozycji',
+              history: [
+                { date: '2026-08-19', weight: 12, reps: 10, sets: 3 },
+                { date: '2026-08-26', weight: 13, reps: 10, sets: 3 },
+                { date: '2026-09-02', weight: 14, reps: 10, sets: 3 }
+              ]
+            },
+            {
+              id: 'ex-pull-9',
+              name: 'Uginanie młotkowe (Hantle / Linka)',
+              sets: 3,
+              reps: 12,
+              weight: 16,
+              rpe: 8.5,
+              notes: 'Rozwój mięśnia ramiennego i ramienno-promieniowego',
+              history: [
+                { date: '2026-08-19', weight: 12, reps: 12, sets: 3 },
+                { date: '2026-08-26', weight: 14, reps: 12, sets: 3 },
+                { date: '2026-09-02', weight: 16, reps: 12, sets: 3 }
+              ]
+            },
+            {
+              id: 'ex-pull-10',
+              name: 'Plank (Deska)',
+              sets: 3,
+              reps: 60,
+              weight: 0,
+              rpe: 8,
+              notes: 'Deska po podciąganiu – stabilizacja gorsetu',
+              history: [
+                { date: '2026-08-19', weight: 0, reps: 50, sets: 3 },
+                { date: '2026-08-26', weight: 0, reps: 55, sets: 3 },
+                { date: '2026-09-02', weight: 0, reps: 60, sets: 3 }
               ]
             }
           ]
         },
         {
           id: 'w1-d3',
-          name: 'Piątek - Legs (Przysiad / Dwugłowe / Łydki)',
+          name: 'Środa – Plan C: Legs & Abs (Nogi, Brzuch)',
           completed: false,
-          notes: 'Plan na mocne tempo',
+          notes: 'Mocny trening nóg i brzucha',
           exercises: [
             {
-              id: 'ex-8',
-              name: 'Przysiad ze sztangą (Back Squat)',
-              sets: 4,
-              reps: 6,
-              weight: 115,
+              id: 'ex-legs-1',
+              name: 'Prostowanie nóg na maszynie siedząc',
+              sets: 3,
+              reps: 12,
+              weight: 50,
               rpe: 8,
-              notes: 'Głębokość poniżej równoległości',
+              notes: 'Wstępne zmęczenie czworogłowych ud',
               history: [
-                { date: '2026-08-22', weight: 105, reps: 6, sets: 4 },
-                { date: '2026-08-29', weight: 110, reps: 6, sets: 4 },
-                { date: '2026-09-05', weight: 115, reps: 6, sets: 4 }
+                { date: '2026-08-20', weight: 40, reps: 12, sets: 3 },
+                { date: '2026-08-27', weight: 45, reps: 12, sets: 3 },
+                { date: '2026-09-03', weight: 50, reps: 12, sets: 3 }
               ]
             },
             {
-              id: 'ex-9',
-              name: 'Rumuński martwy ciąg (RDL)',
+              id: 'ex-legs-2',
+              name: 'Przysiady ze sztangą na plecach (Back Squat)',
+              sets: 4,
+              reps: 6,
+              weight: 115,
+              rpe: 8.5,
+              notes: 'Głębokość poniżej linii kolan, kontrolowane schodzenie',
+              history: [
+                { date: '2026-08-20', weight: 105, reps: 6, sets: 4 },
+                { date: '2026-08-27', weight: 110, reps: 6, sets: 4 },
+                { date: '2026-09-03', weight: 115, reps: 6, sets: 4 }
+              ]
+            },
+            {
+              id: 'ex-legs-3',
+              name: 'RDL – Rumuński Martwy Ciąg ze sztangą',
+              sets: 4,
+              reps: 8,
+              weight: 95,
+              rpe: 8,
+              notes: 'Rozciągnięcie dwugłowych, biodra mocno w tył',
+              history: [
+                { date: '2026-08-20', weight: 85, reps: 8, sets: 4 },
+                { date: '2026-08-27', weight: 90, reps: 8, sets: 4 },
+                { date: '2026-09-03', weight: 95, reps: 8, sets: 4 }
+              ]
+            },
+            {
+              id: 'ex-legs-4',
+              name: 'Wykroki chodzone z hantlami',
               sets: 3,
               reps: 10,
-              weight: 85,
-              rpe: 8,
-              notes: 'Mocne spięcie pośladków na górze',
+              weight: 18,
+              rpe: 8.5,
+              notes: '10 kroków na nogę (razem 20 kroków na serię)',
               history: [
-                { date: '2026-08-22', weight: 75, reps: 10, sets: 3 },
-                { date: '2026-08-29', weight: 80, reps: 10, sets: 3 },
-                { date: '2026-09-05', weight: 85, reps: 10, sets: 3 }
+                { date: '2026-08-20', weight: 14, reps: 10, sets: 3 },
+                { date: '2026-08-27', weight: 16, reps: 10, sets: 3 },
+                { date: '2026-09-03', weight: 18, reps: 10, sets: 3 }
+              ]
+            },
+            {
+              id: 'ex-legs-5',
+              name: 'Wspięcia na palce stojąc',
+              sets: 4,
+              reps: 15,
+              weight: 60,
+              rpe: 9,
+              notes: 'Pełen skok na palcach i przytrzymanie w szczycie 2 sec',
+              history: [
+                { date: '2026-08-20', weight: 50, reps: 15, sets: 4 },
+                { date: '2026-08-27', weight: 55, reps: 15, sets: 4 },
+                { date: '2026-09-03', weight: 60, reps: 15, sets: 4 }
+              ]
+            },
+            {
+              id: 'ex-legs-6',
+              name: 'Unoszenie nóg w wiszeniu na drążku',
+              sets: 3,
+              reps: 12,
+              weight: 0,
+              rpe: 8.5,
+              notes: 'Podwijanie miednicy do klatki bez bujania ciałem',
+              history: [
+                { date: '2026-08-20', weight: 0, reps: 10, sets: 3 },
+                { date: '2026-08-27', weight: 0, reps: 12, sets: 3 },
+                { date: '2026-09-03', weight: 0, reps: 12, sets: 3 }
+              ]
+            },
+            {
+              id: 'ex-legs-7',
+              name: 'Allahy na bramce / wyciągu górnym',
+              sets: 3,
+              reps: 15,
+              weight: 35,
+              rpe: 8,
+              notes: 'Mocny skurcz mięśnia prostego brzucha',
+              history: [
+                { date: '2026-08-20', weight: 27.5, reps: 15, sets: 3 },
+                { date: '2026-08-27', weight: 30, reps: 15, sets: 3 },
+                { date: '2026-09-03', weight: 35, reps: 15, sets: 3 }
+              ]
+            },
+            {
+              id: 'ex-legs-8',
+              name: 'Plank (Deska)',
+              sets: 3,
+              reps: 60,
+              weight: 0,
+              rpe: 8,
+              notes: 'Deska na zakończenie treningu nóg',
+              history: [
+                { date: '2026-08-20', weight: 0, reps: 50, sets: 3 },
+                { date: '2026-08-27', weight: 0, reps: 55, sets: 3 },
+                { date: '2026-09-03', weight: 0, reps: 60, sets: 3 }
               ]
             }
           ]
@@ -317,21 +586,28 @@ export const initialGymData: GymData = {
 };
 
 export const commonExerciseLibrary = [
-  'Wyciskanie sztangi leżąc (Bench Press)',
-  'Wyciskanie hantli na skosie dodatnim',
-  'Przysiad ze sztangą (Back Squat)',
-  'Przysiad przedni (Front Squat)',
-  'Martwy ciąg klasyczny (Deadlift)',
-  'Rumuński martwy ciąg (RDL)',
-  'Wyciskanie żołnierskie (OHP)',
-  'Wiosłowanie sztangą w opadzie',
-  'Wiosłowanie hantlem w oparciu',
-  'Podciąganie na drążku (nachwyt)',
-  'Podciąganie podchwytem (Chin-ups)',
-  'Dipsy na poręczach',
-  'Wznosy hantli bokiem (barki)',
-  'Uginanie przedramion ze sztangą (biceps)',
-  'Wyciskanie francuskie leżąc',
-  'Wspięcia na palce (łydki)',
-  'Wypychanie nóg na suwnicy (Leg Press)'
+  'Wyciskanie sztangi na ławce płaskiej',
+  'Wyciskanie hantli na skosie dodatnim (30–45°)',
+  'Rozpiętki na bramce / wyciągu',
+  'OHP (Wyciskanie żołnierskie sztangi stojąc)',
+  'Wznosy bokiem z hantlami lub na wyciągu',
+  'Prostowanie ramion z linką za głowy (French)',
+  'Prostowanie ramion na linkach wyciągu górnego',
+  'Podciąganie na drążku (Nachwyt / Podchwyt)',
+  'Wiosłowanie sztangą w opadzie tułowia',
+  'Wiosłowanie jednorącz na wyciągu dolnym do biodra',
+  'Pull-over (Przenoszenie drążka na wyciągu)',
+  'Face Pulls (Przyciąganie linki do twarzy)',
+  'Wznosy hantli w opadzie leżąc przodem (30–45°)',
+  'Uginanie ramion ze sztangą łamaną stojąc',
+  'Uginanie hantli z supinacją na ławce skośnej',
+  'Uginanie młotkowe (Hantle / Linka)',
+  'Prostowanie nóg na maszynie siedząc',
+  'Przysiady ze sztangą na plecach (Back Squat)',
+  'RDL – Rumuński Martwy Ciąg ze sztangą',
+  'Wykroki chodzone z hantlami',
+  'Wspięcia na palce stojąc',
+  'Unoszenie nóg w wiszeniu na drążku',
+  'Allahy na bramce / wyciągu górnym',
+  'Plank (Deska)'
 ];

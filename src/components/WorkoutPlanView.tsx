@@ -13,7 +13,8 @@ import {
   Layers, 
   Sparkles,
   CheckCircle2,
-  AlertCircle
+  AlertCircle,
+  Pencil
 } from 'lucide-react';
 import { TrainingWeek, TrainingDay, Exercise, LoggedSet } from '../types';
 import { calculateVolume } from '../utils/calculations';
@@ -43,6 +44,9 @@ interface WorkoutPlanViewProps {
     loggedSets?: LoggedSet[]
   ) => void;
   onRenameExercise?: (weekId: string, dayId: string, exerciseId: string, newName: string) => void;
+  onRenameWeek: (weekId: string, newName: string) => void;
+  onUpdateWeekStartDate: (weekId: string, newDate: string) => void;
+  onRenameDay: (weekId: string, dayId: string, newName: string) => void;
   onOpenAddExerciseModal: () => void;
   onOpenEditExerciseModal: (exercise: Exercise) => void;
   onOpenHistoryModal: (exercise: Exercise) => void;
@@ -66,6 +70,9 @@ export const WorkoutPlanView: React.FC<WorkoutPlanViewProps> = ({
   onUpdateExerciseWeight,
   onSaveExercisePerformance,
   onRenameExercise,
+  onRenameWeek,
+  onUpdateWeekStartDate,
+  onRenameDay,
   onOpenAddExerciseModal,
   onOpenEditExerciseModal,
   onOpenHistoryModal,
@@ -176,7 +183,31 @@ export const WorkoutPlanView: React.FC<WorkoutPlanViewProps> = ({
                   }`}
                   id={`btn-week-${week.id}`}
                 >
-                  <span>{week.name || `Tydzień ${week.number}`}</span>
+                  <span className="flex items-center gap-1.5">
+                    {week.name || `Tydzień ${week.number}`}
+                    {isSelected && (
+                      <span
+                        role="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          const newName = window.prompt("Podaj nową nazwę tygodnia:", week.name);
+                          if (newName) onRenameWeek(week.id, newName);
+                        }}
+                        className="p-0.5 rounded hover:bg-emerald-500/20 cursor-pointer"
+                      >
+                        <Pencil className="w-3 h-3" />
+                      </span>
+                    )}
+                  </span>
+                  {isSelected && (
+                    <input
+                      type="date"
+                      value={week.startDate || ''}
+                      onChange={(e) => onUpdateWeekStartDate(week.id, e.target.value)}
+                      className="ml-2 bg-transparent text-[10px] text-emerald-200 border-b border-emerald-500/30 focus:border-emerald-400 outline-hidden"
+                      title="Data startu tygodnia"
+                    />
+                  )}
                   <span className={`text-[10px] font-mono px-1.5 py-0.2 rounded-md ${
                     isSelected
                       ? 'bg-emerald-500/25 text-emerald-200'
@@ -260,8 +291,21 @@ export const WorkoutPlanView: React.FC<WorkoutPlanViewProps> = ({
                     ) : (
                       <Circle className="w-4 h-4 text-slate-600 shrink-0" />
                     )}
-                    <span className="truncate max-w-[180px] font-medium text-slate-200">
+                    <span className="truncate max-w-[180px] font-medium text-slate-200 flex items-center gap-1">
                       {day.name}
+                      {isSelected && (
+                        <span
+                          role="button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            const newName = window.prompt("Podaj nową nazwę dnia:", day.name);
+                            if (newName) onRenameDay(currentWeek.id, day.id, newName);
+                          }}
+                          className="p-0.5 rounded hover:bg-emerald-500/20 cursor-pointer"
+                        >
+                          <Pencil className="w-2.5 h-2.5" />
+                        </span>
+                      )}
                     </span>
                     <span className="text-[10px] px-1.5 py-0.2 rounded-md bg-slate-800 text-slate-400 font-mono">
                       {day.exercises.length} ćw.

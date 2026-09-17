@@ -1,38 +1,76 @@
-import React, { useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import { TrendingUp, Award, Flame, BarChart3, Calendar, Layers, FileSpreadsheet } from 'lucide-react';
 import { TrainingWeek, ExerciseHistoryPoint, BodyWeightEntry } from '../types';
-import { calculate1RM, calculateVolume } from '../utils/calculations';
+import { calculate1RM } from '../utils/calculations';
 import { MesocycleReportView } from './MesocycleReportView';
+import { AnalysisExecutionOptions, analysisOptionsForWeek, bestHistoryPoint, dedupeHistory, detectStagnation, executedSets, historyForAnalysis, includeExerciseInAnalysis, latestHistoryPoint, personalRecordIndices, progressionStatus, scopeAnalysisWeeks, trendSlope, PersonalRecordMetric } from '../utils/analysis';
 
 interface StatsViewProps {
   weeks: TrainingWeek[];
   bodyWeights?: BodyWeightEntry[];
   unit: 'kg' | 'lbs';
+  analysisOnlyCompleted?: boolean;
+  analysisHideEmptyGroups?: boolean;
+  analysisIncludePartialHistory?: boolean;
+  analysisStartWeek?: number;
+  analysisEndWeek?: number;
+  analysisDefaultMetric?: 'progressPct' | 'volume' | 'executedSets';
+  analysisShowDataQualityWarnings?: boolean;
+  analysisRequireHistoryForCompleted?: boolean;
+  analysisMinExecutedSets?: number;
+  analysisWarnMissingHistory?: boolean;
+  analysisShowExecutionSummary?: boolean;
+  analysisShowWeekComparison?: boolean;
+  analysisShowWeeklyTonnage?: boolean;
+  analysisShowWeeklyMetrics?: boolean;
+  analysisShowExecutedDays?: boolean;
+  analysisShowExecutedExercises?: boolean;
+  analysisShowExecutedSets?: boolean;
+  analysisShowExecutedReps?: boolean;
+  analysisShowVolumeDelta?: boolean;
+  analysisShowDataConfidence?: boolean;
+  analysisShowBestE1RM?: boolean;
+  analysisShowLatestResult?: boolean;
+  analysisShowTrendLine?: boolean;
+  analysisShowPRMarkers?: boolean;
+  analysisPRMetric?: PersonalRecordMetric;
+  analysisStagnationWindow?: number;
+  analysisStagnationMinSessions?: number;
+  analysisShowRegularity?: boolean;
+  analysisRegularityTargetPct?: number;
+  analysisShowMonthlyComparison?: boolean;
+  analysisMonthlyMetric?: 'volume' | 'executedSets' | 'executedReps';
+  analysisShowPeriodComparison?: boolean;
+  analysisPeriodComparisonMetric?: 'volume' | 'executedSets' | 'executedReps' | 'executedDays';
+  analysisWarnVolumeJumpPct?: number;
 }
 
-export const StatsView: React.FC<StatsViewProps> = ({ weeks, bodyWeights = [], unit }) => {
+export const StatsView: React.FC<StatsViewProps> = ({ weeks, bodyWeights = [], unit, analysisOnlyCompleted = true, analysisStartWeek = 1, analysisEndWeek = 999, analysisIncludePartialHistory = false, analysisRequireHistoryForCompleted = false, analysisMinExecutedSets = 1, analysisShowExecutionSummary = true, analysisShowWeekComparison = true, analysisShowWeeklyTonnage = true, analysisShowWeeklyMetrics = true, analysisShowExecutedDays = true, analysisShowExecutedExercises = true, analysisShowExecutedSets = true, analysisShowExecutedReps = true, analysisShowVolumeDelta = true, analysisShowDataConfidence = true, analysisShowBestE1RM = true, analysisShowLatestResult = true, analysisShowTrendLine = true, analysisShowPRMarkers = true, analysisPRMetric = 'e1RM', analysisStagnationWindow = 4, analysisStagnationMinSessions = 3, analysisShowRegularity = true, analysisRegularityTargetPct = 80, analysisShowMonthlyComparison = true, analysisMonthlyMetric = 'volume', analysisShowPeriodComparison = true, analysisPeriodComparisonMetric = 'volume', analysisWarnVolumeJumpPct = 30 }) => {
   const [activeTab, setActiveTab] = useState<'mesocycle_report' | 'exercises_1rm'>('mesocycle_report');
+  const scopedWeeks = useMemo(() => scopeAnalysisWeeks(weeks, analysisStartWeek, analysisEndWeek), [weeks, analysisStartWeek, analysisEndWeek]);
+  const analysisOptions = useMemo<AnalysisExecutionOptions>(() => ({
+    onlyCompleted: analysisOnlyCompleted,
+    includePartialHistory: analysisIncludePartialHistory,
+    requireHistoryForCompleted: analysisRequireHistoryForCompleted,
+    minExecutedSets: analysisMinExecutedSets,
+    startDate: scopedWeeks[0]?.startDate,
+  }), [analysisOnlyCompleted, analysisIncludePartialHistory, analysisRequireHistoryForCompleted, analysisMinExecutedSets, scopedWeeks]);
 
   // Collect all distinct exercise names
-  const exerciseNamesMap = new Map<string, { latestWeight: number; history: ExerciseHistoryPoint[] }>();
+  const exerciseNamesMap = new Map<string, { latestWeight: number; history: ExerciseHistoryPoint[]; goalWeight?: number }>();
 
-  weeks.forEach((week) => {
+  scopedWeeks.forEach((week, weekIndex) => {
+    const weekOptions = analysisOptionsForWeek(week, analysisOptions, scopedWeeks[weekIndex + 1]?.startDate);
     week.days.forEach((day) => {
       day.exercises.forEach((ex) => {
+        if (!includeExerciseInAnalysis(day, ex, weekOptions)) return;
         const existing = exerciseNamesMap.get(ex.name);
-        const combinedHistory = [...(existing?.history || []), ...(ex.history || [])];
-        // Deduplicate history by date
-        const uniqueHistoryMap = new Map<string, ExerciseHistoryPoint>();
-        combinedHistory.forEach((h) => {
-          uniqueHistoryMap.set(h.date, h);
-        });
-        const sortedHistory = Array.from(uniqueHistoryMap.values()).sort((a, b) =>
-          a.date.localeCompare(b.date)
-        );
+        const sortedHistory = dedupeHistory([...(existing?.history || []), ...historyForAnalysis(ex, weekOptions)], analysisOptions.startDate);
 
         exerciseNamesMap.set(ex.name, {
           latestWeight: Math.max(existing?.latestWeight || 0, ex.weight),
-          history: sortedHistory
+          history: sortedHistory,
+          goalWeight: ex.goalWeight ?? existing?.goalWeight
         });
       });
     });
@@ -45,27 +83,31 @@ export const StatsView: React.FC<StatsViewProps> = ({ weeks, bodyWeights = [], u
 
   const selectedData = selectedExerciseName ? exerciseNamesMap.get(selectedExerciseName) : null;
   const historyPoints = selectedData?.history || [];
+  const goalWeight = selectedData?.goalWeight;
 
   // Metrics for selected exercise
   const maxWeight = historyPoints.length > 0 ? Math.max(...historyPoints.map((p) => p.weight)) : 0;
   const initialWeight = historyPoints.length > 0 ? historyPoints[0].weight : 0;
   const weightGain = Math.round((maxWeight - initialWeight) * 10) / 10;
   const weightGainPct = initialWeight > 0 ? Math.round((weightGain / initialWeight) * 100) : 0;
-  const bestPoint = historyPoints.find((p) => p.weight === maxWeight);
+  const bestPoint = bestHistoryPoint(historyPoints);
+  const latestPoint = latestHistoryPoint(historyPoints);
+  const trend = trendSlope(historyPoints.map((point) => point.weight));
+  const prIndices = personalRecordIndices(historyPoints, analysisPRMetric);
+  const stagnation = detectStagnation(historyPoints, analysisPRMetric, analysisStagnationWindow, analysisStagnationMinSessions);
+  const progression = progressionStatus(historyPoints, analysisPRMetric);
   const best1RM = bestPoint ? calculate1RM(bestPoint.weight, bestPoint.reps) : 0;
 
   // Total executed sets across all weeks from the start of the plan
-  const totalSetsExecuted = weeks.reduce((acc, w) => {
+  const totalSetsExecuted = scopedWeeks.reduce((acc, w, weekIndex) => {
+    const weekOptions = analysisOptionsForWeek(w, analysisOptions, scopedWeeks[weekIndex + 1]?.startDate);
     return (
       acc +
       w.days.reduce((dAcc, d) => {
         return (
           dAcc +
           d.exercises.reduce((eAcc, e) => {
-            if (e.history && e.history.length > 0) {
-              return eAcc + e.history.reduce((hAcc, h) => hAcc + (h.sets || e.sets), 0);
-            }
-            return eAcc + (d.completed ? e.sets : 0);
+            return eAcc + executedSets(d, e, weekOptions);
           }, 0)
         );
       }, 0)
@@ -142,7 +184,7 @@ export const StatsView: React.FC<StatsViewProps> = ({ weeks, bodyWeights = [], u
 
       {/* TAB 1: RAPORT PODSUMOWUJĄCY CAŁY CYKL / MEZOCYKL */}
       {activeTab === 'mesocycle_report' && (
-        <MesocycleReportView weeks={weeks} bodyWeights={bodyWeights} unit={unit} />
+        <MesocycleReportView weeks={weeks} bodyWeights={bodyWeights} unit={unit} analysisOnlyCompleted={analysisOnlyCompleted} analysisStartWeek={analysisStartWeek} analysisEndWeek={analysisEndWeek} analysisIncludePartialHistory={analysisIncludePartialHistory} analysisRequireHistoryForCompleted={analysisRequireHistoryForCompleted} analysisMinExecutedSets={analysisMinExecutedSets} analysisShowExecutionSummary={analysisShowExecutionSummary} analysisShowWeekComparison={analysisShowWeekComparison} analysisShowWeeklyTonnage={analysisShowWeeklyTonnage} analysisShowWeeklyMetrics={analysisShowWeeklyMetrics} analysisShowExecutedDays={analysisShowExecutedDays} analysisShowExecutedExercises={analysisShowExecutedExercises} analysisShowExecutedSets={analysisShowExecutedSets} analysisShowExecutedReps={analysisShowExecutedReps} analysisShowVolumeDelta={analysisShowVolumeDelta} analysisShowDataConfidence={analysisShowDataConfidence} analysisShowRegularity={analysisShowRegularity} analysisRegularityTargetPct={analysisRegularityTargetPct} analysisShowMonthlyComparison={analysisShowMonthlyComparison} analysisMonthlyMetric={analysisMonthlyMetric} analysisShowPeriodComparison={analysisShowPeriodComparison} analysisPeriodComparisonMetric={analysisPeriodComparisonMetric} analysisWarnVolumeJumpPct={analysisWarnVolumeJumpPct} />
       )}
 
       {/* TAB 2: ANALIZA POSZCZEGÓLNYCH ĆWICZEŃ & 1RM */}
@@ -237,6 +279,16 @@ export const StatsView: React.FC<StatsViewProps> = ({ weeks, bodyWeights = [], u
             </div>
           )}
         </div>
+        {(analysisShowBestE1RM || analysisShowLatestResult || analysisShowTrendLine) && historyPoints.length > 0 && (
+          <div className="flex flex-wrap items-center gap-2 text-[11px] text-slate-400" id="exercise-analysis-signals">
+            {analysisShowBestE1RM && bestPoint && <span className="px-2 py-1 rounded-md bg-amber-500/10 border border-amber-500/20">Najlepszy e1RM: <strong className="text-amber-300">{best1RM} {unit}</strong></span>}
+            {analysisShowLatestResult && latestPoint && <span className="px-2 py-1 rounded-md bg-sky-500/10 border border-sky-500/20">Ostatni: <strong className="text-sky-300">{latestPoint.weight} {unit}</strong> ({latestPoint.date})</span>}
+            {analysisShowTrendLine && <span className={`px-2 py-1 rounded-md border ${trend > 0 ? 'text-emerald-300 border-emerald-500/20 bg-emerald-500/10' : trend < 0 ? 'text-amber-300 border-amber-500/20 bg-amber-500/10' : 'text-slate-300 border-slate-700 bg-slate-950'}`}>Trend: <strong>{trend > 0 ? 'wzrost' : trend < 0 ? 'spadek' : 'stabilny'}</strong> ({trend.toFixed(2)} {unit}/punkt)</span>}
+            <span className={`px-2 py-1 rounded-md border ${stagnation === 'stagnating' ? 'text-amber-300 border-amber-500/20 bg-amber-500/10' : stagnation === 'progressing' ? 'text-emerald-300 border-emerald-500/20 bg-emerald-500/10' : 'text-slate-400 border-slate-700 bg-slate-950'}`} id="stagnation-status">Stagnacja: <strong>{stagnation === 'insufficient' ? 'brak wystarczających danych' : stagnation === 'stagnating' ? 'możliwa' : 'nie wykryto'}</strong></span>
+            <span className={`px-2 py-1 rounded-md border ${progression === 'progressing' ? 'text-emerald-300 border-emerald-500/20 bg-emerald-500/10' : progression === 'regressing' ? 'text-rose-300 border-rose-500/20 bg-rose-500/10' : 'text-slate-400 border-slate-700 bg-slate-950'}`} id="progression-status">Cel progresji: <strong>{progression === 'insufficient' ? 'brak wystarczających danych' : progression === 'progressing' ? 'progres' : progression === 'regressing' ? 'regres' : 'stabilnie'}</strong></span>
+            {goalWeight && latestPoint && <span className={`px-2 py-1 rounded-md border ${latestPoint.weight >= goalWeight ? 'text-emerald-300 border-emerald-500/20 bg-emerald-500/10' : 'text-sky-300 border-sky-500/20 bg-sky-500/10'}`} id="exercise-goal-status">Cel: <strong>{latestPoint.weight >= goalWeight ? 'osiągnięty' : `${latestPoint.weight}/${goalWeight} ${unit}`}</strong></span>}
+          </div>
+        )}
 
         {historyPoints.length === 0 ? (
           <div className="h-64 flex items-center justify-center text-slate-500 text-xs">
@@ -301,13 +353,14 @@ export const StatsView: React.FC<StatsViewProps> = ({ weeks, bodyWeights = [], u
                     cx={pt.x}
                     cy={pt.y}
                     r="5"
-                    fill="#10b981"
+                    fill={analysisShowPRMarkers && prIndices.includes(i) ? '#fbbf24' : '#10b981'}
                     stroke="#ffffff"
                     strokeWidth="2"
                     className="cursor-pointer transition-transform hover:scale-150"
                     onMouseEnter={() => setHoveredPoint(pt)}
                     onMouseLeave={() => setHoveredPoint(null)}
                   />
+                  {analysisShowPRMarkers && prIndices.includes(i) && <text x={pt.x} y={pt.y + 22} fill="#fbbf24" fontSize="9" textAnchor="middle" fontFamily="monospace">PR</text>}
                   <text
                     x={pt.x}
                     y={pt.y - 10}
