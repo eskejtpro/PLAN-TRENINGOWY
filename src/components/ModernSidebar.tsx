@@ -71,14 +71,6 @@ export const ModernSidebar: React.FC<ModernSidebarProps> = ({
       label: 'Waga Ciała',
       icon: Scale,
       description: 'Ważenie, trendy i bilans'
-    },
-    {
-      id: 'profile',
-      label: 'Profil',
-      icon: User,
-      badge: 'SYNC',
-      badgeColor: 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20',
-      description: 'Zdjęcie, dane, cele i status serwera Android'
     }
   ];
 
@@ -293,19 +285,39 @@ export const ModernSidebar: React.FC<ModernSidebarProps> = ({
         {!isCollapsed ? (
           <>
             {/* Athlete Profile Badge */}
-            <div className={`p-2.5 rounded-xl border flex items-center justify-between ${
-              isDark ? 'bg-slate-900/90 border-slate-800' : 'bg-white border-slate-200 shadow-xs'
+            <div className={`p-2 rounded-xl border flex items-center justify-between transition-all ${
+              activeView === 'profile'
+                ? isDark 
+                  ? 'bg-gradient-to-r from-emerald-500/20 to-teal-500/10 border-emerald-500/40 ring-1 ring-emerald-500/30' 
+                  : 'bg-emerald-50 border-emerald-300 ring-1 ring-emerald-200 shadow-xs'
+                : isDark 
+                  ? 'bg-slate-900/90 border-slate-800' 
+                  : 'bg-white border-slate-200 shadow-xs'
             }`}>
-              <div 
+              <button 
+                type="button"
+                id="sidebar-athlete-profile-button"
                 onClick={() => onSelectView('profile')}
-                className="flex items-center gap-2 overflow-hidden cursor-pointer group hover:opacity-90 transition-opacity"
-                title="Przejdź do profilu zawodnika i synchronizacji"
+                className="flex items-center gap-2 overflow-hidden cursor-pointer group text-left flex-1 min-w-0 mr-2 py-0.5"
+                title="Kliknij, aby otworzyć Profil zawodnika, cele i status serwera"
               >
-                <div className="w-7 h-7 rounded-lg bg-emerald-500/20 text-emerald-400 group-hover:bg-emerald-500/30 flex items-center justify-center font-bold text-xs shrink-0 transition-colors">
+                <div className={`w-7 h-7 rounded-lg flex items-center justify-center font-bold text-xs shrink-0 transition-all ${
+                  activeView === 'profile'
+                    ? 'bg-emerald-500 text-white shadow-xs'
+                    : isDark 
+                      ? 'bg-emerald-500/20 text-emerald-400 group-hover:bg-emerald-500/30' 
+                      : 'bg-emerald-100 text-emerald-700 group-hover:bg-emerald-200'
+                }`}>
                   <User className="w-3.5 h-3.5" />
                 </div>
-                <div className="truncate">
-                  <span className={`text-xs font-bold block truncate group-hover:text-emerald-400 transition-colors ${isDark ? 'text-slate-200' : 'text-slate-800'}`}>
+                <div className="truncate min-w-0">
+                  <span className={`text-xs font-bold block truncate transition-colors ${
+                    activeView === 'profile'
+                      ? 'text-emerald-400 font-extrabold'
+                      : isDark 
+                        ? 'text-slate-200 group-hover:text-emerald-400' 
+                        : 'text-slate-800 group-hover:text-emerald-600'
+                  }`}>
                     {settings.athleteName || 'Zawodnik'}
                   </span>
                   <span className="text-[10px] text-emerald-400 font-medium flex items-center gap-1">
@@ -313,7 +325,7 @@ export const ModernSidebar: React.FC<ModernSidebarProps> = ({
                     <span>Profil &amp; Sync</span>
                   </span>
                 </div>
-              </div>
+              </button>
 
               {/* Unit Toggle kg/lbs */}
               <div className="flex items-center rounded-lg p-0.5 bg-slate-950/80 border border-slate-800 text-[10px] font-bold">
@@ -368,6 +380,24 @@ export const ModernSidebar: React.FC<ModernSidebarProps> = ({
           </>
         ) : (
           <div className="flex flex-col items-center gap-2">
+            <button
+              type="button"
+              id="sidebar-athlete-profile-collapsed-btn"
+              onClick={() => onSelectView('profile')}
+              className={`p-2 rounded-xl border flex items-center justify-center transition-all cursor-pointer ${
+                activeView === 'profile'
+                  ? isDark
+                    ? 'bg-emerald-500/25 text-emerald-300 border-emerald-500/50 ring-1 ring-emerald-500/30'
+                    : 'bg-emerald-100 text-emerald-700 border-emerald-300 ring-1 ring-emerald-200'
+                  : isDark
+                    ? 'bg-slate-900 border-slate-800 text-slate-300 hover:text-emerald-400 hover:border-slate-700'
+                    : 'bg-white border-slate-200 text-slate-700 hover:text-emerald-600 shadow-xs'
+              }`}
+              title={`Profil zawodnika: ${settings.athleteName || 'Zawodnik'} (kliknij, aby otworzyć)`}
+            >
+              <User className="w-4 h-4" />
+            </button>
+
             <button
               type="button"
               onClick={() => onUpdateSettings({ theme: isDark ? 'light' : 'dark' })}
