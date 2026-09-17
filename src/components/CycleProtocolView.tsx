@@ -15,15 +15,22 @@ import {
   CalendarCheck,
   CalendarX,
   Search,
-  TrendingUp
+  TrendingUp,
+  Scale,
+  Ruler,
+  Sparkles,
+  Layers
 } from 'lucide-react';
-import { ProtocolEntry, TrainingWeek, AppSettings } from '../types';
+import { ProtocolEntry, TrainingWeek, AppSettings, BodyWeightEntry, BodyPartMeasurement } from '../types';
 import { BloodConcentrationCalculator } from './BloodConcentrationCalculator';
+import { BODY_PART_CONFIG } from '../utils/bodyMeasurements';
 
 interface CycleProtocolViewProps {
   protocolEntries: ProtocolEntry[];
   weeks: TrainingWeek[];
   settings: AppSettings;
+  bodyWeights?: BodyWeightEntry[];
+  bodyPartMeasurements?: BodyPartMeasurement[];
   onAddProtocolEntry: (entry: Omit<ProtocolEntry, 'id'>) => void;
   onDeleteProtocolEntry: (id: string) => void;
   onUpdateWeekStartDate?: (weekId: string, startDate: string) => void;
@@ -46,6 +53,8 @@ export const CycleProtocolView: React.FC<CycleProtocolViewProps> = ({
   protocolEntries = [],
   weeks = [],
   settings,
+  bodyWeights = [],
+  bodyPartMeasurements = [],
   onAddProtocolEntry,
   onDeleteProtocolEntry,
   onUpdateWeekStartDate,
@@ -57,6 +66,12 @@ export const CycleProtocolView: React.FC<CycleProtocolViewProps> = ({
   // Calendar State
   const [currentDate, setCurrentDate] = useState(() => new Date());
   const [selectedDateStr, setSelectedDateStr] = useState(() => new Date().toISOString().split('T')[0]);
+
+  // Calendar display filter: all vs doses vs measurements
+  const [calendarFilter, setCalendarFilter] = useState<'all' | 'doses' | 'measurements'>('all');
+
+  // Bottom table mode: doses log vs combined correlation log
+  const [bottomTableMode, setBottomTableMode] = useState<'doses' | 'correlation'>('doses');
 
   // Form State
   const [substance, setSubstance] = useState('Testosteron Enanthat');
@@ -143,6 +158,42 @@ export const CycleProtocolView: React.FC<CycleProtocolViewProps> = ({
     });
     return map;
   }, [protocolEntries]);
+
+  // Body weights grouped by date
+  const weightsByDate = useMemo(() => {
+    const map = new Map<string, BodyWeightEntry>();
+    bodyWeights.forEach(w => map.set(w.date, w));
+    return map;
+  }, [bodyWeights]);
+
+  // Body part measurements grouped by date
+  const measurementsByDate = useMemo(() => {
+    const map = new Map<string, BodyPartMeasurement[]>();
+    bodyPartMeasurements.forEach(m => {
+      const list = map.get(m.date) || [];
+      list.push(m);
+      map.set(m.date, list);
+    });
+    return map;
+  }, [bodyPartMeasurements]);
+
+  const sortedWeights = useMemo(() => [...bodyWeights].sort((a, b) => a.date.localeCompare(b.date)), [bodyWeights]);
+  const latestWeight = sortedWeights.length > 0 ? sortedWeights[sortedWeights.length - 1] : null;
+  const sortedParts = useMemo(() => [...bodyPartMeasurements].sort((a, b) => a.date.localeCompare(b.date)), [bodyPartMeasurements]);
+  const latestPart = sortedParts.length > 0 ? sortedParts[sortedParts.length - 1] : null;
+
+  // Selected date weight and body measurements
+  const selectedDateWeight = weightsByDate.get(selectedDateStr);
+  const selectedDateMeasurements = measurementsByDate.get(selectedDateStr) || [];
+
+  // Combined dates for cycle correlation table
+  const combinedLogDates = useMemo(() => {
+    const setOfDates = new Set<string>();
+    protocolEntries.forEach(p => setOfDates.add(p.date));
+    bodyWeights.forEach(w => setOfDates.add(w.date));
+    bodyPartMeasurements.forEach(m => setOfDates.add(m.date));
+    return Array.from(setOfDates).sort((a, b) => b.localeCompare(a));
+  }, [protocolEntries, bodyWeights, bodyPartMeasurements]);
 
   // Handle Preset Apply
   const applyPreset = (preset: typeof PRESET_PROTOCOLS[0]) => {
@@ -335,6 +386,28 @@ export const CycleProtocolView: React.FC<CycleProtocolViewProps> = ({
               <div className="font-extrabold text-amber-400 text-sm">{inProgressCount} / {emptyGapsCount}</div>
             </div>
           </div>
+
+          {latestWeight && (
+            <div className="px-3 py-2 rounded-xl bg-slate-950/70 border border-slate-800 flex items-center gap-2">
+              <Scale className="w-4 h-4 text-amber-400" />
+              <div>
+                <div className="text-[10px] text-slate-500 uppercase font-mono">Waga na cyklu</div>
+                <div className="font-extrabold text-amber-300 text-sm">{latestWeight.weight} {settings.unit}</div>
+              </div>
+            </div>
+          )}
+
+          {latestPart && (
+            <div className="px-3 py-2 rounded-xl bg-slate-950/70 border border-slate-800 flex items-center gap-2">
+              <Ruler className="w-4 h-4 text-purple-400" />
+              <div>
+                <div className="text-[10px] text-slate-500 uppercase font-mono">
+                  {BODY_PART_CONFIG[latestPart.part]?.label || 'Obwód'}
+                </div>
+                <div className="font-extrabold text-purple-300 text-sm">{latestPart.value} cm</div>
+              </div>
+            </div>
+          )}
         </div>
       </div>
 
@@ -396,7 +469,7 @@ export const CycleProtocolView: React.FC<CycleProtocolViewProps> = ({
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
           {/* Left / Center: Interactive Month Calendar (7 cols on lg) */}
           <div className="lg:col-span-7 bg-slate-900 rounded-2xl border border-slate-800 p-4 sm:p-5 flex flex-col shadow-md">
-            <div className="flex items-center justify-between pb-4 border-b border-slate-800">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between pb-4 border-b border-slate-800 gap-3">
               <div className="flex items-center gap-2">
                 <CalendarIcon className="w-5 h-5 text-emerald-400" />
                 <h3 className="font-extrabold text-white text-base">
@@ -404,30 +477,71 @@ export const CycleProtocolView: React.FC<CycleProtocolViewProps> = ({
                 </h3>
               </div>
 
-              <div className="flex items-center gap-1.5">
-                <button
-                  type="button"
-                  onClick={handlePrevMonth}
-                  className="p-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 transition-colors"
-                  title="Poprzedni miesiąc"
-                >
-                  <ChevronLeft className="w-4 h-4" />
-                </button>
-                <button
-                  type="button"
-                  onClick={handleToday}
-                  className="px-2.5 py-1 text-xs rounded-lg bg-slate-800 hover:bg-slate-700 text-emerald-400 font-bold transition-colors"
-                >
-                  Dzisiaj
-                </button>
-                <button
-                  type="button"
-                  onClick={handleNextMonth}
-                  className="p-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 transition-colors"
-                  title="Następny miesiąc"
-                >
-                  <ChevronRight className="w-4 h-4" />
-                </button>
+              <div className="flex flex-wrap items-center gap-2">
+                {/* Filter for Calendar Badges */}
+                <div className="flex items-center bg-slate-950 p-0.5 rounded-lg border border-slate-800 text-[10px]">
+                  <button
+                    type="button"
+                    onClick={() => setCalendarFilter('all')}
+                    className={`px-2 py-1 rounded-md font-bold transition-all ${
+                      calendarFilter === 'all'
+                        ? 'bg-slate-800 text-white shadow-xs'
+                        : 'text-slate-400 hover:text-slate-200'
+                    }`}
+                  >
+                    Wszystko
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setCalendarFilter('doses')}
+                    className={`px-2 py-1 rounded-md font-bold transition-all flex items-center gap-1 ${
+                      calendarFilter === 'doses'
+                        ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30'
+                        : 'text-slate-400 hover:text-slate-200'
+                    }`}
+                  >
+                    <Syringe className="w-2.5 h-2.5 text-emerald-400" />
+                    <span>Dawki</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setCalendarFilter('measurements')}
+                    className={`px-2 py-1 rounded-md font-bold transition-all flex items-center gap-1 ${
+                      calendarFilter === 'measurements'
+                        ? 'bg-purple-500/20 text-purple-300 border border-purple-500/30'
+                        : 'text-slate-400 hover:text-slate-200'
+                    }`}
+                  >
+                    <Ruler className="w-2.5 h-2.5 text-purple-400" />
+                    <span>Pomiary</span>
+                  </button>
+                </div>
+
+                <div className="flex items-center gap-1">
+                  <button
+                    type="button"
+                    onClick={handlePrevMonth}
+                    className="p-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 transition-colors"
+                    title="Poprzedni miesiąc"
+                  >
+                    <ChevronLeft className="w-4 h-4" />
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handleToday}
+                    className="px-2.5 py-1 text-xs rounded-lg bg-slate-800 hover:bg-slate-700 text-emerald-400 font-bold transition-colors"
+                  >
+                    Dzisiaj
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handleNextMonth}
+                    className="p-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 transition-colors"
+                    title="Następny miesiąc"
+                  >
+                    <ChevronRight className="w-4 h-4" />
+                  </button>
+                </div>
               </div>
             </div>
 
@@ -446,16 +560,18 @@ export const CycleProtocolView: React.FC<CycleProtocolViewProps> = ({
                 const isSelected = dateStr === selectedDateStr;
                 const isToday = dateStr === new Date().toISOString().split('T')[0];
                 const dayEntries = entriesByDate.get(dateStr) || [];
-                const hasEntries = dayEntries.length > 0;
+                const dayWeight = weightsByDate.get(dateStr);
+                const dayMeasurements = measurementsByDate.get(dateStr) || [];
+                const hasEntries = dayEntries.length > 0 || !!dayWeight || dayMeasurements.length > 0;
 
                 return (
                   <button
                     key={dateStr}
                     type="button"
                     onClick={() => setSelectedDateStr(dateStr)}
-                    className={`min-h-[64px] p-1.5 rounded-xl text-left flex flex-col justify-between transition-all border ${
+                    className={`min-h-[68px] p-1.5 rounded-xl text-left flex flex-col justify-between transition-all border ${
                       isSelected
-                        ? 'border-emerald-400 bg-emerald-500/15 shadow-sm'
+                        ? 'border-emerald-400 bg-emerald-500/15 shadow-sm ring-1 ring-emerald-400/40'
                         : isToday
                         ? 'border-emerald-500/40 bg-slate-950/80'
                         : isCurrentMonth
@@ -481,25 +597,54 @@ export const CycleProtocolView: React.FC<CycleProtocolViewProps> = ({
                     </div>
 
                     {/* Entry Badges inside cell */}
-                    <div className="space-y-0.5 mt-1 overflow-hidden">
-                      {dayEntries.slice(0, 2).map(entry => (
+                    <div className="space-y-0.5 mt-1 overflow-hidden w-full">
+                      {/* Doses Badges */}
+                      {calendarFilter !== 'measurements' &&
+                        dayEntries.slice(0, 2).map(entry => (
+                          <div
+                            key={entry.id}
+                            className={`text-[9px] px-1 py-0.5 rounded truncate font-medium ${
+                              entry.substance.toLowerCase().includes('hcg')
+                                ? 'bg-cyan-500/20 text-cyan-300 border border-cyan-500/30'
+                                : entry.route === 'Oral'
+                                ? 'bg-indigo-500/20 text-indigo-300 border border-indigo-500/30'
+                                : 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30'
+                            }`}
+                            title={`${entry.substance} ${entry.dosage}${entry.unit} (${entry.route})`}
+                          >
+                            {entry.substance.split(' ')[0]} {entry.dosage}{entry.unit}
+                          </div>
+                        ))}
+
+                      {/* Weight Badge */}
+                      {calendarFilter !== 'doses' && dayWeight && (
                         <div
-                          key={entry.id}
-                          className={`text-[9px] px-1 py-0.5 rounded truncate font-medium ${
-                            entry.substance.toLowerCase().includes('hcg')
-                              ? 'bg-cyan-500/20 text-cyan-300 border border-cyan-500/30'
-                              : entry.route === 'Oral'
-                              ? 'bg-purple-500/20 text-purple-300 border border-purple-500/30'
-                              : 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30'
-                          }`}
-                          title={`${entry.substance} ${entry.dosage}${entry.unit} (${entry.route})`}
+                          className="text-[9px] px-1 py-0.5 rounded truncate font-medium bg-amber-500/20 text-amber-300 border border-amber-500/30 flex items-center gap-1 font-mono"
+                          title={`Waga ciała: ${dayWeight.weight} ${settings.unit}${dayWeight.notes ? ` (${dayWeight.notes})` : ''}`}
                         >
-                          {entry.substance.split(' ')[0]} {entry.dosage}{entry.unit}
+                          <span className="text-[8px]">⚖️</span>
+                          <span className="truncate">{dayWeight.weight}{settings.unit}</span>
                         </div>
-                      ))}
-                      {dayEntries.length > 2 && (
+                      )}
+
+                      {/* Muscle Circumferences Badge */}
+                      {calendarFilter !== 'doses' && dayMeasurements.length > 0 && (
+                        <div
+                          className="text-[9px] px-1 py-0.5 rounded truncate font-medium bg-purple-500/20 text-purple-300 border border-purple-500/30 flex items-center gap-1 font-mono"
+                          title={dayMeasurements.map(m => `${BODY_PART_CONFIG[m.part]?.label || m.part}: ${m.value} cm`).join(', ')}
+                        >
+                          <span className="text-[8px]">📐</span>
+                          <span className="truncate">
+                            {dayMeasurements.length === 1
+                              ? `${BODY_PART_CONFIG[dayMeasurements[0].part]?.label.slice(0, 3)} ${dayMeasurements[0].value}`
+                              : `${dayMeasurements.length} pomiary`}
+                          </span>
+                        </div>
+                      )}
+
+                      {calendarFilter === 'all' && dayEntries.length > 2 && (
                         <div className="text-[8px] text-slate-400 font-mono pl-1">
-                          +{dayEntries.length - 2} więcej
+                          +{dayEntries.length - 2} więcej dawek
                         </div>
                       )}
                     </div>
@@ -509,18 +654,26 @@ export const CycleProtocolView: React.FC<CycleProtocolViewProps> = ({
             </div>
 
             {/* Legend */}
-            <div className="flex items-center gap-4 text-[11px] text-slate-400 pt-3 border-t border-slate-800 mt-2">
+            <div className="flex flex-wrap items-center gap-3 sm:gap-4 text-[11px] text-slate-400 pt-3 border-t border-slate-800 mt-2">
               <span className="flex items-center gap-1.5">
                 <span className="w-2.5 h-2.5 rounded-full bg-emerald-400" />
-                <span>Iniekcja IM (Test/Inne)</span>
+                <span>Iniekcja IM</span>
               </span>
               <span className="flex items-center gap-1.5">
                 <span className="w-2.5 h-2.5 rounded-full bg-cyan-400" />
-                <span>HCG / Podskórnie SC</span>
+                <span>HCG / SC</span>
+              </span>
+              <span className="flex items-center gap-1.5">
+                <span className="w-2.5 h-2.5 rounded-full bg-indigo-400" />
+                <span>Doustne</span>
+              </span>
+              <span className="flex items-center gap-1.5">
+                <span className="w-2.5 h-2.5 rounded-full bg-amber-400" />
+                <span>⚖️ Waga ciała</span>
               </span>
               <span className="flex items-center gap-1.5">
                 <span className="w-2.5 h-2.5 rounded-full bg-purple-400" />
-                <span>Doustne (Oral)</span>
+                <span>📐 Obwody partii</span>
               </span>
             </div>
           </div>
@@ -665,13 +818,13 @@ export const CycleProtocolView: React.FC<CycleProtocolViewProps> = ({
             {/* Selected Date Entries List */}
             <div className="bg-slate-900 rounded-2xl border border-slate-800 p-4 shadow-md space-y-3">
               <h5 className="font-extrabold text-xs text-white flex items-center justify-between">
-                <span>Podania z dnia {selectedDateStr}:</span>
+                <span>Podania dawek z dnia {selectedDateStr}:</span>
                 <span className="text-[11px] font-mono text-emerald-400">{selectedDateEntries.length} wpisów</span>
               </h5>
 
               {selectedDateEntries.length === 0 ? (
                 <p className="text-xs text-slate-500 italic py-2">
-                  Brak wpisów dla wybranego dnia. Kliknij powyżej, aby dodać podanie.
+                  Brak wpisów dawek dla wybranego dnia. Kliknij powyżej, aby dodać podanie.
                 </p>
               ) : (
                 <div className="space-y-2 max-h-48 overflow-y-auto pr-1">
@@ -709,88 +862,291 @@ export const CycleProtocolView: React.FC<CycleProtocolViewProps> = ({
                 </div>
               )}
             </div>
+
+            {/* Box: Body Metrics for Selected Date */}
+            <div className="bg-slate-900 rounded-2xl border border-slate-800 p-4 shadow-md space-y-3">
+              <h5 className="font-extrabold text-xs text-white flex items-center justify-between">
+                <span className="flex items-center gap-1.5">
+                  <Ruler className="w-3.5 h-3.5 text-purple-400" />
+                  <span>Wyniki pomiarów ciała z dnia {selectedDateStr}:</span>
+                </span>
+                {(selectedDateWeight || selectedDateMeasurements.length > 0) && (
+                  <span className="text-[10px] font-mono text-purple-300 bg-purple-500/15 border border-purple-500/30 px-2 py-0.5 rounded-md">
+                    Zarejestrowano
+                  </span>
+                )}
+              </h5>
+
+              {!selectedDateWeight && selectedDateMeasurements.length === 0 ? (
+                <p className="text-xs text-slate-500 italic py-1">
+                  Brak wpisów wagi ani obwodów partii w tym dniu. Pomiary dodasz w sekcji „Waga i Pomiary”.
+                </p>
+              ) : (
+                <div className="space-y-2.5">
+                  {selectedDateWeight && (
+                    <div className="p-2.5 rounded-xl bg-slate-950 border border-amber-500/30 flex items-center justify-between">
+                      <div className="flex items-center gap-2.5">
+                        <div className="p-1.5 rounded-lg bg-amber-500/15 text-amber-400">
+                          <Scale className="w-4 h-4" />
+                        </div>
+                        <div>
+                          <span className="text-[10px] text-slate-400 uppercase font-mono block">Masa ciała</span>
+                          <span className="font-mono font-extrabold text-amber-300 text-sm">
+                            {selectedDateWeight.weight} {settings.unit}
+                          </span>
+                        </div>
+                      </div>
+                      {selectedDateWeight.notes && (
+                        <span className="text-[11px] text-slate-400 max-w-[150px] truncate" title={selectedDateWeight.notes}>
+                          💬 {selectedDateWeight.notes}
+                        </span>
+                      )}
+                    </div>
+                  )}
+
+                  {selectedDateMeasurements.length > 0 && (
+                    <div>
+                      <span className="text-[10px] text-slate-400 font-semibold block mb-1.5">
+                        Wymiary partii mięśniowych:
+                      </span>
+                      <div className="grid grid-cols-2 sm:grid-cols-3 gap-1.5">
+                        {selectedDateMeasurements.map(m => {
+                          const cfg = BODY_PART_CONFIG[m.part];
+                          return (
+                            <div key={m.id} className="p-2 rounded-xl bg-slate-950 border border-purple-500/20">
+                              <div className="text-[10px] text-slate-400 font-medium truncate flex items-center gap-1">
+                                <span>📏</span>
+                                <span className="truncate">{cfg?.label || m.part}</span>
+                              </div>
+                              <div className="text-xs font-bold font-mono text-purple-300 mt-1">
+                                {m.value} cm
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
           </div>
 
-          {/* Full Past Entries Log Table */}
-          <div className="lg:col-span-12 bg-slate-900 rounded-2xl border border-slate-800 p-5 shadow-md space-y-3">
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-              <div>
-                <h4 className="font-extrabold text-sm text-white flex items-center gap-2">
-                  <Clock className="w-4 h-4 text-emerald-400" />
-                  <span>Historia Wszystkich Podań ({protocolEntries.length})</span>
-                </h4>
-                <p className="text-xs text-slate-400">Przeglądaj chronologicznie historię iniekcji i dawek</p>
+          {/* Full Past Entries Log Table & Correlation Table */}
+          <div className="lg:col-span-12 bg-slate-900 rounded-2xl border border-slate-800 p-5 shadow-md space-y-4">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-800 pb-3">
+              {/* Table Mode Selector */}
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => setBottomTableMode('doses')}
+                  className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 ${
+                    bottomTableMode === 'doses'
+                      ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 shadow-xs'
+                      : 'text-slate-400 hover:text-white hover:bg-slate-800'
+                  }`}
+                >
+                  <Clock className="w-3.5 h-3.5 text-emerald-400" />
+                  <span>Historia Wszystkich Podań</span>
+                  <span className="text-[10px] px-1.5 py-0.2 rounded-full bg-slate-800 text-slate-300 font-mono">
+                    {protocolEntries.length}
+                  </span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => setBottomTableMode('correlation')}
+                  className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 ${
+                    bottomTableMode === 'correlation'
+                      ? 'bg-purple-500/20 text-purple-300 border border-purple-500/30 shadow-xs'
+                      : 'text-slate-400 hover:text-white hover:bg-slate-800'
+                  }`}
+                >
+                  <Layers className="w-3.5 h-3.5 text-purple-400" />
+                  <span>Zestawienie: Dawki vs Waga & Obwody</span>
+                  <span className="text-[10px] px-1.5 py-0.2 rounded-full bg-slate-800 text-slate-300 font-mono">
+                    {combinedLogDates.length}
+                  </span>
+                </button>
               </div>
 
-              <div className="relative w-full sm:w-64">
-                <Search className="w-3.5 h-3.5 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
-                <input
-                  type="text"
-                  value={searchFilter}
-                  onChange={e => setSearchFilter(e.target.value)}
-                  placeholder="Filtruj np. HCG, Testosteron..."
-                  className="w-full bg-slate-950 border border-slate-800 rounded-xl pl-8 pr-3 py-1.5 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-emerald-500"
-                />
-              </div>
+              {bottomTableMode === 'doses' && (
+                <div className="relative w-full sm:w-64">
+                  <Search className="w-3.5 h-3.5 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
+                  <input
+                    type="text"
+                    value={searchFilter}
+                    onChange={e => setSearchFilter(e.target.value)}
+                    placeholder="Filtruj np. HCG, Testosteron..."
+                    className="w-full bg-slate-950 border border-slate-800 rounded-xl pl-8 pr-3 py-1.5 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-emerald-500"
+                  />
+                </div>
+              )}
             </div>
 
-            {filteredEntries.length === 0 ? (
-              <div className="text-center py-6 text-slate-500 text-xs">
-                Brak wpisów pasujących do filtra.
-              </div>
-            ) : (
-              <div className="overflow-x-auto">
-                <table className="w-full text-left text-xs border-collapse">
-                  <thead>
-                    <tr className="border-b border-slate-800 text-slate-400 font-mono text-[11px]">
-                      <th className="py-2.5 px-3">Data & Godzina</th>
-                      <th className="py-2.5 px-3">Substancja</th>
-                      <th className="py-2.5 px-3">Dawka</th>
-                      <th className="py-2.5 px-3">Droga</th>
-                      <th className="py-2.5 px-3">Notatki / Miejsce</th>
-                      <th className="py-2.5 px-3 text-right">Akcja</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-slate-800/60 font-sans">
-                    {filteredEntries.map(entry => (
-                      <tr key={entry.id} className="hover:bg-slate-800/30 transition-colors">
-                        <td className="py-2.5 px-3 font-mono text-slate-300">
-                          {entry.date} {entry.time ? `• ${entry.time}` : ''}
-                        </td>
-                        <td className="py-2.5 px-3 font-bold text-white">
-                          {entry.substance}
-                        </td>
-                        <td className="py-2.5 px-3 font-mono font-extrabold text-emerald-400">
-                          {entry.dosage} {entry.unit}
-                        </td>
-                        <td className="py-2.5 px-3">
-                          <span className={`text-[10px] px-2 py-0.5 rounded-full font-mono font-bold ${
-                            entry.route === 'IM'
-                              ? 'bg-emerald-500/15 text-emerald-400'
-                              : entry.route === 'SC'
-                              ? 'bg-cyan-500/15 text-cyan-400'
-                              : 'bg-purple-500/15 text-purple-400'
-                          }`}>
-                            {entry.route === 'IM' ? 'Domięśniowo (IM)' : entry.route === 'SC' ? 'Podskórnie (SC)' : 'Doustnie'}
-                          </span>
-                        </td>
-                        <td className="py-2.5 px-3 text-slate-400 max-w-xs truncate">
-                          {entry.notes || '-'}
-                        </td>
-                        <td className="py-2.5 px-3 text-right">
-                          <button
-                            type="button"
-                            onClick={() => onDeleteProtocolEntry(entry.id)}
-                            className="p-1.5 rounded-lg text-slate-500 hover:text-rose-400 hover:bg-rose-500/10 transition-colors"
-                            title="Usuń wpis"
-                          >
-                            <Trash2 className="w-3.5 h-3.5" />
-                          </button>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
+            {/* TAB CONTENT: DOSES LOG */}
+            {bottomTableMode === 'doses' && (
+              <>
+                {filteredEntries.length === 0 ? (
+                  <div className="text-center py-6 text-slate-500 text-xs">
+                    Brak wpisów pasujących do filtra.
+                  </div>
+                ) : (
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-left text-xs border-collapse">
+                      <thead>
+                        <tr className="border-b border-slate-800 text-slate-400 font-mono text-[11px]">
+                          <th className="py-2.5 px-3">Data & Godzina</th>
+                          <th className="py-2.5 px-3">Substancja</th>
+                          <th className="py-2.5 px-3">Dawka</th>
+                          <th className="py-2.5 px-3">Droga</th>
+                          <th className="py-2.5 px-3">Notatki / Miejsce</th>
+                          <th className="py-2.5 px-3 text-right">Akcja</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-slate-800/60 font-sans">
+                        {filteredEntries.map(entry => (
+                          <tr key={entry.id} className="hover:bg-slate-800/30 transition-colors">
+                            <td className="py-2.5 px-3 font-mono text-slate-300">
+                              {entry.date} {entry.time ? `• ${entry.time}` : ''}
+                            </td>
+                            <td className="py-2.5 px-3 font-bold text-white">
+                              {entry.substance}
+                            </td>
+                            <td className="py-2.5 px-3 font-mono font-extrabold text-emerald-400">
+                              {entry.dosage} {entry.unit}
+                            </td>
+                            <td className="py-2.5 px-3">
+                              <span className={`text-[10px] px-2 py-0.5 rounded-full font-mono font-bold ${
+                                entry.route === 'IM'
+                                  ? 'bg-emerald-500/15 text-emerald-400'
+                                  : entry.route === 'SC'
+                                  ? 'bg-cyan-500/15 text-cyan-400'
+                                  : 'bg-purple-500/15 text-purple-400'
+                              }`}>
+                                {entry.route === 'IM' ? 'Domięśniowo (IM)' : entry.route === 'SC' ? 'Podskórnie (SC)' : 'Doustnie'}
+                              </span>
+                            </td>
+                            <td className="py-2.5 px-3 text-slate-400 max-w-xs truncate">
+                              {entry.notes || '-'}
+                            </td>
+                            <td className="py-2.5 px-3 text-right">
+                              <button
+                                type="button"
+                                onClick={() => onDeleteProtocolEntry(entry.id)}
+                                className="p-1.5 rounded-lg text-slate-500 hover:text-rose-400 hover:bg-rose-500/10 transition-colors"
+                                title="Usuń wpis"
+                              >
+                                <Trash2 className="w-3.5 h-3.5" />
+                              </button>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
+              </>
+            )}
+
+            {/* TAB CONTENT: CORRELATION LOG (DOSES + WEIGHT + BODY PART MEASUREMENTS) */}
+            {bottomTableMode === 'correlation' && (
+              <div className="space-y-2">
+                <p className="text-xs text-slate-400">
+                  Zestawienie chronologiczne dawek z zarejestrowaną wagą ciała oraz obwodami mięśniowymi z każdego dnia:
+                </p>
+
+                {combinedLogDates.length === 0 ? (
+                  <div className="text-center py-6 text-slate-500 text-xs">
+                    Brak wpisów dawek ani pomiarów ciała.
+                  </div>
+                ) : (
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-left text-xs border-collapse">
+                      <thead>
+                        <tr className="border-b border-slate-800 text-slate-400 font-mono text-[11px]">
+                          <th className="py-2.5 px-3">Data</th>
+                          <th className="py-2.5 px-3">Przyjęte Środki & Dawki</th>
+                          <th className="py-2.5 px-3">Waga Ciała</th>
+                          <th className="py-2.5 px-3">Zmierzone Partie Mięśniowe</th>
+                          <th className="py-2.5 px-3">Notatki</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-slate-800/60 font-sans">
+                        {combinedLogDates.map(dateStr => {
+                          const doses = entriesByDate.get(dateStr) || [];
+                          const weightEntry = weightsByDate.get(dateStr);
+                          const parts = measurementsByDate.get(dateStr) || [];
+
+                          return (
+                            <tr key={dateStr} className="hover:bg-slate-800/30 transition-colors">
+                              <td className="py-2.5 px-3 font-mono font-bold text-slate-200 whitespace-nowrap">
+                                {dateStr}
+                              </td>
+
+                              {/* Doses */}
+                              <td className="py-2.5 px-3">
+                                {doses.length === 0 ? (
+                                  <span className="text-slate-600 italic">-</span>
+                                ) : (
+                                  <div className="flex flex-wrap gap-1.5">
+                                    {doses.map(d => (
+                                      <span
+                                        key={d.id}
+                                        className="text-[10px] px-2 py-0.5 rounded-md font-mono font-bold bg-emerald-500/15 text-emerald-300 border border-emerald-500/30"
+                                      >
+                                        {d.substance}: {d.dosage} {d.unit} ({d.route})
+                                      </span>
+                                    ))}
+                                  </div>
+                                )}
+                              </td>
+
+                              {/* Weight */}
+                              <td className="py-2.5 px-3 whitespace-nowrap">
+                                {weightEntry ? (
+                                  <span className="text-xs font-mono font-extrabold text-amber-300 bg-amber-500/15 px-2 py-0.5 rounded-md border border-amber-500/30">
+                                    ⚖️ {weightEntry.weight} {settings.unit}
+                                  </span>
+                                ) : (
+                                  <span className="text-slate-600 italic">-</span>
+                                )}
+                              </td>
+
+                              {/* Body parts */}
+                              <td className="py-2.5 px-3">
+                                {parts.length === 0 ? (
+                                  <span className="text-slate-600 italic">-</span>
+                                ) : (
+                                  <div className="flex flex-wrap gap-1.5">
+                                    {parts.map(p => {
+                                      const cfg = BODY_PART_CONFIG[p.part];
+                                      return (
+                                        <span
+                                          key={p.id}
+                                          className="text-[10px] px-2 py-0.5 rounded-md font-mono font-semibold bg-purple-500/15 text-purple-300 border border-purple-500/30 flex items-center gap-1"
+                                        >
+                                          <span>📏</span>
+                                          <span>{cfg?.label || p.part}:</span>
+                                          <strong className="text-white">{p.value} cm</strong>
+                                        </span>
+                                      );
+                                    })}
+                                  </div>
+                                )}
+                              </td>
+
+                              {/* Notes */}
+                              <td className="py-2.5 px-3 text-slate-400 max-w-xs truncate">
+                                {doses.find(d => d.notes)?.notes || weightEntry?.notes || '-'}
+                              </td>
+                            </tr>
+                          );
+                        })}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
               </div>
             )}
           </div>

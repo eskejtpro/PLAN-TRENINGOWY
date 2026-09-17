@@ -531,6 +531,23 @@ export const initialGymData: GymData = {
     { id: 'bw-4', date: '2026-09-05', weight: 80.8, notes: 'Świetna forma, lepsza definicja' },
     { id: 'bw-5', date: '2026-09-12', weight: 80.4, notes: 'Waga stabilna, siła w górę' }
   ],
+  bodyPartMeasurements: [
+    { id: 'bpm-1', date: '2026-08-15', part: 'biceps', value: 37.5, notes: 'Początek mezocyklu' },
+    { id: 'bpm-2', date: '2026-08-29', part: 'biceps', value: 38.0, notes: 'Dobra pompa po treningu' },
+    { id: 'bpm-3', date: '2026-09-12', part: 'biceps', value: 38.5, notes: 'Na czczo rano, pełna regeneracja' },
+    { id: 'bpm-4', date: '2026-08-15', part: 'triceps', value: 35.0, notes: 'Początek pomiarów' },
+    { id: 'bpm-5', date: '2026-08-29', part: 'triceps', value: 35.5, notes: 'Postęp w wyciskaniu wąsko' },
+    { id: 'bpm-6', date: '2026-09-12', part: 'triceps', value: 36.0, notes: 'Widoczna separacja bocznej głowy' },
+    { id: 'bpm-7', date: '2026-08-15', part: 'klata', value: 106.0, notes: 'Na spokojnym wydechu' },
+    { id: 'bpm-8', date: '2026-08-29', part: 'klata', value: 107.2, notes: 'Wzrost siły w wyciskaniu leżąc' },
+    { id: 'bpm-9', date: '2026-09-12', part: 'klata', value: 108.5, notes: 'Wzrost obwodu klatki piersiowej' },
+    { id: 'bpm-10', date: '2026-08-15', part: 'barki', value: 121.0, notes: 'Obwód obręczy barkowej' },
+    { id: 'bpm-11', date: '2026-08-29', part: 'barki', value: 122.2, notes: 'Progres wznosów bokiem' },
+    { id: 'bpm-12', date: '2026-09-12', part: 'barki', value: 123.5, notes: 'Poprawa proporcji V-taper' },
+    { id: 'bpm-13', date: '2026-08-15', part: 'nogi', value: 60.5, notes: 'Najszerszy punkt uda rano' },
+    { id: 'bpm-14', date: '2026-08-29', part: 'nogi', value: 61.2, notes: 'Po przysiadach i RDL' },
+    { id: 'bpm-15', date: '2026-09-12', part: 'nogi', value: 62.0, notes: 'Gęstość czwórogłowych' }
+  ],
   protocolEntries: [
     {
       id: 'proto-1',

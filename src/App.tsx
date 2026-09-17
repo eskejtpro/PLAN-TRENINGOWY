@@ -11,7 +11,7 @@ import { ExerciseManagerView } from './components/ExerciseManagerView';
 import { CycleProtocolView } from './components/CycleProtocolView';
 import { ExerciseModal } from './components/ExerciseModal';
 import { ExerciseHistoryModal } from './components/ExerciseHistoryModal';
-import { GymData, TrainingWeek, TrainingDay, Exercise, ExerciseHistoryPoint, BodyWeightEntry, CircumferenceEntry, AppSettings, LoggedSet, BackupEntry, ProtocolEntry } from './types';
+import { GymData, TrainingWeek, TrainingDay, Exercise, ExerciseHistoryPoint, BodyWeightEntry, CircumferenceEntry, BodyPartMeasurement, AppSettings, LoggedSet, BackupEntry, ProtocolEntry } from './types';
 import { initialGymData } from './data/initialData';
 import { PYTHON_SOURCE_CODE, BAT_SCRIPT_CODE, REQUIREMENTS_TXT, INSTALL_BAT_CODE } from './data/pythonSource';
 import { getTodayDateString } from './utils/calculations';
@@ -19,7 +19,13 @@ import { persistence } from './utils/persistence';
 
 const STORAGE_KEY = 'gymtracker_windows_data_v1';
 const BACKUPS_STORAGE_KEY = 'gymtracker_autobackups_v1';
-const normalizeGymData = (raw: GymData): GymData => ({ ...raw, circumferences: Array.isArray(raw.circumferences) ? raw.circumferences : [] });
+const normalizeGymData = (raw: GymData): GymData => ({
+  ...raw,
+  circumferences: Array.isArray(raw.circumferences) ? raw.circumferences : [],
+  bodyPartMeasurements: Array.isArray(raw.bodyPartMeasurements)
+    ? raw.bodyPartMeasurements
+    : (initialGymData.bodyPartMeasurements || [])
+});
 
 export default function App() {
   const [data, setData] = useState<GymData>(() => {
@@ -653,6 +659,24 @@ export default function App() {
     setData((prev) => ({ ...prev, circumferences: (prev.circumferences || []).filter((item) => item.id !== id) }));
   };
 
+  const handleAddBodyMeasurement = (entry: Omit<BodyPartMeasurement, 'id'>) => {
+    const newEntry: BodyPartMeasurement = {
+      ...entry,
+      id: `bpm-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`
+    };
+    setData((prev) => ({
+      ...prev,
+      bodyPartMeasurements: [...(prev.bodyPartMeasurements || []), newEntry]
+    }));
+  };
+
+  const handleDeleteBodyMeasurement = (id: string) => {
+    setData((prev) => ({
+      ...prev,
+      bodyPartMeasurements: (prev.bodyPartMeasurements || []).filter((item) => item.id !== id)
+    }));
+  };
+
   // Protocol entries (Sterydy, HCG, itp.)
   const handleAddProtocolEntry = (entry: Omit<ProtocolEntry, 'id'>) => {
     const newEntry: ProtocolEntry = {
@@ -884,6 +908,9 @@ export default function App() {
               onAddBodyWeight={handleAddBodyWeight}
               onDeleteBodyWeight={handleDeleteBodyWeight}
               circumferences={data.circumferences || []}
+              bodyPartMeasurements={data.bodyPartMeasurements || []}
+              onAddBodyMeasurement={handleAddBodyMeasurement}
+              onDeleteBodyMeasurement={handleDeleteBodyMeasurement}
               weeks={data.weeks}
               onAddCircumference={handleAddCircumference}
               onUpdateCircumference={handleUpdateCircumference}
@@ -897,6 +924,8 @@ export default function App() {
               protocolEntries={data.protocolEntries || []}
               weeks={data.weeks}
               settings={data.settings}
+              bodyWeights={data.bodyWeights || []}
+              bodyPartMeasurements={data.bodyPartMeasurements || []}
               onAddProtocolEntry={handleAddProtocolEntry}
               onDeleteProtocolEntry={handleDeleteProtocolEntry}
               onUpdateWeekStartDate={handleUpdateWeekStartDate}

@@ -34,6 +34,7 @@ function validate(data) {
     }
   }
   if(data.protocolEntries!==undefined){if(!Array.isArray(data.protocolEntries))bad();for(const p of data.protocolEntries)if(!obj(p)||!str(p.id)||!str(p.date)||!str(p.substance)||!num(p.dosage)||!['mg','IU','mcg','ml','tab'].includes(p.unit)||!['IM','SC','Oral'].includes(p.route))bad();}
+  if(data.bodyPartMeasurements!==undefined){if(!Array.isArray(data.bodyPartMeasurements))bad();const parts=['biceps','triceps','klata','barki','nogi'];for(const m of data.bodyPartMeasurements){if(!obj(m)||!str(m.id)||!str(m.date)||!parts.includes(m.part)||!num(m.value)||m.value<=0)bad();if(m.notes!==undefined&&!str(m.notes))bad();}}
   return data;
 }
 function atomic(file,value){

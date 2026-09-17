@@ -1,14 +1,19 @@
 import React, { useState } from 'react';
-import { Scale, Plus, Trash2, TrendingDown, TrendingUp, Calendar, AlertCircle } from 'lucide-react';
-import { BodyWeightEntry, CircumferenceEntry, TrainingWeek } from '../types';
+import { Scale, Plus, Trash2, TrendingDown, TrendingUp, Calendar, AlertCircle, Ruler, Activity, Sparkles } from 'lucide-react';
+import { BodyWeightEntry, CircumferenceEntry, BodyPartMeasurement, BodyPartType, TrainingWeek } from '../types';
 import { getTodayDateString } from '../utils/calculations';
 import { CircumferenceProgressPanel } from './CircumferenceProgressPanel';
+import { BodyPartMeasurementsPanel } from './BodyPartMeasurementsPanel';
+import { CombinedBodyMetricsChart } from './CombinedBodyMetricsChart';
 
 interface BodyWeightViewProps {
   bodyWeights: BodyWeightEntry[];
   onAddBodyWeight: (entry: Omit<BodyWeightEntry, 'id'>) => void;
   onDeleteBodyWeight: (id: string) => void;
   circumferences: CircumferenceEntry[];
+  bodyPartMeasurements?: BodyPartMeasurement[];
+  onAddBodyMeasurement?: (entry: Omit<BodyPartMeasurement, 'id'>) => void;
+  onDeleteBodyMeasurement?: (id: string) => void;
   weeks: TrainingWeek[];
   onAddCircumference: (entry: Omit<CircumferenceEntry, 'id'>) => void;
   onUpdateCircumference: (entry: CircumferenceEntry) => void;
@@ -21,6 +26,9 @@ export const BodyWeightView: React.FC<BodyWeightViewProps> = ({
   onAddBodyWeight,
   onDeleteBodyWeight,
   circumferences,
+  bodyPartMeasurements = [],
+  onAddBodyMeasurement,
+  onDeleteBodyMeasurement,
   weeks,
   onAddCircumference,
   onUpdateCircumference,
@@ -30,6 +38,7 @@ export const BodyWeightView: React.FC<BodyWeightViewProps> = ({
   const [date, setDate] = useState(getTodayDateString());
   const [weight, setWeight] = useState('');
   const [notes, setNotes] = useState('');
+  const [selectedPart, setSelectedPart] = useState<BodyPartType>('biceps');
 
   const sortedEntries = [...bodyWeights].sort((a, b) => a.date.localeCompare(b.date));
 
@@ -87,13 +96,58 @@ export const BodyWeightView: React.FC<BodyWeightViewProps> = ({
         <div>
           <h2 className="text-base font-bold text-slate-100 flex items-center gap-2">
             <Scale className="w-5 h-5 text-emerald-400" />
-            <span>Rejestr i Analiza Wagi Ciała</span>
+            <span>Rejestr Wagi i Pomiarów Partii Ciała</span>
           </h2>
           <p className="text-xs text-slate-400 mt-0.5">
-            Śledź regularne pomiary na czczo, aby kontrolować masę, redukcję lub rekompozycję.
+            Śledź regularne pomiary masy oraz obwodów: biceps, triceps, klata, barki, nogi z wykresem dat i logiczną analizą progresu.
           </p>
         </div>
+
+        {/* Quick jump navigation */}
+        <div className="flex flex-wrap items-center gap-2">
+          <a
+            href="#section-combined-chart"
+            className="text-xs px-3 py-1.5 rounded-lg bg-emerald-500/15 hover:bg-emerald-500/25 text-emerald-300 border border-emerald-500/40 font-bold transition-colors flex items-center gap-1.5 shadow-xs"
+          >
+            <Sparkles className="w-3.5 h-3.5 text-emerald-400" />
+            Wspólny Wykres (Waga + Partie)
+          </a>
+          <a
+            href="#section-body-parts"
+            className="text-xs px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-purple-300 border border-purple-500/30 font-medium transition-colors flex items-center gap-1.5"
+          >
+            <Ruler className="w-3.5 h-3.5 text-purple-400" />
+            Pomiary partii (Biceps, Klata...)
+          </a>
+          <a
+            href="#section-body-weight"
+            className="text-xs px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 font-medium transition-colors flex items-center gap-1.5"
+          >
+            <Scale className="w-3.5 h-3.5 text-emerald-400" />
+            Waga ciała
+          </a>
+          <a
+            href="#section-advanced-circumferences"
+            className="text-xs px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-400 border border-slate-700 font-medium transition-colors flex items-center gap-1.5"
+          >
+            <Activity className="w-3.5 h-3.5" />
+            Zaawansowane obwody & 1RM
+          </a>
+        </div>
       </div>
+
+      {/* SECTION: COMBINED WEIGHT & BODY PART METRICS CHART */}
+      <div id="section-combined-chart">
+        <CombinedBodyMetricsChart
+          bodyWeights={bodyWeights}
+          bodyPartMeasurements={bodyPartMeasurements}
+          unit={unit}
+          selectedPart={selectedPart}
+          onSelectPart={setSelectedPart}
+        />
+      </div>
+
+      <div id="section-body-weight" className="space-y-6">
 
       {/* KPI Stats */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3.5">
@@ -309,16 +363,31 @@ export const BodyWeightView: React.FC<BodyWeightViewProps> = ({
           </div>
         </div>
       </div>
+    </div>
 
-      <CircumferenceProgressPanel
-        circumferences={circumferences}
-        bodyWeights={bodyWeights}
-        weeks={weeks}
-        unit={unit}
-        onAdd={onAddCircumference}
-        onUpdate={onUpdateCircumference}
-        onDelete={onDeleteCircumference}
-      />
+      {/* SECTION: BODY PART MEASUREMENTS (BICEPS, TRICEPS, KLATA, BARKI, NOGI) */}
+      <div id="section-body-parts">
+        <BodyPartMeasurementsPanel
+          measurements={bodyPartMeasurements}
+          selectedPart={selectedPart}
+          onSelectPart={setSelectedPart}
+          onAddMeasurement={(entry) => onAddBodyMeasurement && onAddBodyMeasurement(entry)}
+          onDeleteMeasurement={(id) => onDeleteBodyMeasurement && onDeleteBodyMeasurement(id)}
+        />
+      </div>
+
+      {/* SECTION: ADVANCED CIRCUMFERENCES & 1RM CORRELATION */}
+      <div id="section-advanced-circumferences">
+        <CircumferenceProgressPanel
+          circumferences={circumferences}
+          bodyWeights={bodyWeights}
+          weeks={weeks}
+          unit={unit}
+          onAdd={onAddCircumference}
+          onUpdate={onUpdateCircumference}
+          onDelete={onDeleteCircumference}
+        />
+      </div>
     </div>
   );
 };

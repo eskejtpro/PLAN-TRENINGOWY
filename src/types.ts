@@ -51,6 +51,17 @@ export interface BodyWeightEntry {
   notes: string;
 }
 
+export const BODY_PARTS = ['biceps', 'triceps', 'klata', 'barki', 'nogi'] as const;
+export type BodyPartType = (typeof BODY_PARTS)[number];
+
+export interface BodyPartMeasurement {
+  id: string;
+  date: string;
+  part: BodyPartType;
+  value: number; // in cm, e.g. 38.5
+  notes?: string;
+}
+
 export const CIRCUMFERENCE_BODY_PARTS = ['klatka', 'talia', 'biodra', 'udo', 'łydka', 'ramię'] as const;
 export type CircumferenceBodyPart = (typeof CIRCUMFERENCE_BODY_PARTS)[number];
 export type CircumferenceSide = 'left' | 'right' | null;
@@ -162,5 +173,6 @@ export interface GymData {
   bodyWeights: BodyWeightEntry[];
   /** Optional for compatibility with JSON saved before circumference tracking. */
   circumferences?: CircumferenceEntry[];
+  bodyPartMeasurements?: BodyPartMeasurement[];
   protocolEntries?: ProtocolEntry[];
 }
