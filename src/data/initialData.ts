@@ -61,6 +61,15 @@ export const initialGymData: GymData = {
     analysisShowPeriodComparison: false,
     analysisPeriodComparisonMetric: 'volume',
     analysisShowRollingVolume: false,
+    analysisReportLayout: 'bento_left',
+    analysisShowLayoutSwitcher: false,
+    analysisShowAiAgent: true,
+    aiAgentMode: 'heuristic_local',
+    aiAgentServerUrl: '',
+    aiAgentApiKey: '',
+    aiAgentPersona: 'balanced',
+    aiAgentFocus: 'all_muscles',
+    aiAgentResponseLength: 'concise',
     lastBackupTime: undefined
   },
   weeks: [

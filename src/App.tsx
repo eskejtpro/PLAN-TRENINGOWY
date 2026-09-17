@@ -1124,6 +1124,15 @@ export default function App() {
               analysisShowPeriodComparison={data.settings.analysisShowPeriodComparison === true}
               analysisPeriodComparisonMetric={data.settings.analysisPeriodComparisonMetric || 'volume'}
               analysisShowRollingVolume={data.settings.analysisShowRollingVolume === true}
+              analysisReportLayout={data.settings.analysisReportLayout || 'bento_left'}
+              analysisShowLayoutSwitcher={data.settings.analysisShowLayoutSwitcher === true}
+              analysisShowAiAgent={data.settings.analysisShowAiAgent !== false}
+              aiAgentMode={data.settings.aiAgentMode || 'heuristic_local'}
+              aiAgentServerUrl={data.settings.aiAgentServerUrl || ''}
+              aiAgentApiKey={data.settings.aiAgentApiKey || ''}
+              aiAgentPersona={data.settings.aiAgentPersona || 'balanced'}
+              aiAgentFocus={data.settings.aiAgentFocus || 'all_muscles'}
+              aiAgentResponseLength={data.settings.aiAgentResponseLength || 'concise'}
             />
           )}
 

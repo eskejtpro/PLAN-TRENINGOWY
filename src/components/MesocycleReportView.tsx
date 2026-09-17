@@ -23,11 +23,13 @@ import {
   Columns,
   LayoutList,
   ChevronRight,
-  Eye
+  Eye,
+  Bot
 } from 'lucide-react';
-import { TrainingWeek, BodyWeightEntry } from '../types';
+import { TrainingWeek, BodyWeightEntry, AppSettings } from '../types';
 import { calculate1RM } from '../utils/calculations';
 import { AnalysisExecutionOptions, analysisOptionsForWeek, detectVolumeJumps, executedReps, executedSets, executedVolume, historyForAnalysis, includeExerciseInAnalysis, regularityPercent, rollingAverage, scopeAnalysisWeeks, summarizeExecution, summarizeMonthlyExecution, summarizeWeekExercises, summarizeWeeklyExecution, volumeDeltaPercent, volumePerSet } from '../utils/analysis';
+import { AiAgentReportCard } from './AiAgentReportCard';
 
 type ReportLayoutPreset = 'bento_left' | 'compact_dashboard' | 'split_preview' | 'executive_strip';
 
@@ -59,6 +61,15 @@ interface MesocycleReportViewProps {
   analysisPeriodComparisonMetric?: 'volume' | 'executedSets' | 'executedReps' | 'executedDays';
   analysisShowRollingVolume?: boolean;
   analysisWarnVolumeJumpPct?: number;
+  analysisReportLayout?: ReportLayoutPreset;
+  analysisShowLayoutSwitcher?: boolean;
+  analysisShowAiAgent?: boolean;
+  aiAgentMode?: 'heuristic_local' | 'server_endpoint';
+  aiAgentServerUrl?: string;
+  aiAgentApiKey?: string;
+  aiAgentPersona?: 'coach_hardcore' | 'sports_scientist' | 'regenerative' | 'balanced';
+  aiAgentFocus?: 'all_muscles' | 'hypertrophy_volume' | 'strength_progression' | 'fatigue_management';
+  aiAgentResponseLength?: 'concise' | 'detailed' | 'bullet_points';
 }
 
 interface MainLiftSummary {
@@ -79,7 +90,40 @@ interface MainLiftSummary {
 export const MesocycleReportView: React.FC<MesocycleReportViewProps> = ({
   weeks: sourceWeeks = [],
   bodyWeights = [],
-  unit = 'kg', analysisOnlyCompleted = true, analysisStartWeek = 1, analysisEndWeek = 999, analysisIncludePartialHistory = false, analysisRequireHistoryForCompleted = false, analysisMinExecutedSets = 1, analysisShowExecutionSummary = true, analysisShowWeekComparison = true, analysisShowWeeklyTonnage = false, analysisShowWeeklyMetrics = false, analysisShowExecutedDays = true, analysisShowExecutedExercises = true, analysisShowExecutedSets = true, analysisShowExecutedReps = true, analysisShowVolumeDelta = true, analysisShowDataConfidence = true, analysisShowRegularity = false, analysisRegularityTargetPct = 80, analysisShowMonthlyComparison = false, analysisMonthlyMetric = 'volume', analysisShowPeriodComparison = false, analysisPeriodComparisonMetric = 'volume', analysisShowRollingVolume = false, analysisWarnVolumeJumpPct = 30
+  unit = 'kg', 
+  analysisOnlyCompleted = true, 
+  analysisStartWeek = 1, 
+  analysisEndWeek = 999, 
+  analysisIncludePartialHistory = false, 
+  analysisRequireHistoryForCompleted = false, 
+  analysisMinExecutedSets = 1, 
+  analysisShowExecutionSummary = true, 
+  analysisShowWeekComparison = true, 
+  analysisShowWeeklyTonnage = false, 
+  analysisShowWeeklyMetrics = false, 
+  analysisShowExecutedDays = true, 
+  analysisShowExecutedExercises = true, 
+  analysisShowExecutedSets = true, 
+  analysisShowExecutedReps = true, 
+  analysisShowVolumeDelta = true, 
+  analysisShowDataConfidence = true, 
+  analysisShowRegularity = false, 
+  analysisRegularityTargetPct = 80, 
+  analysisShowMonthlyComparison = false, 
+  analysisMonthlyMetric = 'volume', 
+  analysisShowPeriodComparison = false, 
+  analysisPeriodComparisonMetric = 'volume', 
+  analysisShowRollingVolume = false, 
+  analysisWarnVolumeJumpPct = 30,
+  analysisReportLayout,
+  analysisShowLayoutSwitcher = false,
+  analysisShowAiAgent = true,
+  aiAgentMode,
+  aiAgentServerUrl,
+  aiAgentApiKey,
+  aiAgentPersona,
+  aiAgentFocus,
+  aiAgentResponseLength
 }) => {
   const weeks = useMemo(() => scopeAnalysisWeeks(sourceWeeks, analysisStartWeek, analysisEndWeek), [sourceWeeks, analysisStartWeek, analysisEndWeek]);
   const analysisOptions = useMemo<AnalysisExecutionOptions>(() => ({
@@ -352,8 +396,9 @@ export const MesocycleReportView: React.FC<MesocycleReportViewProps> = ({
     });
   }, [weeks, analysisOptions]);
 
-  // Layout Proposal State (Persisted in localStorage)
+  // Layout Proposal State (Persisted in localStorage & AppSettings)
   const [layoutPreset, setLayoutPreset] = useState<ReportLayoutPreset>(() => {
+    if (analysisReportLayout) return analysisReportLayout;
     try {
       const saved = localStorage.getItem('gymtracker_report_layout_preset');
       if (saved && ['bento_left', 'compact_dashboard', 'split_preview', 'executive_strip'].includes(saved)) {
@@ -362,6 +407,12 @@ export const MesocycleReportView: React.FC<MesocycleReportViewProps> = ({
     } catch (_) {}
     return 'bento_left';
   });
+
+  useEffect(() => {
+    if (analysisReportLayout) {
+      setLayoutPreset(analysisReportLayout);
+    }
+  }, [analysisReportLayout]);
 
   const handleSelectPreset = (preset: ReportLayoutPreset) => {
     setLayoutPreset(preset);
@@ -396,82 +447,102 @@ export const MesocycleReportView: React.FC<MesocycleReportViewProps> = ({
 
   return (
     <div className="space-y-6" id="mesocycle-summary-report">
-      {/* ─── GÓRNA BELKA NAWIGACJI / SELEKTOR PROPOZYCJI UKŁADU ─── */}
-      <div className="bg-slate-900/95 backdrop-blur-md border border-slate-800/90 rounded-2xl p-3.5 sm:p-4 shadow-sm flex flex-col xl:flex-row xl:items-center justify-between gap-3.5">
-        <div className="flex items-center gap-2.5">
-          <div className="w-8 h-8 rounded-xl bg-emerald-500/10 border border-emerald-500/30 flex items-center justify-center text-emerald-400 shrink-0">
-            <LayoutGrid className="w-4 h-4" />
-          </div>
-          <div>
-            <div className="flex items-center gap-2">
-              <span className="text-xs font-bold text-white tracking-tight">Układ Raportu & Kafelków</span>
-              <span className="text-[10px] px-1.5 py-0.2 rounded font-mono font-medium text-emerald-400 bg-emerald-500/10 border border-emerald-500/20">
-                4 Propozycje
-              </span>
+      {/* ─── INTELIGENTNY AGENT ANALITYCZNY & AI COACH ─── */}
+      {analysisShowAiAgent !== false && (
+        <AiAgentReportCard
+          weeks={weeks}
+          bodyWeights={bodyWeights}
+          unit={unit}
+          settings={{
+            unit,
+            aiAgentMode,
+            aiAgentServerUrl,
+            aiAgentApiKey,
+            aiAgentPersona,
+            aiAgentFocus,
+            aiAgentResponseLength
+          } as AppSettings}
+        />
+      )}
+
+      {/* ─── GÓRNA BELKA NAWIGACJI / SELEKTOR PROPOZYCJI UKŁADU (OPCJONALNY / Z USTAWIEŃ) ─── */}
+      {analysisShowLayoutSwitcher && (
+        <div className="bg-slate-900/95 backdrop-blur-md border border-slate-800/90 rounded-2xl p-3.5 sm:p-4 shadow-sm flex flex-col xl:flex-row xl:items-center justify-between gap-3.5">
+          <div className="flex items-center gap-2.5">
+            <div className="w-8 h-8 rounded-xl bg-emerald-500/10 border border-emerald-500/30 flex items-center justify-center text-emerald-400 shrink-0">
+              <LayoutGrid className="w-4 h-4" />
             </div>
-            <p className="text-[11px] text-slate-400">Wybierz najbardziej intuicyjną kompozycję kafelków podsumowania:</p>
+            <div>
+              <div className="flex items-center gap-2">
+                <span className="text-xs font-bold text-white tracking-tight">Układ Raportu & Kafelków</span>
+                <span className="text-[10px] px-1.5 py-0.2 rounded font-mono font-medium text-emerald-400 bg-emerald-500/10 border border-emerald-500/20">
+                  4 Propozycje
+                </span>
+              </div>
+              <p className="text-[11px] text-slate-400">Wybierz najbardziej intuicyjną kompozycję kafelków podsumowania:</p>
+            </div>
+          </div>
+
+          {/* 4 Pigułki Przełączania Propozycji */}
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-1.5 p-1 bg-slate-950/80 rounded-xl border border-slate-800/80">
+            <button
+              type="button"
+              onClick={() => handleSelectPreset('bento_left')}
+              className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all flex items-center justify-center gap-1.5 cursor-pointer ${
+                layoutPreset === 'bento_left'
+                  ? 'bg-emerald-500 text-slate-950 font-bold shadow-xs shadow-emerald-500/20'
+                  : 'text-slate-400 hover:text-slate-200 hover:bg-slate-900/60'
+              }`}
+              title="Propozycja 1: Bento z dużą centralą tonażu po lewej stronie"
+            >
+              <Columns className="w-3.5 h-3.5 shrink-0" />
+              <span className="truncate">1. Bento Lewa</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => handleSelectPreset('compact_dashboard')}
+              className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all flex items-center justify-center gap-1.5 cursor-pointer ${
+                layoutPreset === 'compact_dashboard'
+                  ? 'bg-emerald-500 text-slate-950 font-bold shadow-xs shadow-emerald-500/20'
+                  : 'text-slate-400 hover:text-slate-200 hover:bg-slate-900/60'
+              }`}
+              title="Propozycja 2: Klasyczny, symetryczny Dashboard 4-karty Pro z paskami"
+            >
+              <LayoutGrid className="w-3.5 h-3.5 shrink-0" />
+              <span className="truncate">2. Dashboard Pro</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => handleSelectPreset('split_preview')}
+              className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all flex items-center justify-center gap-1.5 cursor-pointer ${
+                layoutPreset === 'split_preview'
+                  ? 'bg-emerald-500 text-slate-950 font-bold shadow-xs shadow-emerald-500/20'
+                  : 'text-slate-400 hover:text-slate-200 hover:bg-slate-900/60'
+              }`}
+              title="Propozycja 3: Split 60/40 - Kafelki po lewej i natychmiastowy wykres po prawej"
+            >
+              <BarChart3 className="w-3.5 h-3.5 shrink-0" />
+              <span className="truncate">3. Split 60/40</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => handleSelectPreset('executive_strip')}
+              className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all flex items-center justify-center gap-1.5 cursor-pointer ${
+                layoutPreset === 'executive_strip'
+                  ? 'bg-emerald-500 text-slate-950 font-bold shadow-xs shadow-emerald-500/20'
+                  : 'text-slate-400 hover:text-slate-200 hover:bg-slate-900/60'
+              }`}
+              title="Propozycja 4: Kompaktowa wstęga wskaźników KPI bez zbędnego scrollowania"
+            >
+              <LayoutList className="w-3.5 h-3.5 shrink-0" />
+              <span className="truncate">4. Wstęga KPI</span>
+            </button>
           </div>
         </div>
-
-        {/* 4 Pigułki Przełączania Propozycji */}
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-1.5 p-1 bg-slate-950/80 rounded-xl border border-slate-800/80">
-          <button
-            type="button"
-            onClick={() => handleSelectPreset('bento_left')}
-            className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all flex items-center justify-center gap-1.5 cursor-pointer ${
-              layoutPreset === 'bento_left'
-                ? 'bg-emerald-500 text-slate-950 font-bold shadow-xs shadow-emerald-500/20'
-                : 'text-slate-400 hover:text-slate-200 hover:bg-slate-900/60'
-            }`}
-            title="Propozycja 1: Bento z dużą centralą tonażu po lewej stronie"
-          >
-            <Columns className="w-3.5 h-3.5 shrink-0" />
-            <span className="truncate">1. Bento Lewa</span>
-          </button>
-
-          <button
-            type="button"
-            onClick={() => handleSelectPreset('compact_dashboard')}
-            className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all flex items-center justify-center gap-1.5 cursor-pointer ${
-              layoutPreset === 'compact_dashboard'
-                ? 'bg-emerald-500 text-slate-950 font-bold shadow-xs shadow-emerald-500/20'
-                : 'text-slate-400 hover:text-slate-200 hover:bg-slate-900/60'
-            }`}
-            title="Propozycja 2: Klasyczny, symetryczny Dashboard 4-karty Pro z paskami"
-          >
-            <LayoutGrid className="w-3.5 h-3.5 shrink-0" />
-            <span className="truncate">2. Dashboard Pro</span>
-          </button>
-
-          <button
-            type="button"
-            onClick={() => handleSelectPreset('split_preview')}
-            className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all flex items-center justify-center gap-1.5 cursor-pointer ${
-              layoutPreset === 'split_preview'
-                ? 'bg-emerald-500 text-slate-950 font-bold shadow-xs shadow-emerald-500/20'
-                : 'text-slate-400 hover:text-slate-200 hover:bg-slate-900/60'
-            }`}
-            title="Propozycja 3: Split 60/40 - Kafelki po lewej i natychmiastowy wykres po prawej"
-          >
-            <BarChart3 className="w-3.5 h-3.5 shrink-0" />
-            <span className="truncate">3. Split 60/40</span>
-          </button>
-
-          <button
-            type="button"
-            onClick={() => handleSelectPreset('executive_strip')}
-            className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all flex items-center justify-center gap-1.5 cursor-pointer ${
-              layoutPreset === 'executive_strip'
-                ? 'bg-emerald-500 text-slate-950 font-bold shadow-xs shadow-emerald-500/20'
-                : 'text-slate-400 hover:text-slate-200 hover:bg-slate-900/60'
-            }`}
-            title="Propozycja 4: Kompaktowa wstęga wskaźników KPI bez zbędnego scrollowania"
-          >
-            <LayoutList className="w-3.5 h-3.5 shrink-0" />
-            <span className="truncate">4. Wstęga KPI</span>
-          </button>
-        </div>
-      </div>
+      )}
 
       {/* ═══════════════════════════════════════════════════════════════════════
           PROPOZYCJA 1: BENTO CENTRALA PO LEWEJ STRONIE (ASYMETRYCZNY NOWOCZESNY)

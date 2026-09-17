@@ -44,9 +44,62 @@ interface StatsViewProps {
   analysisPeriodComparisonMetric?: 'volume' | 'executedSets' | 'executedReps' | 'executedDays';
   analysisShowRollingVolume?: boolean;
   analysisWarnVolumeJumpPct?: number;
+  analysisReportLayout?: 'bento_left' | 'compact_dashboard' | 'split_preview' | 'executive_strip';
+  analysisShowLayoutSwitcher?: boolean;
+  analysisShowAiAgent?: boolean;
+  aiAgentMode?: 'heuristic_local' | 'server_endpoint';
+  aiAgentServerUrl?: string;
+  aiAgentApiKey?: string;
+  aiAgentPersona?: 'coach_hardcore' | 'sports_scientist' | 'regenerative' | 'balanced';
+  aiAgentFocus?: 'all_muscles' | 'hypertrophy_volume' | 'strength_progression' | 'fatigue_management';
+  aiAgentResponseLength?: 'concise' | 'detailed' | 'bullet_points';
 }
 
-export const StatsView: React.FC<StatsViewProps> = ({ weeks, bodyWeights = [], unit, analysisOnlyCompleted = true, analysisStartWeek = 1, analysisEndWeek = 999, analysisIncludePartialHistory = false, analysisRequireHistoryForCompleted = false, analysisMinExecutedSets = 1, analysisShowExecutionSummary = true, analysisShowWeekComparison = true, analysisShowWeeklyTonnage = false, analysisShowWeeklyMetrics = false, analysisShowExecutedDays = true, analysisShowExecutedExercises = true, analysisShowExecutedSets = true, analysisShowExecutedReps = true, analysisShowVolumeDelta = true, analysisShowDataConfidence = true, analysisShowBestE1RM = true, analysisShowLatestResult = true, analysisShowTrendLine = true, analysisShowPRMarkers = true, analysisPRMetric = 'e1RM', analysisStagnationWindow = 4, analysisStagnationMinSessions = 3, analysisShowRegularity = false, analysisRegularityTargetPct = 80, analysisShowMonthlyComparison = false, analysisMonthlyMetric = 'volume', analysisShowPeriodComparison = false, analysisPeriodComparisonMetric = 'volume', analysisShowRollingVolume = false, analysisWarnVolumeJumpPct = 30 }) => {
+export const StatsView: React.FC<StatsViewProps> = ({ 
+  weeks, 
+  bodyWeights = [], 
+  unit, 
+  analysisOnlyCompleted = true, 
+  analysisStartWeek = 1, 
+  analysisEndWeek = 999, 
+  analysisIncludePartialHistory = false, 
+  analysisRequireHistoryForCompleted = false, 
+  analysisMinExecutedSets = 1, 
+  analysisShowExecutionSummary = true, 
+  analysisShowWeekComparison = true, 
+  analysisShowWeeklyTonnage = false, 
+  analysisShowWeeklyMetrics = false, 
+  analysisShowExecutedDays = true, 
+  analysisShowExecutedExercises = true, 
+  analysisShowExecutedSets = true, 
+  analysisShowExecutedReps = true, 
+  analysisShowVolumeDelta = true, 
+  analysisShowDataConfidence = true, 
+  analysisShowBestE1RM = true, 
+  analysisShowLatestResult = true, 
+  analysisShowTrendLine = true, 
+  analysisShowPRMarkers = true, 
+  analysisPRMetric = 'e1RM', 
+  analysisStagnationWindow = 4, 
+  analysisStagnationMinSessions = 3, 
+  analysisShowRegularity = false, 
+  analysisRegularityTargetPct = 80, 
+  analysisShowMonthlyComparison = false, 
+  analysisMonthlyMetric = 'volume', 
+  analysisShowPeriodComparison = false, 
+  analysisPeriodComparisonMetric = 'volume', 
+  analysisShowRollingVolume = false, 
+  analysisWarnVolumeJumpPct = 30,
+  analysisReportLayout,
+  analysisShowLayoutSwitcher = false,
+  analysisShowAiAgent = true,
+  aiAgentMode,
+  aiAgentServerUrl,
+  aiAgentApiKey,
+  aiAgentPersona,
+  aiAgentFocus,
+  aiAgentResponseLength
+}) => {
   const [activeTab, setActiveTab] = useState<'mesocycle_report' | 'exercises_1rm'>('mesocycle_report');
   const scopedWeeks = useMemo(() => scopeAnalysisWeeks(weeks, analysisStartWeek, analysisEndWeek), [weeks, analysisStartWeek, analysisEndWeek]);
   const analysisOptions = useMemo<AnalysisExecutionOptions>(() => ({
@@ -185,7 +238,44 @@ export const StatsView: React.FC<StatsViewProps> = ({ weeks, bodyWeights = [], u
 
       {/* TAB 1: RAPORT PODSUMOWUJĄCY CAŁY CYKL / MEZOCYKL */}
       {activeTab === 'mesocycle_report' && (
-        <MesocycleReportView weeks={weeks} bodyWeights={bodyWeights} unit={unit} analysisOnlyCompleted={analysisOnlyCompleted} analysisStartWeek={analysisStartWeek} analysisEndWeek={analysisEndWeek} analysisIncludePartialHistory={analysisIncludePartialHistory} analysisRequireHistoryForCompleted={analysisRequireHistoryForCompleted} analysisMinExecutedSets={analysisMinExecutedSets} analysisShowExecutionSummary={analysisShowExecutionSummary} analysisShowWeekComparison={analysisShowWeekComparison} analysisShowWeeklyTonnage={analysisShowWeeklyTonnage} analysisShowWeeklyMetrics={analysisShowWeeklyMetrics} analysisShowExecutedDays={analysisShowExecutedDays} analysisShowExecutedExercises={analysisShowExecutedExercises} analysisShowExecutedSets={analysisShowExecutedSets} analysisShowExecutedReps={analysisShowExecutedReps} analysisShowVolumeDelta={analysisShowVolumeDelta} analysisShowDataConfidence={analysisShowDataConfidence} analysisShowRegularity={analysisShowRegularity} analysisRegularityTargetPct={analysisRegularityTargetPct} analysisShowMonthlyComparison={analysisShowMonthlyComparison} analysisMonthlyMetric={analysisMonthlyMetric} analysisShowPeriodComparison={analysisShowPeriodComparison} analysisPeriodComparisonMetric={analysisPeriodComparisonMetric} analysisShowRollingVolume={analysisShowRollingVolume} analysisWarnVolumeJumpPct={analysisWarnVolumeJumpPct} />
+        <MesocycleReportView 
+          weeks={weeks} 
+          bodyWeights={bodyWeights} 
+          unit={unit} 
+          analysisOnlyCompleted={analysisOnlyCompleted} 
+          analysisStartWeek={analysisStartWeek} 
+          analysisEndWeek={analysisEndWeek} 
+          analysisIncludePartialHistory={analysisIncludePartialHistory} 
+          analysisRequireHistoryForCompleted={analysisRequireHistoryForCompleted} 
+          analysisMinExecutedSets={analysisMinExecutedSets} 
+          analysisShowExecutionSummary={analysisShowExecutionSummary} 
+          analysisShowWeekComparison={analysisShowWeekComparison} 
+          analysisShowWeeklyTonnage={analysisShowWeeklyTonnage} 
+          analysisShowWeeklyMetrics={analysisShowWeeklyMetrics} 
+          analysisShowExecutedDays={analysisShowExecutedDays} 
+          analysisShowExecutedExercises={analysisShowExecutedExercises} 
+          analysisShowExecutedSets={analysisShowExecutedSets} 
+          analysisShowExecutedReps={analysisShowExecutedReps} 
+          analysisShowVolumeDelta={analysisShowVolumeDelta} 
+          analysisShowDataConfidence={analysisShowDataConfidence} 
+          analysisShowRegularity={analysisShowRegularity} 
+          analysisRegularityTargetPct={analysisRegularityTargetPct} 
+          analysisShowMonthlyComparison={analysisShowMonthlyComparison} 
+          analysisMonthlyMetric={analysisMonthlyMetric} 
+          analysisShowPeriodComparison={analysisShowPeriodComparison} 
+          analysisPeriodComparisonMetric={analysisPeriodComparisonMetric} 
+          analysisShowRollingVolume={analysisShowRollingVolume} 
+          analysisWarnVolumeJumpPct={analysisWarnVolumeJumpPct}
+          analysisReportLayout={analysisReportLayout}
+          analysisShowLayoutSwitcher={analysisShowLayoutSwitcher}
+          analysisShowAiAgent={analysisShowAiAgent}
+          aiAgentMode={aiAgentMode}
+          aiAgentServerUrl={aiAgentServerUrl}
+          aiAgentApiKey={aiAgentApiKey}
+          aiAgentPersona={aiAgentPersona}
+          aiAgentFocus={aiAgentFocus}
+          aiAgentResponseLength={aiAgentResponseLength}
+        />
       )}
 
       {/* TAB 2: ANALIZA POSZCZEGÓLNYCH ĆWICZEŃ & 1RM */}

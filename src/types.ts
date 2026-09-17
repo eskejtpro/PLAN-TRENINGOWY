@@ -158,6 +158,18 @@ export interface AppSettings {
   analysisPeriodComparisonMetric?: 'volume' | 'executedSets' | 'executedReps' | 'executedDays';
   /** Rolling average tonnage (4 weeks) toggle - hidden by default */
   analysisShowRollingVolume?: boolean;
+  /** Layout preset for Mesocycle report summary cards */
+  analysisReportLayout?: 'bento_left' | 'compact_dashboard' | 'split_preview' | 'executive_strip';
+  /** Toggle visibility of layout switcher on report screen (hidden by default) */
+  analysisShowLayoutSwitcher?: boolean;
+  /** AI Coach / Analytical Agent */
+  analysisShowAiAgent?: boolean;
+  aiAgentMode?: 'heuristic_local' | 'server_endpoint';
+  aiAgentServerUrl?: string;
+  aiAgentApiKey?: string;
+  aiAgentPersona?: 'coach_hardcore' | 'sports_scientist' | 'regenerative' | 'balanced';
+  aiAgentFocus?: 'all_muscles' | 'hypertrophy_volume' | 'strength_progression' | 'fatigue_management';
+  aiAgentResponseLength?: 'concise' | 'detailed' | 'bullet_points';
   /** v2.9: Ultra-sharp display rendering, resolution & pixel density scaling */
   uiScale?: 'compact' | 'standard' | 'high' | 'ultra';
   pixelDensity?: 'ultra' | 'crisp' | 'standard';
