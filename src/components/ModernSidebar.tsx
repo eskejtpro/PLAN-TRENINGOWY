@@ -14,6 +14,7 @@ import {
   Sun,
   ChevronLeft,
   ChevronRight,
+  ChevronDown,
   Sparkles,
   Zap,
   HardDrive,
@@ -23,9 +24,14 @@ import {
   Edit2,
   Wifi,
   WifiOff,
-  UserCheck
+  UserCheck,
+  Flame,
+  Trophy,
+  Shield,
+  RefreshCw,
+  CheckCircle2
 } from 'lucide-react';
-import { AppSettings, UserProfile, SyncServerConfig } from '../types';
+import { AppSettings, UserProfile, SyncServerConfig, TrainingWeek, TrainingDay } from '../types';
 import { AccountProfileModal } from './AccountProfileModal';
 
 interface ModernSidebarProps {
@@ -43,7 +49,20 @@ interface ModernSidebarProps {
   onUpdateProfile?: (updatedProfile: Partial<UserProfile>) => void;
   syncConfig?: SyncServerConfig;
   onUpdateSyncConfig?: (updatedSync: Partial<SyncServerConfig>) => void;
+  currentWeek?: TrainingWeek;
+  selectedDayId?: string;
+  onSelectDay?: (dayId: string) => void;
 }
+
+const WEEKDAY_DEFS = [
+  { key: 'pn', full: 'Poniedziałek', short: 'Pn', aliases: ['poniedziałek', 'poniedzialek', 'pn', 'plan a'] },
+  { key: 'wt', full: 'Wtorek', short: 'Wt', aliases: ['wtorek', 'wt', 'plan b'] },
+  { key: 'sr', full: 'Środa', short: 'Śr', aliases: ['środa', 'sroda', 'sr', 'plan c'] },
+  { key: 'cz', full: 'Czwartek', short: 'Cz', aliases: ['czwartek', 'cz', 'plan d'] },
+  { key: 'pt', full: 'Piątek', short: 'Pt', aliases: ['piątek', 'piatek', 'pt', 'plan e'] },
+  { key: 'sb', full: 'Sobota', short: 'Sb', aliases: ['sobota', 'sb', 'plan f'] },
+  { key: 'nd', full: 'Niedziela', short: 'Nd', aliases: ['niedziela', 'nd', 'plan g'] },
+];
 
 const PRESET_EMOJIS: Record<string, { emoji: string; bg: string }> = {
   'preset:muscle': { emoji: '💪', bg: 'from-amber-500 to-orange-600' },
@@ -70,15 +89,78 @@ export const ModernSidebar: React.FC<ModernSidebarProps> = ({
   profile,
   onUpdateProfile,
   syncConfig,
-  onUpdateSyncConfig
+  onUpdateSyncConfig,
+  currentWeek,
+  selectedDayId,
+  onSelectDay
 }) => {
   const isDark = settings.theme === 'dark';
   const isRight = position === 'right';
   const [isAccountModalOpen, setIsAccountModalOpen] = useState(false);
+  const [isPlanDaysOpen, setIsPlanDaysOpen] = useState(true);
+  const [isWeightSubcategoriesOpen, setIsWeightSubcategoriesOpen] = useState(true);
 
   const athleteName = profile?.name || settings.athleteName || 'Pasik92';
   const isServerConnected = (syncConfig?.lastSyncStatus || 'connected') === 'connected';
   const serverPing = syncConfig?.lastPingMs || 14;
+
+  const appTitle = settings.customAppName || 'GYMTRACKER';
+  const appSubtitle = settings.customAppSubtitle || 'Workspace Treningowy';
+
+  const planDaysList = (() => {
+    const days = currentWeek?.days || [];
+    const assignedDayIds = new Set<string>();
+
+    return WEEKDAY_DEFS.map((def, index) => {
+      // 1. Try finding by matching weekday in day name
+      let matched = days.find((d) => {
+        if (assignedDayIds.has(d.id)) return false;
+        const lower = d.name.toLowerCase();
+        return (
+          lower.includes(def.full.toLowerCase()) ||
+          lower.startsWith(def.short.toLowerCase() + ' ') ||
+          lower.startsWith(def.short.toLowerCase() + ' -') ||
+          lower.startsWith(def.short.toLowerCase() + ':') ||
+          lower.startsWith(def.short.toLowerCase() + '–')
+        );
+      });
+
+      // 2. Match aliases
+      if (!matched) {
+        matched = days.find(
+          (d) => !assignedDayIds.has(d.id) && def.aliases.some((alias) => d.name.toLowerCase().includes(alias))
+        );
+      }
+
+      // 3. Fallback by index
+      if (!matched && days[index] && !assignedDayIds.has(days[index].id)) {
+        matched = days[index];
+      }
+
+      if (matched) {
+        assignedDayIds.add(matched.id);
+      }
+
+      return {
+        key: def.key,
+        weekdayName: def.full,
+        shortName: def.short,
+        day: matched || null,
+        isEmpty: !matched,
+      };
+    });
+  })();
+
+  const renderAppIcon = () => {
+    switch (settings.customAppIcon) {
+      case 'flame': return <Flame className="w-5 h-5" />;
+      case 'trophy': return <Trophy className="w-5 h-5" />;
+      case 'zap': return <Zap className="w-5 h-5" />;
+      case 'activity': return <Activity className="w-5 h-5" />;
+      case 'shield': return <Shield className="w-5 h-5" />;
+      default: return <Dumbbell className="w-5 h-5" />;
+    }
+  };
 
   const renderSidebarAvatar = (size = 'small') => {
     const avatarUrl = profile?.avatarUrl;
@@ -158,17 +240,9 @@ export const ModernSidebar: React.FC<ModernSidebarProps> = ({
     },
     {
       id: 'settings',
-      label: 'Ustawienia & Backup',
+      label: 'Ustawienia',
       icon: Settings,
-      description: 'Auto-Backup JSON i konfiguracja'
-    },
-    {
-      id: 'python',
-      label: 'Kod Pythona & EXE',
-      icon: Code2,
-      badge: 'Windows',
-      badgeColor: 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20',
-      description: 'Tkinter desktop .exe generator'
+      description: 'Auto-Backup JSON, kody Windows i konfiguracja'
     }
   ];
 
@@ -185,20 +259,20 @@ export const ModernSidebar: React.FC<ModernSidebarProps> = ({
       <div className={`p-4 border-b flex items-center ${isDark ? 'border-slate-800/80' : 'border-slate-100'} ${isCollapsed ? 'justify-center' : 'justify-between'}`}>
         <div className="flex items-center gap-3 overflow-hidden">
           <div className="w-9 h-9 rounded-xl bg-gradient-to-tr from-emerald-600 to-teal-400 flex items-center justify-center text-white shadow-md shadow-emerald-950/40 shrink-0">
-            <Dumbbell className="w-5 h-5" />
+            {renderAppIcon()}
           </div>
           {!isCollapsed && (
             <div className="leading-tight">
               <div className="flex items-center gap-1.5">
-                <span className={`font-extrabold text-sm tracking-tight font-sans ${isDark ? 'text-white' : 'text-slate-900'}`}>
-                  GYM<span className="text-emerald-400">TRACKER</span>
+                <span className={`font-extrabold text-sm tracking-tight font-sans truncate max-w-[125px] ${isDark ? 'text-white' : 'text-slate-900'}`}>
+                  {appTitle}
                 </span>
-                <span className="text-[9px] px-1.5 py-0.2 rounded-full font-bold uppercase tracking-wider bg-emerald-500/15 text-emerald-400 border border-emerald-500/30">
+                <span className="text-[9px] px-1.5 py-0.2 rounded-full font-bold uppercase tracking-wider bg-emerald-500/15 text-emerald-400 border border-emerald-500/30 shrink-0">
                   PRO
                 </span>
               </div>
-              <p className={`text-[11px] truncate ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>
-                Workspace Treningowy
+              <p className={`text-[11px] truncate max-w-[140px] ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>
+                {appSubtitle}
               </p>
             </div>
           )}
@@ -236,9 +310,11 @@ export const ModernSidebar: React.FC<ModernSidebarProps> = ({
           <nav className="space-y-1">
             {navItems.map((item) => {
               const Icon = item.icon;
-              const isActive = activeView === item.id;
+              const isActive = activeView === item.id || (item.id === 'weight' && activeView.startsWith('weight'));
+              const isPlan = item.id === 'plan';
               const isWeight = item.id === 'weight';
-              const showSubcategories = isWeight && !isCollapsed;
+              const showPlanSubcategories = isPlan && !isCollapsed && isPlanDaysOpen;
+              const showWeightSubcategories = isWeight && !isCollapsed && isWeightSubcategoriesOpen;
 
               return (
                 <div key={item.id} className="space-y-1">
@@ -249,9 +325,17 @@ export const ModernSidebar: React.FC<ModernSidebarProps> = ({
                     data-annotation-title={item.label}
                     data-annotation-desc={item.description}
                     data-annotation-category="Trening & Analityka"
-                    onClick={() => onSelectView(item.id)}
+                    onClick={() => {
+                      onSelectView(item.id);
+                      if (isPlan) {
+                        setIsPlanDaysOpen(!isPlanDaysOpen);
+                      }
+                      if (isWeight) {
+                        setIsWeightSubcategoriesOpen(!isWeightSubcategoriesOpen);
+                      }
+                    }}
                     title={isCollapsed ? item.label : undefined}
-                    className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-xs font-semibold transition-all group relative ${
+                    className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-xs font-semibold transition-all group relative cursor-pointer ${
                       isActive
                         ? isDark
                           ? 'bg-gradient-to-r from-emerald-500/15 to-teal-500/5 text-emerald-400 border border-emerald-500/30 shadow-xs'
@@ -261,7 +345,7 @@ export const ModernSidebar: React.FC<ModernSidebarProps> = ({
                           : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
                     } ${isCollapsed ? 'justify-center px-2' : ''}`}
                   >
-                    <div className={`p-1.5 rounded-lg transition-colors ${
+                    <div className={`p-1.5 rounded-lg transition-colors shrink-0 ${
                       isActive 
                         ? isDark ? 'bg-emerald-500/20 text-emerald-400' : 'bg-emerald-600 text-white' 
                         : isDark ? 'bg-slate-900 text-slate-400 group-hover:text-slate-200' : 'bg-slate-100 text-slate-600 group-hover:text-slate-900'
@@ -270,7 +354,7 @@ export const ModernSidebar: React.FC<ModernSidebarProps> = ({
                     </div>
 
                     {!isCollapsed && (
-                      <div className="flex-1 text-left flex items-center justify-between">
+                      <div className="flex-1 text-left flex items-center justify-between min-w-0">
                         <span className="truncate">{item.label}</span>
                         {item.badge && (
                           <span className={`text-[10px] px-1.5 py-0.5 rounded-md font-mono ${
@@ -289,9 +373,99 @@ export const ModernSidebar: React.FC<ModernSidebarProps> = ({
                     )}
                   </button>
 
-                  {/* Podkategorie pod kategorią WAGA CIAŁA o mniejszym, estetycznym wyglądzie */}
-                  {showSubcategories && (
-                    <div className="ml-5 pl-2.5 border-l border-slate-800/80 space-y-0.5 my-1">
+                  {/* Podkategorie pod kategorią PLAN TRENINGOWY - zwijane / rozwijane 7 dni tygodnia */}
+                  {showPlanSubcategories && (
+                    <div className="ml-5 pl-2.5 border-l border-slate-800/80 space-y-0.5 my-1 animate-fadeIn">
+                      {planDaysList.map((slot) => {
+                        const isSelected = activeView === 'plan' && slot.day && selectedDayId === slot.day.id;
+
+                        if (!slot.isEmpty && slot.day) {
+                          const day = slot.day;
+                          // Usuwamy powtarzający się prefiks dnia tygodnia z nazwy planu jeśli występuje
+                          const cleanPlanName = day.name.replace(new RegExp(`^${slot.weekdayName}\\s*[-–:]?\\s*`, 'i'), '').trim();
+
+                          return (
+                            <button
+                              key={slot.key}
+                              type="button"
+                              id={`sidebar-subnav-plan-day-${slot.key}`}
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                onSelectView('plan');
+                                onSelectDay?.(day.id);
+                              }}
+                              className={`w-full flex items-center justify-between gap-1.5 px-2 py-1 rounded-lg text-[11px] font-medium transition-all group cursor-pointer ${
+                                isSelected
+                                  ? isDark
+                                    ? 'bg-emerald-500/15 text-emerald-300 font-bold border border-emerald-500/30 shadow-xs'
+                                    : 'bg-emerald-100 text-emerald-800 font-bold border border-emerald-200'
+                                  : isDark
+                                    ? 'text-slate-300 hover:text-white hover:bg-slate-900/70'
+                                    : 'text-slate-700 hover:text-slate-900 hover:bg-slate-100'
+                              }`}
+                              title={`${day.name} (${day.exercises.length} ćwiczeń)`}
+                            >
+                              <div className="flex items-center gap-1.5 min-w-0 truncate">
+                                <span className={`w-4.5 h-4.5 rounded flex items-center justify-center font-mono text-[9px] font-bold shrink-0 ${
+                                  isSelected
+                                    ? 'bg-emerald-500 text-slate-950'
+                                    : isDark ? 'bg-slate-900 text-slate-400 border border-slate-800' : 'bg-slate-200 text-slate-700'
+                                }`}>
+                                  {slot.shortName}
+                                </span>
+                                <span className="truncate">{cleanPlanName ? `${slot.weekdayName}: ${cleanPlanName}` : slot.weekdayName}</span>
+                              </div>
+
+                              <div className="flex items-center gap-1 shrink-0">
+                                {day.completed ? (
+                                  <span className="text-[10px] text-emerald-400 font-bold" title="Trening ukończony">✓</span>
+                                ) : (
+                                  <span className={`text-[9px] px-1 py-0.5 rounded font-mono ${
+                                    isDark ? 'bg-slate-900/90 text-slate-400' : 'bg-slate-200/80 text-slate-600'
+                                  }`}>
+                                    {day.exercises.length} ćw.
+                                  </span>
+                                )}
+                              </div>
+                            </button>
+                          );
+                        }
+
+                        // Pusty dzień (brak przypisanego cyklu / treningu w tym tygodniu)
+                        return (
+                          <button
+                            key={slot.key}
+                            type="button"
+                            id={`sidebar-subnav-plan-day-${slot.key}-empty`}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              onSelectView('plan');
+                            }}
+                            className={`w-full flex items-center justify-between gap-1.5 px-2 py-0.5 rounded-lg text-[11px] transition-all cursor-pointer ${
+                              isDark 
+                                ? 'text-slate-500 hover:text-slate-300 hover:bg-slate-900/40' 
+                                : 'text-slate-400 hover:text-slate-600 hover:bg-slate-100/60'
+                            }`}
+                            title={`${slot.weekdayName} - Brak zapisanego treningu w bieżącym tygodniu`}
+                          >
+                            <div className="flex items-center gap-1.5 min-w-0 truncate">
+                              <span className={`w-4.5 h-4.5 rounded flex items-center justify-center font-mono text-[9px] font-medium shrink-0 opacity-60 ${
+                                isDark ? 'bg-slate-900/60 text-slate-500 border border-slate-800/40' : 'bg-slate-100 text-slate-400'
+                              }`}>
+                                {slot.shortName}
+                              </span>
+                              <span className="truncate">{slot.weekdayName}</span>
+                            </div>
+                            <span className="text-[9px] font-mono italic opacity-60">(pusty)</span>
+                          </button>
+                        );
+                      })}
+                    </div>
+                  )}
+
+                  {/* Podkategorie pod kategorią WAGA CIAŁA - zwijane / rozwijane */}
+                  {showWeightSubcategories && (
+                    <div className="ml-5 pl-2.5 border-l border-slate-800/80 space-y-0.5 my-1 animate-fadeIn">
                       {[
                         { id: 'all', label: 'Wszystkie sekcje', icon: Layers },
                         { id: 'register', label: 'Rejestr & Trendy', icon: Scale },
@@ -300,7 +474,7 @@ export const ModernSidebar: React.FC<ModernSidebarProps> = ({
                         { id: 'circumferences', label: 'Obwody & 1RM', icon: Activity },
                       ].map((sub) => {
                         const SubIcon = sub.icon;
-                        const isSubActive = activeView === 'weight' && weightSubcategory === sub.id;
+                        const isSubActive = (activeView === 'weight' || activeView.startsWith('weight')) && weightSubcategory === sub.id;
 
                         return (
                           <button
@@ -334,11 +508,11 @@ export const ModernSidebar: React.FC<ModernSidebarProps> = ({
           </nav>
         </div>
 
-        {/* System & Tools */}
+        {/* System */}
         <div>
           {!isCollapsed && (
             <h5 className={`px-3 mb-2 text-[10px] font-bold uppercase tracking-wider ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>
-              System & Kopia
+              System
             </h5>
           )}
           <nav className="space-y-1">
@@ -353,7 +527,7 @@ export const ModernSidebar: React.FC<ModernSidebarProps> = ({
                   data-view={item.id}
                   data-annotation-title={item.label}
                   data-annotation-desc={item.description}
-                  data-annotation-category="System & Narzędzia"
+                  data-annotation-category="System"
                   onClick={() => onSelectView(item.id)}
                   title={isCollapsed ? item.label : undefined}
                   className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-xs font-semibold transition-all group relative ${
@@ -469,9 +643,12 @@ export const ModernSidebar: React.FC<ModernSidebarProps> = ({
 
             {/* Sync status & theme toggle */}
             <div className="flex items-center justify-between px-1 text-[11px]">
-              <span className={`flex items-center gap-1.5 truncate max-w-[130px] font-mono text-[10px] ${isDark ? 'text-slate-400' : 'text-slate-500'}`} title={autoSaveStatus}>
-                <HardDrive className="w-3 h-3 text-emerald-400 shrink-0" />
-                <span className="truncate">{autoSaveStatus}</span>
+              <span 
+                className={`flex items-center gap-1.5 truncate max-w-[130px] font-mono text-[10px] ${isDark ? 'text-slate-300' : 'text-slate-600'}`} 
+                title={isServerConnected ? `Połączono z serwerem (${serverPing}ms) • Trwa synchronizacja w czasie rzeczywistym` : 'Synchronizacja lokalna'}
+              >
+                <RefreshCw className="w-3 h-3 text-emerald-400 shrink-0 animate-spin" style={{ animationDuration: '3.5s' }} />
+                <span className="truncate font-semibold text-emerald-400/90">{isServerConnected ? 'Synchronizacja...' : 'Tryb Lokalny'}</span>
               </span>
 
               <div className="flex items-center gap-1.5">

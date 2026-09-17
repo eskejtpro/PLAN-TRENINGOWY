@@ -22,22 +22,40 @@ import { persistence } from './utils/persistence';
 
 const STORAGE_KEY = 'gymtracker_windows_data_v1';
 const BACKUPS_STORAGE_KEY = 'gymtracker_autobackups_v1';
-const normalizeGymData = (raw: GymData): GymData => ({
-  ...raw,
-  circumferences: Array.isArray(raw.circumferences) ? raw.circumferences : [],
-  bodyPartMeasurements: Array.isArray(raw.bodyPartMeasurements)
-    ? raw.bodyPartMeasurements
-    : (initialGymData.bodyPartMeasurements || []),
-  profile: raw.profile || initialGymData.profile,
-  profilesList: Array.isArray(raw.profilesList) && raw.profilesList.length > 0
-    ? raw.profilesList
-    : (initialGymData.profilesList || []),
-  syncConfig: raw.syncConfig || initialGymData.syncConfig,
-  syncLogs: Array.isArray(raw.syncLogs) ? raw.syncLogs : (initialGymData.syncLogs || []),
-  catalogExercises: Array.isArray(raw.catalogExercises) && raw.catalogExercises.length > 0
-    ? raw.catalogExercises
-    : DEFAULT_CATALOG_EXERCISES
-});
+const normalizeGymData = (raw: GymData): GymData => {
+  const rawSettings = raw.settings || {};
+  const isMigrated = (rawSettings as { _analysisSectionsHiddenDefaultV2?: boolean })._analysisSectionsHiddenDefaultV2 === true;
+  const migratedSettings: AppSettings = {
+    ...initialGymData.settings,
+    ...rawSettings,
+    ...(isMigrated ? {} : {
+      analysisShowWeeklyTonnage: false,
+      analysisShowWeeklyMetrics: false,
+      analysisShowRegularity: false,
+      analysisShowMonthlyComparison: false,
+      analysisShowPeriodComparison: false,
+      _analysisSectionsHiddenDefaultV2: true,
+    } as Partial<AppSettings>),
+  };
+
+  return {
+    ...raw,
+    settings: migratedSettings,
+    circumferences: Array.isArray(raw.circumferences) ? raw.circumferences : [],
+    bodyPartMeasurements: Array.isArray(raw.bodyPartMeasurements)
+      ? raw.bodyPartMeasurements
+      : (initialGymData.bodyPartMeasurements || []),
+    profile: raw.profile || initialGymData.profile,
+    profilesList: Array.isArray(raw.profilesList) && raw.profilesList.length > 0
+      ? raw.profilesList
+      : (initialGymData.profilesList || []),
+    syncConfig: raw.syncConfig || initialGymData.syncConfig,
+    syncLogs: Array.isArray(raw.syncLogs) ? raw.syncLogs : (initialGymData.syncLogs || []),
+    catalogExercises: Array.isArray(raw.catalogExercises) && raw.catalogExercises.length > 0
+      ? raw.catalogExercises
+      : DEFAULT_CATALOG_EXERCISES
+  };
+};
 
 export default function App() {
   const [data, setData] = useState<GymData>(() => {
@@ -1003,6 +1021,9 @@ export default function App() {
           onUpdateProfile={handleUpdateProfile}
           syncConfig={data.syncConfig}
           onUpdateSyncConfig={handleUpdateSyncConfig}
+          currentWeek={currentWeek}
+          selectedDayId={selectedDayId}
+          onSelectDay={setSelectedDayId}
         />
       </div>
 
@@ -1081,8 +1102,8 @@ export default function App() {
               analysisWarnMissingHistory={data.settings.analysisWarnMissingHistory !== false}
               analysisShowExecutionSummary={data.settings.analysisShowExecutionSummary !== false}
               analysisShowWeekComparison={data.settings.analysisShowWeekComparison !== false}
-              analysisShowWeeklyTonnage={data.settings.analysisShowWeeklyTonnage !== false}
-              analysisShowWeeklyMetrics={data.settings.analysisShowWeeklyMetrics !== false}
+              analysisShowWeeklyTonnage={data.settings.analysisShowWeeklyTonnage === true}
+              analysisShowWeeklyMetrics={data.settings.analysisShowWeeklyMetrics === true}
               analysisShowExecutedDays={data.settings.analysisShowExecutedDays !== false}
               analysisShowExecutedExercises={data.settings.analysisShowExecutedExercises !== false}
               analysisShowExecutedSets={data.settings.analysisShowExecutedSets !== false}
@@ -1096,12 +1117,13 @@ export default function App() {
               analysisPRMetric={data.settings.analysisPRMetric || 'e1RM'}
               analysisStagnationWindow={data.settings.analysisStagnationWindow || 4}
               analysisStagnationMinSessions={data.settings.analysisStagnationMinSessions || 3}
-              analysisShowRegularity={data.settings.analysisShowRegularity !== false}
+              analysisShowRegularity={data.settings.analysisShowRegularity === true}
               analysisRegularityTargetPct={data.settings.analysisRegularityTargetPct || 80}
-              analysisShowMonthlyComparison={data.settings.analysisShowMonthlyComparison !== false}
+              analysisShowMonthlyComparison={data.settings.analysisShowMonthlyComparison === true}
               analysisMonthlyMetric={data.settings.analysisMonthlyMetric || 'volume'}
-              analysisShowPeriodComparison={data.settings.analysisShowPeriodComparison !== false}
+              analysisShowPeriodComparison={data.settings.analysisShowPeriodComparison === true}
               analysisPeriodComparisonMetric={data.settings.analysisPeriodComparisonMetric || 'volume'}
+              analysisShowRollingVolume={data.settings.analysisShowRollingVolume === true}
             />
           )}
 
@@ -1222,6 +1244,9 @@ export default function App() {
               onUpdateProfile={handleUpdateProfile}
               syncConfig={data.syncConfig}
               onUpdateSyncConfig={handleUpdateSyncConfig}
+              currentWeek={currentWeek}
+              selectedDayId={selectedDayId}
+              onSelectDay={setSelectedDayId}
             />
           </div>
         </div>

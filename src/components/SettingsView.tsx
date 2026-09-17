@@ -1,7 +1,40 @@
 import React, { useState } from 'react';
-import { Settings, Save, Download, Upload, RotateCcw, Folder, Check, Copy, ShieldCheck, Archive, Clock, RefreshCw, Trash2, HardDrive, Smartphone, Wifi, ArrowRight, Shield, Sparkles, Info, Monitor } from 'lucide-react';
+import { 
+  Settings, 
+  Save, 
+  Download, 
+  Upload, 
+  RotateCcw, 
+  Folder, 
+  Check, 
+  Copy, 
+  ShieldCheck, 
+  Archive, 
+  Clock, 
+  RefreshCw, 
+  Trash2, 
+  HardDrive, 
+  Smartphone, 
+  Wifi, 
+  ArrowRight, 
+  Shield, 
+  Sparkles, 
+  Info, 
+  Monitor,
+  Dumbbell,
+  Flame,
+  Trophy,
+  Zap,
+  Activity,
+  Code2,
+  ChevronDown,
+  ChevronUp,
+  FileCode,
+  Terminal
+} from 'lucide-react';
 import { GymData, AppSettings, BackupEntry, SyncServerConfig } from '../types';
 import { initialGymData } from '../data/initialData';
+import { PYTHON_SOURCE_CODE, BAT_SCRIPT_CODE, REQUIREMENTS_TXT, INSTALL_BAT_CODE } from '../data/pythonSource';
 
 interface SettingsViewProps {
   data: GymData;
@@ -34,6 +67,9 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
 }) => {
   const [copied, setCopied] = useState(false);
   const [importError, setImportError] = useState('');
+  const [isPythonSectionOpen, setIsPythonSectionOpen] = useState(false);
+  const [selectedScriptTab, setSelectedScriptTab] = useState<'bat' | 'install' | 'python' | 'req'>('bat');
+  const [copiedScript, setCopiedScript] = useState(false);
 
   const jsonString = JSON.stringify(data, null, 2);
   const diagnostics = (() => {
@@ -265,6 +301,88 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
             />
           </div>
 
+          {/* Personalizacja Logo i Nazwy Aplikacji (Branding) */}
+          <div className="p-3.5 rounded-xl bg-slate-950 border border-slate-800 space-y-3">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <Sparkles className="w-4 h-4 text-emerald-400" />
+                <span className="text-xs font-bold text-slate-200">Personalizacja Logo &amp; Nazwy Programu</span>
+              </div>
+              {(data.settings.customAppName || data.settings.customAppSubtitle || data.settings.customAppIcon) && (
+                <button
+                  type="button"
+                  onClick={() => onUpdateSettings({ customAppName: undefined, customAppSubtitle: undefined, customAppIcon: undefined })}
+                  className="text-[10px] text-slate-400 hover:text-emerald-400 underline transition-colors"
+                >
+                  Przywróć domyślne
+                </button>
+              )}
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div>
+                <label className="block text-[11px] font-semibold text-slate-400 mb-1">
+                  Tytuł programu w menu:
+                </label>
+                <input
+                  type="text"
+                  placeholder="np. GYMTRACKER"
+                  value={data.settings.customAppName || ''}
+                  onChange={(e) => onUpdateSettings({ customAppName: e.target.value })}
+                  className="w-full px-2.5 py-1.5 rounded-lg bg-slate-900 border border-slate-700 text-slate-200 text-xs"
+                />
+              </div>
+              <div>
+                <label className="block text-[11px] font-semibold text-slate-400 mb-1">
+                  Podtytuł programu:
+                </label>
+                <input
+                  type="text"
+                  placeholder="np. Workspace Treningowy"
+                  value={data.settings.customAppSubtitle || ''}
+                  onChange={(e) => onUpdateSettings({ customAppSubtitle: e.target.value })}
+                  className="w-full px-2.5 py-1.5 rounded-lg bg-slate-900 border border-slate-700 text-slate-200 text-xs"
+                />
+              </div>
+            </div>
+
+            {/* Wybór Ikony */}
+            <div>
+              <label className="block text-[11px] font-semibold text-slate-400 mb-1.5">
+                Ikona w nagłówku menu:
+              </label>
+              <div className="grid grid-cols-6 gap-1.5">
+                {[
+                  { id: 'dumbbell' as const, label: 'Hantel', icon: Dumbbell },
+                  { id: 'flame' as const, label: 'Ogień', icon: Flame },
+                  { id: 'trophy' as const, label: 'Puchar', icon: Trophy },
+                  { id: 'zap' as const, label: 'Błysk', icon: Zap },
+                  { id: 'activity' as const, label: 'Puls', icon: Activity },
+                  { id: 'shield' as const, label: 'Tarcza', icon: Shield },
+                ].map((item) => {
+                  const Icon = item.icon;
+                  const isSelected = (data.settings.customAppIcon || 'dumbbell') === item.id;
+                  return (
+                    <button
+                      key={item.id}
+                      type="button"
+                      onClick={() => onUpdateSettings({ customAppIcon: item.id })}
+                      className={`flex flex-col items-center justify-center p-2 rounded-lg border transition-all ${
+                        isSelected
+                          ? 'bg-emerald-600 text-white border-emerald-500 shadow-xs'
+                          : 'bg-slate-900 text-slate-400 border-slate-800 hover:bg-slate-800 hover:text-slate-200'
+                      }`}
+                      title={item.label}
+                    >
+                      <Icon className="w-4 h-4" />
+                      <span className="text-[9px] mt-1 truncate max-w-full font-medium">{item.label}</span>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          </div>
+
           {/* Auto Save Toggle */}
           <div className="flex items-center justify-between p-3 rounded-lg bg-slate-950 border border-slate-800">
             <div>
@@ -439,18 +557,21 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
 
                 <label
                   id="chk-analysis-weekly-tonnage"
-                  data-annotation-title="Wykres Tonażu Tygodniowego"
-                  data-annotation-desc="Wizualizuje sumę podniesionych kilogramów w całym tygodniu w formie słupków."
+                  data-annotation-title="Wykres Tonażu Tygodniowego (Domyślnie ukryty)"
+                  data-annotation-desc="Wizualizuje sumę podniesionych kilogramów w całym tygodniu w formie słupków. Opcja domyślnie ukryta w raporcie mezocyklu."
                   data-annotation-category="Wykresy Objętości"
-                  className="flex items-center gap-2 p-2 rounded-lg bg-slate-950 border border-slate-800 hover:border-slate-700 transition-colors cursor-pointer"
+                  className="flex items-center justify-between gap-2 p-2 rounded-lg bg-slate-950 border border-slate-800 hover:border-slate-700 transition-colors cursor-pointer"
                 >
-                  <input
-                    type="checkbox"
-                    checked={data.settings.analysisShowWeeklyTonnage !== false}
-                    onChange={(e) => onUpdateSettings({ analysisShowWeeklyTonnage: e.target.checked })}
-                    className="accent-emerald-500 cursor-pointer"
-                  />
-                  <span>Pokaż tonaż tygodniowy</span>
+                  <div className="flex items-center gap-2">
+                    <input
+                      type="checkbox"
+                      checked={data.settings.analysisShowWeeklyTonnage === true}
+                      onChange={(e) => onUpdateSettings({ analysisShowWeeklyTonnage: e.target.checked })}
+                      className="accent-emerald-500 cursor-pointer"
+                    />
+                    <span>Pokaż / Przywróć tonaż tygodniowy</span>
+                  </div>
+                  <span className="text-[9px] px-1.5 py-0.5 rounded bg-slate-900 border border-slate-800 text-slate-400 font-mono">Domyślnie ukryte</span>
                 </label>
 
                 <label
@@ -522,18 +643,21 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
 
                 <label
                   id="chk-analysis-weekly-metrics"
-                  data-annotation-title="Kafelki Metryk Tygodniowych"
-                  data-annotation-desc="Wyświetla zbiorcze kafelki z liczbą sesji, zróżnicowaniem ćwiczeń i średnią objętością."
+                  data-annotation-title="Kafelki Metryk Tygodniowych (Domyślnie ukryte)"
+                  data-annotation-desc="Wyświetla zbiorcze kafelki z liczbą sesji, zróżnicowaniem ćwiczeń i średnią objętością. Opcja domyślnie ukryta w raporcie mezocyklu."
                   data-annotation-category="Wskaźniki Tygodniowe"
-                  className="flex items-center gap-2 p-2 rounded-lg bg-slate-950 border border-slate-800 hover:border-slate-700 transition-colors cursor-pointer"
+                  className="flex items-center justify-between gap-2 p-2 rounded-lg bg-slate-950 border border-slate-800 hover:border-slate-700 transition-colors cursor-pointer"
                 >
-                  <input
-                    type="checkbox"
-                    checked={data.settings.analysisShowWeeklyMetrics !== false}
-                    onChange={(e) => onUpdateSettings({ analysisShowWeeklyMetrics: e.target.checked })}
-                    className="accent-emerald-500 cursor-pointer"
-                  />
-                  <span>Pokaż metryki tygodniowe</span>
+                  <div className="flex items-center gap-2">
+                    <input
+                      type="checkbox"
+                      checked={data.settings.analysisShowWeeklyMetrics === true}
+                      onChange={(e) => onUpdateSettings({ analysisShowWeeklyMetrics: e.target.checked })}
+                      className="accent-emerald-500 cursor-pointer"
+                    />
+                    <span>Pokaż / Przywróć metryki tygodniowe</span>
+                  </div>
+                  <span className="text-[9px] px-1.5 py-0.5 rounded bg-slate-900 border border-slate-800 text-slate-400 font-mono">Domyślnie ukryte</span>
                 </label>
               </div>
             </div>
@@ -798,22 +922,57 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
 
             {/* Podgrupa 5: Regularność, Częstotliwość i Długie Okresy */}
             <div className="space-y-1.5 pt-2 border-t border-slate-800/60">
-              <span className="text-[10px] font-bold uppercase tracking-wider text-emerald-400">5. Regularność, Częstotliwość i Długie Okresy</span>
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                <span className="text-[10px] font-bold uppercase tracking-wider text-emerald-400">5. Regularność, Częstotliwość i Długie Okresy</span>
+                <div className="flex items-center gap-1.5 self-start sm:self-auto">
+                  <button
+                    type="button"
+                    onClick={() => onUpdateSettings({
+                      analysisShowWeeklyTonnage: true,
+                      analysisShowWeeklyMetrics: true,
+                      analysisShowRegularity: true,
+                      analysisShowMonthlyComparison: true,
+                      analysisShowPeriodComparison: true,
+                    })}
+                    className="px-2 py-0.5 rounded bg-emerald-500/10 border border-emerald-500/30 text-emerald-300 hover:bg-emerald-500/20 text-[10px] font-bold transition-all"
+                    title="Przywraca wszystkie ukryte wykresy i tabele w raporcie mezocyklu"
+                  >
+                    Pokaż wszystkie sekcje raportu
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => onUpdateSettings({
+                      analysisShowWeeklyTonnage: false,
+                      analysisShowWeeklyMetrics: false,
+                      analysisShowRegularity: false,
+                      analysisShowMonthlyComparison: false,
+                      analysisShowPeriodComparison: false,
+                    })}
+                    className="px-2 py-0.5 rounded bg-slate-900 border border-slate-700 text-slate-400 hover:text-slate-200 hover:bg-slate-800 text-[10px] font-medium transition-all"
+                    title="Ukrywa sekcje periodyzacji i porównań zgodnie z domyślnym widokiem"
+                  >
+                    Schowaj sekcje (Domyślne)
+                  </button>
+                </div>
+              </div>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-[11px]">
                 <label
                   id="chk-analysis-regularity"
-                  data-annotation-title="Wykres Regularności Treningowej"
-                  data-annotation-desc="Wykres systematyczności treningów w ujęciu tygodniowym (odbyte sesje vs zaplanowane)."
+                  data-annotation-title="Wykres Regularności Treningowej (Domyślnie ukryty)"
+                  data-annotation-desc="Wykres systematyczności treningów w ujęciu tygodniowym (odbyte sesje vs zaplanowane). Domyślnie ukryty w raporcie mezocyklu."
                   data-annotation-category="Dyscyplina"
-                  className="flex items-center gap-2 p-2 rounded-lg bg-slate-950 border border-slate-800 hover:border-slate-700 transition-colors cursor-pointer"
+                  className="flex items-center justify-between gap-2 p-2 rounded-lg bg-slate-950 border border-slate-800 hover:border-slate-700 transition-colors cursor-pointer"
                 >
-                  <input
-                    type="checkbox"
-                    checked={data.settings.analysisShowRegularity !== false}
-                    onChange={(e) => onUpdateSettings({ analysisShowRegularity: e.target.checked })}
-                    className="accent-emerald-500 cursor-pointer"
-                  />
-                  <span>Wykres regularności tygodniowej</span>
+                  <div className="flex items-center gap-2">
+                    <input
+                      type="checkbox"
+                      checked={data.settings.analysisShowRegularity === true}
+                      onChange={(e) => onUpdateSettings({ analysisShowRegularity: e.target.checked })}
+                      className="accent-emerald-500 cursor-pointer"
+                    />
+                    <span>Pokaż / Przywróć regularność</span>
+                  </div>
+                  <span className="text-[9px] px-1.5 py-0.5 rounded bg-slate-900 border border-slate-800 text-slate-400 font-mono">Domyślnie ukryte</span>
                 </label>
 
                 <label
@@ -852,18 +1011,21 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
 
                 <label
                   id="chk-analysis-monthly-comparison"
-                  data-annotation-title="Zestawienie Miesięczne"
-                  data-annotation-desc="Grupowanie wyników w ujęciu miesięcy kalendarzowych ułatwiające ewaluację makrocyklu."
+                  data-annotation-title="Zestawienie Miesięczne (Domyślnie ukryte)"
+                  data-annotation-desc="Grupowanie wyników w ujęciu miesięcy kalendarzowych ułatwiające ewaluację makrocyklu. Domyślnie ukryte w raporcie."
                   data-annotation-category="Makrocykl"
-                  className="flex items-center gap-2 p-2 rounded-lg bg-slate-950 border border-slate-800 hover:border-slate-700 transition-colors cursor-pointer"
+                  className="flex items-center justify-between gap-2 p-2 rounded-lg bg-slate-950 border border-slate-800 hover:border-slate-700 transition-colors cursor-pointer"
                 >
-                  <input
-                    type="checkbox"
-                    checked={data.settings.analysisShowMonthlyComparison !== false}
-                    onChange={(e) => onUpdateSettings({ analysisShowMonthlyComparison: e.target.checked })}
-                    className="accent-emerald-500 cursor-pointer"
-                  />
-                  <span>Porównanie miesięczne</span>
+                  <div className="flex items-center gap-2">
+                    <input
+                      type="checkbox"
+                      checked={data.settings.analysisShowMonthlyComparison === true}
+                      onChange={(e) => onUpdateSettings({ analysisShowMonthlyComparison: e.target.checked })}
+                      className="accent-emerald-500 cursor-pointer"
+                    />
+                    <span>Pokaż / Przywróć por. miesięczne</span>
+                  </div>
+                  <span className="text-[9px] px-1.5 py-0.5 rounded bg-slate-900 border border-slate-800 text-slate-400 font-mono">Domyślnie ukryte</span>
                 </label>
 
                 <label
@@ -887,18 +1049,21 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
 
                 <label
                   id="chk-analysis-period-comparison"
-                  data-annotation-title="Porównanie Bloków Treningowych"
-                  data-annotation-desc="Pozwala zestawić dowolne bloki mezocykli (np. blok objętościowy vs intensyfikacyjny)."
+                  data-annotation-title="Porównanie Bloków Treningowych (Domyślnie ukryte)"
+                  data-annotation-desc="Pozwala zestawić dowolne bloki mezocykli (np. blok objętościowy vs intensyfikacyjny). Domyślnie ukryte w raporcie."
                   data-annotation-category="Periodyzacja"
-                  className="flex items-center gap-2 p-2 rounded-lg bg-slate-950 border border-slate-800 hover:border-slate-700 transition-colors cursor-pointer"
+                  className="flex items-center justify-between gap-2 p-2 rounded-lg bg-slate-950 border border-slate-800 hover:border-slate-700 transition-colors cursor-pointer"
                 >
-                  <input
-                    type="checkbox"
-                    checked={data.settings.analysisShowPeriodComparison !== false}
-                    onChange={(e) => onUpdateSettings({ analysisShowPeriodComparison: e.target.checked })}
-                    className="accent-emerald-500 cursor-pointer"
-                  />
-                  <span>Porównanie okresów/bloków</span>
+                  <div className="flex items-center gap-2">
+                    <input
+                      type="checkbox"
+                      checked={data.settings.analysisShowPeriodComparison === true}
+                      onChange={(e) => onUpdateSettings({ analysisShowPeriodComparison: e.target.checked })}
+                      className="accent-emerald-500 cursor-pointer"
+                    />
+                    <span>Pokaż / Przywróć por. okresów/bloków</span>
+                  </div>
+                  <span className="text-[9px] px-1.5 py-0.5 rounded bg-slate-900 border border-slate-800 text-slate-400 font-mono">Domyślnie ukryte</span>
                 </label>
 
                 <label
@@ -919,6 +1084,22 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
                     <option value="executedReps">Powtórzenia</option>
                     <option value="executedDays">Dni</option>
                   </select>
+                </label>
+
+                <label
+                  id="chk-analysis-show-rolling-volume"
+                  data-annotation-title="Średnia Krocząca Tonażu (4T)"
+                  data-annotation-desc="Wygładza wahania tonażu obliczając średnią kroczącą z ostatnich 4 tygodni treningowych (funkcja do włączenia dla długich mezocykli)."
+                  data-annotation-category="Zaawansowana Periodyzacja"
+                  className="flex items-center gap-2 p-2 rounded-lg bg-slate-950 border border-slate-800 hover:border-slate-700 transition-colors cursor-pointer sm:col-span-2"
+                >
+                  <input
+                    type="checkbox"
+                    checked={data.settings.analysisShowRollingVolume === true}
+                    onChange={(e) => onUpdateSettings({ analysisShowRollingVolume: e.target.checked })}
+                    className="accent-emerald-500 cursor-pointer"
+                  />
+                  <span>Średnia krocząca tonażu (4 tygodnie) — włącz tabelę średnich 4T w raporcie</span>
                 </label>
               </div>
             </div>
@@ -1443,6 +1624,117 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
             <div className="flex-1 bg-slate-950 border border-slate-800 rounded-lg p-3 overflow-auto max-h-[300px] font-mono text-[11px] text-slate-300 leading-relaxed">
               <pre>{jsonString}</pre>
             </div>
+          </div>
+
+          {/* Kod Pythona & Skrypty Uruchomieniowe Windows (.EXE / .BAT) */}
+          <div className="bg-slate-900 border border-slate-800 rounded-xl p-5 shadow-sm space-y-3">
+            <div className="flex items-center justify-between">
+              <div>
+                <h3 className="text-sm font-bold text-slate-100 flex items-center gap-2">
+                  <Terminal className="w-4 h-4 text-emerald-400" />
+                  <span>Skrypty Windows &amp; Kod Python (.EXE / .BAT)</span>
+                </h3>
+                <p className="text-[11px] text-slate-400 mt-0.5">
+                  Natywna wersja desktopowa na Windows 10/11 x64 (Tkinter + CustomTkinter + Matplotlib).
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setIsPythonSectionOpen(!isPythonSectionOpen)}
+                className="p-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-semibold flex items-center gap-1.5 transition-colors border border-slate-700"
+              >
+                <span>{isPythonSectionOpen ? 'Zwiń' : 'Rozwiń'}</span>
+                {isPythonSectionOpen ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+              </button>
+            </div>
+
+            {isPythonSectionOpen && (
+              <div className="space-y-3 pt-2 border-t border-slate-800 animate-fadeIn">
+                {/* Tabs */}
+                <div className="flex flex-wrap gap-1.5 p-1 bg-slate-950 rounded-lg border border-slate-800 text-xs">
+                  {[
+                    { id: 'bat', label: 'build_exe.bat (Kompilator EXE)', icon: Terminal, code: BAT_SCRIPT_CODE, filename: 'build_exe.bat' },
+                    { id: 'install', label: 'install_deps.bat (Biblioteki PIP)', icon: Terminal, code: INSTALL_BAT_CODE, filename: 'install_deps.bat' },
+                    { id: 'python', label: 'gymtracker_gui.py (Kod źródłowy)', icon: FileCode, code: PYTHON_SOURCE_CODE, filename: 'gymtracker_gui.py' },
+                    { id: 'req', label: 'requirements.txt', icon: FileCode, code: REQUIREMENTS_TXT, filename: 'requirements.txt' },
+                  ].map((tab) => {
+                    const isTabActive = selectedScriptTab === tab.id;
+                    const TabIcon = tab.icon;
+                    return (
+                      <button
+                        key={tab.id}
+                        type="button"
+                        onClick={() => setSelectedScriptTab(tab.id as any)}
+                        className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md font-semibold transition-all ${
+                          isTabActive
+                            ? 'bg-emerald-600 text-white shadow-xs'
+                            : 'text-slate-400 hover:text-slate-200 hover:bg-slate-900'
+                        }`}
+                      >
+                        <TabIcon className="w-3.5 h-3.5" />
+                        <span>{tab.label}</span>
+                      </button>
+                    );
+                  })}
+                </div>
+
+                {/* Tab Content Actions */}
+                {(() => {
+                  const currentItem = [
+                    { id: 'bat', label: 'build_exe.bat', code: BAT_SCRIPT_CODE, filename: 'build_exe.bat' },
+                    { id: 'install', label: 'install_deps.bat', code: INSTALL_BAT_CODE, filename: 'install_deps.bat' },
+                    { id: 'python', label: 'gymtracker_gui.py', code: PYTHON_SOURCE_CODE, filename: 'gymtracker_gui.py' },
+                    { id: 'req', label: 'requirements.txt', code: REQUIREMENTS_TXT, filename: 'requirements.txt' },
+                  ].find(t => t.id === selectedScriptTab)!;
+
+                  const handleCopy = () => {
+                    navigator.clipboard.writeText(currentItem.code);
+                    setCopiedScript(true);
+                    setTimeout(() => setCopiedScript(false), 2000);
+                  };
+
+                  const handleDownload = () => {
+                    const blob = new Blob([currentItem.code], { type: 'text/plain;charset=utf-8' });
+                    const url = URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = currentItem.filename;
+                    a.click();
+                    URL.revokeObjectURL(url);
+                  };
+
+                  return (
+                    <div className="space-y-2">
+                      <div className="flex items-center justify-between text-xs">
+                        <span className="text-slate-400 font-mono text-[11px]">{currentItem.filename}</span>
+                        <div className="flex items-center gap-2">
+                          <button
+                            type="button"
+                            onClick={handleCopy}
+                            className="px-2.5 py-1 rounded bg-slate-800 hover:bg-slate-700 text-slate-200 flex items-center gap-1 font-medium border border-slate-700 transition-colors"
+                          >
+                            {copiedScript ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5" />}
+                            <span>{copiedScript ? 'Skopiowano!' : 'Kopiuj'}</span>
+                          </button>
+                          <button
+                            type="button"
+                            onClick={handleDownload}
+                            className="px-2.5 py-1 rounded bg-emerald-600 hover:bg-emerald-500 text-white flex items-center gap-1 font-bold shadow-xs transition-colors"
+                          >
+                            <Download className="w-3.5 h-3.5" />
+                            <span>Pobierz plik</span>
+                          </button>
+                        </div>
+                      </div>
+
+                      <div className="bg-slate-950 border border-slate-800 rounded-lg p-3 overflow-auto max-h-[250px] font-mono text-[11px] text-slate-300 leading-relaxed">
+                        <pre>{currentItem.code}</pre>
+                      </div>
+                    </div>
+                  );
+                })()}
+              </div>
+            )}
           </div>
         </div>
       </div>

@@ -156,10 +156,16 @@ export interface AppSettings {
   /** v2.8: compare two executed training periods from real history. */
   analysisShowPeriodComparison?: boolean;
   analysisPeriodComparisonMetric?: 'volume' | 'executedSets' | 'executedReps' | 'executedDays';
+  /** Rolling average tonnage (4 weeks) toggle - hidden by default */
+  analysisShowRollingVolume?: boolean;
   /** v2.9: Ultra-sharp display rendering, resolution & pixel density scaling */
   uiScale?: 'compact' | 'standard' | 'high' | 'ultra';
   pixelDensity?: 'ultra' | 'crisp' | 'standard';
   fontSharpness?: 'retina' | 'sharp' | 'standard';
+  /** Custom app branding in settings */
+  customAppName?: string;
+  customAppSubtitle?: string;
+  customAppIcon?: 'dumbbell' | 'flame' | 'trophy' | 'zap' | 'activity' | 'shield';
 }
 
 export interface ProtocolEntry {
