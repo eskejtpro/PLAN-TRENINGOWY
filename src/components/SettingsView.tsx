@@ -36,6 +36,8 @@ import { GymData, AppSettings, BackupEntry, SyncServerConfig } from '../types';
 import { initialGymData } from '../data/initialData';
 import { PYTHON_SOURCE_CODE, BAT_SCRIPT_CODE, REQUIREMENTS_TXT, INSTALL_BAT_CODE } from '../data/pythonSource';
 import { AgentSettingsPanel } from './AgentSettingsPanel';
+import { LayoutCustomizerSettings } from './LayoutCustomizerSettings';
+import { AppIntegrityDiagnosticRunner } from './AppIntegrityDiagnosticRunner';
 
 interface SettingsViewProps {
   data: GymData;
@@ -66,6 +68,7 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
   onUpdateSyncConfig,
   onNavigateToProfile
 }) => {
+  const [activeSettingsTab, setActiveSettingsTab] = useState<'all' | 'layout' | 'agent' | 'tests' | 'general' | 'backup'>('all');
   const [copied, setCopied] = useState(false);
   const [importError, setImportError] = useState('');
   const [isPythonSectionOpen, setIsPythonSectionOpen] = useState(false);
@@ -141,19 +144,111 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
   return (
     <div className="flex flex-col h-full overflow-y-auto p-4 sm:p-6 space-y-6" id="view-settings">
       {/* Header */}
-      <div className="bg-slate-900 border border-slate-800 rounded-xl p-4 shadow-sm">
-        <h2 className="text-base font-bold text-slate-100 flex items-center gap-2">
-          <Settings className="w-5 h-5 text-emerald-400" />
-          <span>Ustawienia Programu &amp; Zarządzanie Plikiem JSON</span>
-        </h2>
-        <p className="text-xs text-slate-400 mt-0.5">
-          Zarządzaj lokalną bazą danych Windows (%LOCALAPPDATA%), jednostkami i kopiami zapasowymi.
-        </p>
+      <div className="bg-slate-900 border border-slate-800 rounded-xl p-4 shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <div>
+          <h2 className="text-base font-bold text-slate-100 flex items-center gap-2">
+            <Settings className="w-5 h-5 text-emerald-400" />
+            <span>Centrum Ustawień &amp; Personalizacji GymTracker Pro</span>
+          </h2>
+          <p className="text-xs text-slate-400 mt-0.5">
+            Dostosuj układ funkcji, skalowanie czcionki, ekran Windows, agenta AI, persony, automatyczne testy i kopie zapasowe.
+          </p>
+        </div>
+
+        {/* Quick Nav Tab Pills */}
+        <div className="flex items-center gap-1.5 flex-wrap bg-slate-950 p-1 rounded-xl border border-slate-800">
+          {[
+            { id: 'all', label: 'Wszystko' },
+            { id: 'layout', label: 'Układ & Czcionki & Windows' },
+            { id: 'agent', label: 'Agent & Persony' },
+            { id: 'tests', label: 'Testy Integralności' },
+            { id: 'general', label: 'Ogólne & Baza' },
+            { id: 'backup', label: 'Auto-Backup & Kod' },
+          ].map((tab) => (
+            <button
+              key={tab.id}
+              type="button"
+              onClick={() => setActiveSettingsTab(tab.id as any)}
+              className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
+                activeSettingsTab === tab.id
+                  ? 'bg-emerald-600 text-white shadow-xs'
+                  : 'text-slate-400 hover:text-slate-200 hover:bg-slate-900'
+              }`}
+            >
+              {tab.label}
+            </button>
+          ))}
+        </div>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Left Column: General Configuration */}
-        <div className="bg-slate-900 border border-slate-800 rounded-xl p-5 shadow-sm space-y-5">
+      {/* 🌟 1. UKŁAD, CZCIONKI & ROZMIAR EKRANU POD WINDOWS */}
+      {(activeSettingsTab === 'all' || activeSettingsTab === 'layout') && (
+        <div className="space-y-4">
+          <div className="flex items-center justify-between pb-1 border-b border-slate-800">
+            <h3 className="text-sm font-extrabold text-slate-100 flex items-center gap-2">
+              <Sparkles className="w-4 h-4 text-emerald-400" />
+              <span>Dostosowanie Układu, Widoczności Funkcji &amp; Czcionki Windows</span>
+            </h3>
+            <span className="text-[10px] px-2 py-0.5 rounded bg-emerald-500/15 text-emerald-300 border border-emerald-500/30 font-mono">
+              Live Reorder &amp; Font Engine
+            </span>
+          </div>
+
+          <LayoutCustomizerSettings
+            settings={data.settings}
+            onUpdateSettings={onUpdateSettings}
+            isDark={true}
+          />
+        </div>
+      )}
+
+      {/* 🌟 2. CENTRUM TESTÓW INTEGRALNOŚCI & DIAGNOSTYKI FUNKCJI */}
+      {(activeSettingsTab === 'all' || activeSettingsTab === 'tests') && (
+        <div className="space-y-4">
+          <div className="flex items-center justify-between pb-1 border-b border-slate-800">
+            <h3 className="text-sm font-extrabold text-slate-100 flex items-center gap-2">
+              <ShieldCheck className="w-4 h-4 text-emerald-400" />
+              <span>Centrum Testów Działania i Integralności Wszystkich Funkcji</span>
+            </h3>
+            <span className="text-[10px] px-2 py-0.5 rounded bg-emerald-500/15 text-emerald-300 border border-emerald-500/30 font-mono">
+              100% Automated Test Suite
+            </span>
+          </div>
+
+          <AppIntegrityDiagnosticRunner
+            data={data}
+            onUpdateSettings={onUpdateSettings}
+            isDark={true}
+          />
+        </div>
+      )}
+
+      {/* 🌟 3. DEDYKOWANY PANEL AGENTA, PERSONY I TRYBY ODPOWIEDZI */}
+      {(activeSettingsTab === 'all' || activeSettingsTab === 'agent') && (
+        <div className="space-y-4">
+          <div className="flex items-center justify-between pb-1 border-b border-slate-800">
+            <h3 className="text-sm font-extrabold text-slate-100 flex items-center gap-2">
+              <Activity className="w-4 h-4 text-emerald-400" />
+              <span>Dedykowany Panel Ustawień Agenta &amp; AI Coach</span>
+            </h3>
+            <span className="text-[10px] px-2 py-0.5 rounded bg-emerald-500/15 text-emerald-300 border border-emerald-500/30 font-mono">
+              Persony: Trener / Analityk / Lekarz / Motywator
+            </span>
+          </div>
+
+          <AgentSettingsPanel
+            settings={data.settings}
+            weeks={data.weeks}
+            onUpdateSettings={onUpdateSettings}
+          />
+        </div>
+      )}
+
+      {/* 🌟 4. OGÓLNE USTAWIENIA, BAZA WINDOWS, ANNOTATIONS & KOPIE */}
+      {(activeSettingsTab === 'all' || activeSettingsTab === 'general' || activeSettingsTab === 'backup') && (
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          {/* Left Column: General Configuration */}
+          <div className="bg-slate-900 border border-slate-800 rounded-xl p-5 shadow-sm space-y-5">
           <h3 className="text-sm font-bold text-slate-100 border-b border-slate-800 pb-2">
             Konfiguracja Środowiska Windows
           </h3>
@@ -1799,6 +1894,7 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
           </div>
         </div>
       </div>
+      )}
     </div>
   );
 };

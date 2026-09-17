@@ -178,6 +178,18 @@ export interface AppSettings {
   customAppName?: string;
   customAppSubtitle?: string;
   customAppIcon?: 'dumbbell' | 'flame' | 'trophy' | 'zap' | 'activity' | 'shield';
+  /** Custom navigation order and hidden features */
+  navOrder?: string[];
+  hiddenNavItems?: string[];
+  /** Font customization & scaling */
+  fontSizeScale?: number;
+  fontFamilyChoice?: 'sans' | 'segoe' | 'mono' | 'condensed';
+  fontContrast?: 'standard' | 'high_contrast' | 'bold_headings';
+  uiDensity?: 'compact' | 'standard' | 'spacious';
+  /** Windows Desktop sizing & frame simulation */
+  windowsViewportMode?: 'responsive' | 'fhd_1080p' | 'laptop_768p' | 'wqhd_1440p' | 'classic_1280x800' | 'window_simulation';
+  windowsShowDesktopFrame?: boolean;
+  windowsDpiScale?: '100' | '125' | '150';
 }
 
 export interface ProtocolEntry {

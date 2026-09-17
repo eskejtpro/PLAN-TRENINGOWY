@@ -193,42 +193,44 @@ export const ModernSidebar: React.FC<ModernSidebarProps> = ({
     );
   };
 
-  const navItems = [
+  const allAvailableNavItems = [
     {
       id: 'plan',
       label: 'Plan Treningowy',
       badge: `${weeksCount} tyg.`,
       icon: Calendar,
-      description: 'Ćwiczenia, serie i progres ciężarów'
+      description: 'Ćwiczenia, serie i progres ciężarów',
+      category: 'core'
     },
     {
       id: 'stats',
       label: 'Progres & Wykresy',
       icon: TrendingUp,
-      description: '1RM, objętość i wykresy siły'
+      description: '1RM, objętość i wykresy siły',
+      category: 'core'
     },
     {
       id: 'muscle',
       label: 'Analiza Partii',
       icon: Activity,
-      description: 'Rozkład serii na grupy mięśniowe'
+      description: 'Rozkład serii na grupy mięśniowe',
+      category: 'core'
     },
     {
       id: 'weight',
       label: 'Waga Ciała',
       icon: Scale,
-      description: 'Ważenie, trendy i bilans'
-    }
-  ];
-
-  const systemItems = [
+      description: 'Ważenie, trendy i bilans',
+      category: 'core'
+    },
     {
       id: 'cycles',
       label: 'Kalendarz',
       icon: Syringe,
       badge: 'Cykl',
       badgeColor: 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20',
-      description: 'Rejestr iniekcji, historia tygodni i kalkulator stężeń'
+      description: 'Rejestr iniekcji, historia tygodni i kalkulator stężeń',
+      category: 'system'
     },
     {
       id: 'exercises',
@@ -236,15 +238,35 @@ export const ModernSidebar: React.FC<ModernSidebarProps> = ({
       icon: Dumbbell,
       badge: 'Baza',
       badgeColor: 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20',
-      description: 'Zarządzanie, dodawanie i edycja ćwiczeń'
+      description: 'Zarządzanie, dodawanie i edycja ćwiczeń',
+      category: 'system'
     },
     {
       id: 'settings',
       label: 'Ustawienia',
       icon: Settings,
-      description: 'Auto-Backup JSON, kody Windows i konfiguracja'
+      description: 'Auto-Backup JSON, kody Windows i konfiguracja',
+      category: 'system'
     }
   ];
+
+  const hiddenNavSet = new Set(settings.hiddenNavItems || []);
+  const navOrderList = settings.navOrder || allAvailableNavItems.map(i => i.id);
+
+  // Filter and order navigation items
+  const sortedNavItems = [...allAvailableNavItems]
+    .filter(item => !hiddenNavSet.has(item.id) || activeView === item.id)
+    .sort((a, b) => {
+      const idxA = navOrderList.indexOf(a.id);
+      const idxB = navOrderList.indexOf(b.id);
+      if (idxA === -1 && idxB === -1) return 0;
+      if (idxA === -1) return 1;
+      if (idxB === -1) return -1;
+      return idxA - idxB;
+    });
+
+  const navItems = sortedNavItems.filter(item => item.category === 'core');
+  const systemItems = sortedNavItems.filter(item => item.category === 'system');
 
   return (
     <aside

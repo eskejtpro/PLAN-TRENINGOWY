@@ -11,6 +11,7 @@ import { ExerciseManagerView } from './components/ExerciseManagerView';
 import { CycleProtocolView } from './components/CycleProtocolView';
 import { UserProfileView } from './components/UserProfileView';
 import { HoverAnnotationSystem } from './components/HoverAnnotationSystem';
+import { WindowsTitleBar } from './components/WindowsTitleBar';
 import { ExerciseModal } from './components/ExerciseModal';
 import { ExerciseHistoryModal } from './components/ExerciseHistoryModal';
 import { GymData, TrainingWeek, TrainingDay, Exercise, ExerciseHistoryPoint, BodyWeightEntry, CircumferenceEntry, BodyPartMeasurement, AppSettings, LoggedSet, BackupEntry, ProtocolEntry, UserProfile, SyncServerConfig, SyncLogEntry, CatalogExercise } from './types';
@@ -999,52 +1000,92 @@ export default function App() {
   const currentDay = currentWeek?.days.find((d) => d.id === selectedDayId) || currentWeek?.days[0];
   const uiScale = data.settings.uiScale || 'high';
 
+  // Typography & Windows Layout Classes
+  const fontFamilyClass = data.settings.fontFamilyChoice === 'segoe'
+    ? 'font-windows-segoe'
+    : data.settings.fontFamilyChoice === 'mono'
+    ? 'font-mono-tech'
+    : data.settings.fontFamilyChoice === 'condensed'
+    ? 'font-condensed-pro'
+    : 'font-sans-modern';
+
+  const fontContrastClass = data.settings.fontContrast === 'high_contrast'
+    ? 'high-contrast-text'
+    : data.settings.fontContrast === 'bold_headings'
+    ? 'bold-headings'
+    : '';
+
+  const windowsViewportClass = data.settings.windowsViewportMode === 'fhd_1080p'
+    ? 'windows-frame-fhd'
+    : data.settings.windowsViewportMode === 'laptop_768p'
+    ? 'windows-frame-laptop'
+    : data.settings.windowsViewportMode === 'wqhd_1440p'
+    ? 'windows-frame-wqhd'
+    : data.settings.windowsViewportMode === 'classic_1280x800'
+    ? 'windows-frame-classic'
+    : '';
+
+  const fontSizeScale = data.settings.fontSizeScale || 100;
+
   return (
     <div 
       data-ui-scale={uiScale}
-      className={`min-h-screen ${isDark ? 'bg-slate-950 text-slate-100' : 'bg-slate-50 text-slate-900'} ${data.settings.reducedMotion ? 'reduce-motion' : ''} flex font-sans antialiased crisp-pixel selection:bg-emerald-500 selection:text-white`}
+      className={`min-h-screen ${isDark ? 'bg-slate-950 text-slate-100' : 'bg-slate-50 text-slate-900'} ${data.settings.reducedMotion ? 'reduce-motion' : ''} ${fontFamilyClass} ${fontContrastClass} ${windowsViewportClass} flex flex-col font-sans antialiased crisp-pixel selection:bg-emerald-500 selection:text-white`}
+      style={{
+        fontSize: fontSizeScale !== 100 ? `${fontSizeScale}%` : undefined
+      }}
     >
-      {/* Modern Desktop Sidebar (Left Side) */}
-      <div className="hidden md:flex shrink-0">
-        <ModernSidebar
-          activeView={activeView}
-          weightSubcategory={weightSubcategory}
-          onSelectView={handleSelectView}
+      {/* Windows Native Titlebar Simulation (if enabled or in desktop mode) */}
+      {data.settings.windowsShowDesktopFrame && (
+        <WindowsTitleBar
           settings={data.settings}
           onUpdateSettings={handleUpdateSettings}
-          autoSaveStatus={autoSaveStatus}
-          isCollapsed={isSidebarCollapsed}
-          onToggleCollapse={() => setIsSidebarCollapsed(!isSidebarCollapsed)}
-          weeksCount={data.weeks.length}
-          position="left"
-          profile={data.profile}
-          onUpdateProfile={handleUpdateProfile}
-          syncConfig={data.syncConfig}
-          onUpdateSyncConfig={handleUpdateSyncConfig}
-          currentWeek={currentWeek}
-          selectedDayId={selectedDayId}
-          onSelectDay={setSelectedDayId}
+          isDark={isDark}
         />
-      </div>
+      )}
 
-      {/* Main Workspace Canvas */}
-      <div className="flex-1 flex flex-col h-screen overflow-hidden">
-        <ModernHeader
-          activeView={activeView}
-          onSelectView={handleSelectView}
-          settings={data.settings}
-          onUpdateSettings={handleUpdateSettings}
-          autoSaveStatus={autoSaveStatus}
-          onOpenAddExerciseModal={() => {
-            setExerciseToEdit(null);
-            setIsExerciseModalOpen(true);
-          }}
-          onExportJson={handleExportJson}
-          onCreateBackup={handleCreateManualBackup}
-          onToggleMobileMenu={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-          currentWeekName={currentWeek?.name}
-          currentDayName={currentDay?.name}
-        />
+      <div className="flex-1 flex overflow-hidden">
+        {/* Modern Desktop Sidebar (Left Side) */}
+        <div className="hidden md:flex shrink-0">
+          <ModernSidebar
+            activeView={activeView}
+            weightSubcategory={weightSubcategory}
+            onSelectView={handleSelectView}
+            settings={data.settings}
+            onUpdateSettings={handleUpdateSettings}
+            autoSaveStatus={autoSaveStatus}
+            isCollapsed={isSidebarCollapsed}
+            onToggleCollapse={() => setIsSidebarCollapsed(!isSidebarCollapsed)}
+            weeksCount={data.weeks.length}
+            position="left"
+            profile={data.profile}
+            onUpdateProfile={handleUpdateProfile}
+            syncConfig={data.syncConfig}
+            onUpdateSyncConfig={handleUpdateSyncConfig}
+            currentWeek={currentWeek}
+            selectedDayId={selectedDayId}
+            onSelectDay={setSelectedDayId}
+          />
+        </div>
+
+        {/* Main Workspace Canvas */}
+        <div className="flex-1 flex flex-col h-full overflow-hidden">
+          <ModernHeader
+            activeView={activeView}
+            onSelectView={handleSelectView}
+            settings={data.settings}
+            onUpdateSettings={handleUpdateSettings}
+            autoSaveStatus={autoSaveStatus}
+            onOpenAddExerciseModal={() => {
+              setExerciseToEdit(null);
+              setIsExerciseModalOpen(true);
+            }}
+            onExportJson={handleExportJson}
+            onCreateBackup={handleCreateManualBackup}
+            onToggleMobileMenu={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+            currentWeekName={currentWeek?.name}
+            currentDayName={currentDay?.name}
+          />
 
         {/* View Switcher Container */}
         <main className={`flex-1 overflow-hidden flex flex-col ${isDark ? 'bg-slate-950' : 'bg-slate-50'}`}>
@@ -1225,6 +1266,7 @@ export default function App() {
             />
           )}
         </main>
+        </div>
       </div>
 
       {/* Mobile Drawer Navigation (Left Side) */}

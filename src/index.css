@@ -99,6 +99,70 @@
   background: rgba(16, 185, 129, 0.6);
 }
 
+/* Dynamic Font Family Overrides */
+[data-font-family="segoe"], body.font-segoe {
+  font-family: 'Segoe UI', 'Segoe UI Variable', -apple-system, BlinkMacSystemFont, 'Roboto', sans-serif !important;
+}
+
+[data-font-family="mono"], body.font-mono-custom {
+  font-family: 'JetBrains Mono', 'Cascadia Code', 'Consolas', 'Courier New', monospace !important;
+}
+
+[data-font-family="condensed"], body.font-condensed {
+  font-family: 'Franklin Gothic Medium', 'Arial Narrow', 'Tw Cen MT', sans-serif !important;
+  letter-spacing: -0.02em;
+}
+
+[data-font-family="sans"], body.font-sans-custom {
+  font-family: 'Inter', 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif !important;
+}
+
+/* High Contrast & Bold Typography */
+[data-font-contrast="high_contrast"] {
+  --text-contrast-boost: 1.15;
+}
+[data-font-contrast="high_contrast"] p,
+[data-font-contrast="high_contrast"] span,
+[data-font-contrast="high_contrast"] td,
+[data-font-contrast="high_contrast"] label {
+  color: #f8fafc !important;
+  font-weight: 500;
+}
+
+[data-font-contrast="bold_headings"] h1,
+[data-font-contrast="bold_headings"] h2,
+[data-font-contrast="bold_headings"] h3,
+[data-font-contrast="bold_headings"] h4,
+[data-font-contrast="bold_headings"] th {
+  font-weight: 900 !important;
+  letter-spacing: -0.03em;
+}
+
+/* Windows Desktop Viewport Simulators */
+.windows-fhd-frame {
+  max-width: 1920px;
+  width: 100%;
+  margin: 0 auto;
+}
+
+.windows-laptop-frame {
+  max-width: 1366px;
+  width: 100%;
+  margin: 0 auto;
+}
+
+.windows-wqhd-frame {
+  max-width: 2560px;
+  width: 100%;
+  margin: 0 auto;
+}
+
+.windows-classic-frame {
+  max-width: 1280px;
+  width: 100%;
+  margin: 0 auto;
+}
+
 /* User-controlled accessibility preference; scoped to the application root. */
 .reduce-motion *, .reduce-motion *::before, .reduce-motion *::after { 
   animation-duration: 0.001ms !important; 
