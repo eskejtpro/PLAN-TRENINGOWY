@@ -12,7 +12,8 @@ import {
   Dumbbell,
   Sparkles,
   Monitor,
-  Maximize2
+  Maximize2,
+  DownloadCloud
 } from 'lucide-react';
 import { AppSettings } from '../types';
 
@@ -103,9 +104,15 @@ export const ModernHeader: React.FC<ModernHeaderProps> = ({
         <div>
           <h1 className="text-base sm:text-lg font-extrabold tracking-tight flex items-center gap-2">
             <span>{currentViewMeta.title}</span>
-            <span id="app-version-badge" className={`text-[10px] font-mono font-semibold px-1.5 py-0.5 rounded border ${isDark ? 'text-emerald-300 border-emerald-500/30 bg-emerald-500/10' : 'text-emerald-700 border-emerald-300 bg-emerald-50'}`}>
-              v{__APP_VERSION__}
-            </span>
+            <button
+              type="button"
+              onClick={() => onSelectView('settings')}
+              id="app-version-badge" 
+              className={`text-[10px] font-mono font-semibold px-1.5 py-0.5 rounded border transition-colors cursor-pointer ${isDark ? 'text-emerald-300 border-emerald-500/30 bg-emerald-500/10 hover:bg-emerald-500/20' : 'text-emerald-700 border-emerald-300 bg-emerald-50 hover:bg-emerald-100'}`}
+              title="Wersja aplikacji - kliknij, aby sprawdzić aktualizacje"
+            >
+              v{settings.installedAppVersion || '2.24.0'}
+            </button>
           </h1>
           <p className={`text-xs font-medium truncate max-w-md ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>
             {currentViewMeta.subtitle}
@@ -192,6 +199,22 @@ export const ModernHeader: React.FC<ModernHeaderProps> = ({
             125%
           </button>
         </div>
+
+        {/* Quick Server Update Button */}
+        <button
+          type="button"
+          onClick={() => onSelectView('settings')}
+          className={`p-2 rounded-xl border transition-colors hidden lg:flex items-center gap-1.5 text-xs font-semibold cursor-pointer ${
+            isDark 
+              ? 'bg-slate-900 border-slate-800 text-slate-300 hover:text-emerald-400 hover:border-emerald-500/40' 
+              : 'bg-white border-slate-200 text-slate-700 hover:text-emerald-700 hover:border-emerald-300 shadow-xs'
+          }`}
+          title="Centrum aktualizacji aplikacji przez serwer"
+          id="btn-header-update-server"
+        >
+          <DownloadCloud className="w-4 h-4 text-emerald-400" />
+          <span className="hidden 2xl:inline">Aktualizacje</span>
+        </button>
 
         {/* Quick Backup Trigger */}
         {onCreateBackup && (

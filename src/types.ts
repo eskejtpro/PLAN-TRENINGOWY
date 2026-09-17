@@ -190,6 +190,49 @@ export interface AppSettings {
   windowsViewportMode?: 'responsive' | 'fhd_1080p' | 'laptop_768p' | 'wqhd_1440p' | 'classic_1280x800' | 'window_simulation';
   windowsShowDesktopFrame?: boolean;
   windowsDpiScale?: '100' | '125' | '150';
+  /** Server-based Full App Update System */
+  updateChannel?: 'stable' | 'beta' | 'nightly';
+  autoCheckUpdates?: boolean;
+  autoInstallPatches?: boolean;
+  updateServerUrl?: string;
+  lastUpdateCheckAt?: string;
+  installedAppVersion?: string;
+}
+
+export interface AppUpdateInfo {
+  version: string;
+  currentVersion: string;
+  releaseDate: string;
+  title: string;
+  releaseNotes: string[];
+  downloadUrl: string;
+  fileSizeBytes: number;
+  sha256Checksum: string;
+  isMandatory: boolean;
+  minSupportedVersion?: string;
+  packageType: 'full_dist' | 'bundle_zip' | 'exe_installer' | 'hotfix_patch';
+  author: string;
+}
+
+export interface AppUpdateHistoryEntry {
+  id: string;
+  version: string;
+  installedAt: string;
+  status: 'success' | 'rolled_back' | 'failed';
+  packageType: string;
+  notes?: string;
+}
+
+export interface AppUpdateState {
+  status: 'idle' | 'checking' | 'available' | 'downloading' | 'verifying' | 'ready_to_install' | 'installing' | 'up_to_date' | 'error';
+  progressPct: number;
+  bytesDownloaded: number;
+  totalBytes: number;
+  downloadSpeedMbps?: number;
+  errorMessage?: string;
+  availableUpdate?: AppUpdateInfo | null;
+  lastCheckedAt?: string;
+  history?: AppUpdateHistoryEntry[];
 }
 
 export interface ProtocolEntry {

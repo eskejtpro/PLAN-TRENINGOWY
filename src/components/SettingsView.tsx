@@ -38,6 +38,7 @@ import { PYTHON_SOURCE_CODE, BAT_SCRIPT_CODE, REQUIREMENTS_TXT, INSTALL_BAT_CODE
 import { AgentSettingsPanel } from './AgentSettingsPanel';
 import { LayoutCustomizerSettings } from './LayoutCustomizerSettings';
 import { AppIntegrityDiagnosticRunner } from './AppIntegrityDiagnosticRunner';
+import { AppUpdateServerPanel } from './AppUpdateServerPanel';
 
 interface SettingsViewProps {
   data: GymData;
@@ -68,7 +69,7 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
   onUpdateSyncConfig,
   onNavigateToProfile
 }) => {
-  const [activeSettingsTab, setActiveSettingsTab] = useState<'all' | 'layout' | 'agent' | 'tests' | 'general' | 'backup'>('all');
+  const [activeSettingsTab, setActiveSettingsTab] = useState<'all' | 'update' | 'layout' | 'agent' | 'tests' | 'general' | 'backup'>('all');
   const [copied, setCopied] = useState(false);
   const [importError, setImportError] = useState('');
   const [isPythonSectionOpen, setIsPythonSectionOpen] = useState(false);
@@ -159,6 +160,7 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
         <div className="flex items-center gap-1.5 flex-wrap bg-slate-950 p-1 rounded-xl border border-slate-800">
           {[
             { id: 'all', label: 'Wszystko' },
+            { id: 'update', label: 'Aktualizacja (Serwer)' },
             { id: 'layout', label: 'Układ & Czcionki & Windows' },
             { id: 'agent', label: 'Agent & Persony' },
             { id: 'tests', label: 'Testy Integralności' },
@@ -244,7 +246,17 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
         </div>
       )}
 
-      {/* 🌟 4. OGÓLNE USTAWIENIA, BAZA WINDOWS, ANNOTATIONS & KOPIE */}
+      {/* 🚀 4. SYSTEM AKTUALIZACJI CAŁEJ APLIKACJI PRZEZ SERWER */}
+      {(activeSettingsTab === 'all' || activeSettingsTab === 'update') && (
+        <div className="space-y-4">
+          <AppUpdateServerPanel
+            settings={data.settings}
+            onUpdateSettings={onUpdateSettings}
+          />
+        </div>
+      )}
+
+      {/* 🌟 5. OGÓLNE USTAWIENIA, BAZA WINDOWS, ANNOTATIONS & KOPIE */}
       {(activeSettingsTab === 'all' || activeSettingsTab === 'general' || activeSettingsTab === 'backup') && (
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           {/* Left Column: General Configuration */}
