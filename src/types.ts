@@ -119,7 +119,7 @@ export interface AppSettings {
   analysisWarnVolumeJumpPct?: number;
   analysisTrendWindowWeeks?: number;
   confirmBeforeDelete?: boolean;
-  startupView?: 'plan' | 'stats' | 'muscle' | 'weight' | 'cycles' | 'exercises' | 'settings' | 'python';
+  startupView?: 'plan' | 'stats' | 'muscle' | 'weight' | 'cycles' | 'exercises' | 'settings' | 'python' | 'profile';
   rememberLastView?: boolean;
   reducedMotion?: boolean;
   analysisShowExecutionSummary?: boolean;
@@ -167,6 +167,78 @@ export interface ProtocolEntry {
   notes?: string;
 }
 
+export interface AthletePersonalRecord {
+  id: string;
+  exerciseName: string;
+  weight: number;
+  reps: number;
+  date: string;
+  estimated1RM: number;
+  notes?: string;
+}
+
+export interface BloodworkMarker {
+  id: string;
+  name: string;
+  value: string;
+  unit: string;
+  referenceRange: string;
+  status: 'normal' | 'low' | 'high';
+  testDate: string;
+}
+
+export interface UserProfile {
+  id: string;
+  name: string;
+  athleteTag?: string;
+  avatarUrl?: string;
+  bio?: string;
+  age?: number;
+  heightCm?: number;
+  experienceLevel?: 'poczatkujacy' | 'sredniozaawansowany' | 'zaawansowany' | 'zawodnik';
+  primaryGoal?: 'masa' | 'redukcja' | 'rekompozycja' | 'sila' | 'utrzymanie';
+  targetWeight?: number;
+  activityLevel?: 'siedzacy' | 'umiarkowany' | 'aktywny' | 'bardzo_aktywny';
+  // Feature 1: Nutrition & Macro Goals
+  dailyCalories?: number;
+  proteinGrams?: number;
+  carbsGrams?: number;
+  fatsGrams?: number;
+  // Feature 2: Official PRs
+  manualPRs?: AthletePersonalRecord[];
+  // Feature 3: Health & Bloodwork Sentinel
+  bloodworkDate?: string;
+  bloodworkClinic?: string;
+  bloodworkNotes?: string;
+  bloodMarkers?: BloodworkMarker[];
+  isPinned?: boolean;
+}
+
+export interface SyncServerConfig {
+  serverUrl: string;
+  port: number;
+  deviceId: string;
+  deviceName: string;
+  deviceType: 'windows_desktop' | 'android_mobile';
+  pairingCode: string;
+  authToken: string;
+  autoSync: boolean;
+  conflictResolution: 'ask' | 'prefer_desktop' | 'prefer_mobile' | 'merge_newer';
+  lastSyncAt?: string;
+  lastSyncStatus?: 'connected' | 'offline' | 'error' | 'syncing' | 'idle';
+  lastSyncDetails?: string;
+  lastPingMs?: number;
+}
+
+export interface SyncLogEntry {
+  id: string;
+  timestamp: string;
+  direction: 'push_to_server' | 'pull_from_server' | 'handshake';
+  recordsAffected: number;
+  status: 'success' | 'conflict_detected' | 'failed';
+  summary: string;
+}
+
 export interface GymData {
   settings: AppSettings;
   weeks: TrainingWeek[];
@@ -175,4 +247,9 @@ export interface GymData {
   circumferences?: CircumferenceEntry[];
   bodyPartMeasurements?: BodyPartMeasurement[];
   protocolEntries?: ProtocolEntry[];
+  profile?: UserProfile;
+  profilesList?: UserProfile[];
+  syncConfig?: SyncServerConfig;
+  syncLogs?: SyncLogEntry[];
 }
+

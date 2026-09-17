@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
-import { Settings, Save, Download, Upload, RotateCcw, Folder, Check, Copy, ShieldCheck, Archive, Clock, RefreshCw, Trash2, HardDrive } from 'lucide-react';
-import { GymData, AppSettings, BackupEntry } from '../types';
+import { Settings, Save, Download, Upload, RotateCcw, Folder, Check, Copy, ShieldCheck, Archive, Clock, RefreshCw, Trash2, HardDrive, Smartphone, Wifi, ArrowRight, Shield } from 'lucide-react';
+import { GymData, AppSettings, BackupEntry, SyncServerConfig } from '../types';
 import { initialGymData } from '../data/initialData';
 
 interface SettingsViewProps {
@@ -14,6 +14,8 @@ interface SettingsViewProps {
   onRestoreBackup?: (backup: BackupEntry) => void;
   onDownloadBackup?: (backup: BackupEntry) => void;
   onDeleteBackup?: (id: string) => void;
+  onUpdateSyncConfig?: (config: Partial<SyncServerConfig>) => void;
+  onNavigateToProfile?: () => void;
 }
 
 export const SettingsView: React.FC<SettingsViewProps> = ({
@@ -26,7 +28,9 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
   onCreateBackup,
   onRestoreBackup,
   onDownloadBackup,
-  onDeleteBackup
+  onDeleteBackup,
+  onUpdateSyncConfig,
+  onNavigateToProfile
 }) => {
   const [copied, setCopied] = useState(false);
   const [importError, setImportError] = useState('');
@@ -357,6 +361,79 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
                 <span>Ostatnia kopia: {data.settings.lastBackupTime}</span>
               </p>
             )}
+          </div>
+
+          {/* 📱 ANDROID SERVER & SYNC (ETAP 5) */}
+          <div className="pt-3 border-t border-slate-800 space-y-3.5" id="settings-android-sync-section">
+            <div className="flex items-center justify-between">
+              <h4 className="text-xs font-bold text-slate-200 flex items-center gap-1.5">
+                <Smartphone className="w-4 h-4 text-emerald-400" />
+                <span>Serwer &amp; Synchronizacja Android (ETAP 5)</span>
+              </h4>
+              <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 font-bold flex items-center gap-1">
+                <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+                <span>Gotowy do parowania</span>
+              </span>
+            </div>
+
+            <div className="p-3.5 rounded-xl bg-slate-950 border border-slate-800/90 space-y-3 text-xs">
+              <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2">
+                <div>
+                  <div className="font-semibold text-slate-200 text-xs flex items-center gap-1.5">
+                    <Wifi className="w-3.5 h-3.5 text-emerald-400" />
+                    <span>Lokalny Endpoint Serwera:</span>
+                  </div>
+                  <code className="text-emerald-400 font-mono text-[11px] block mt-0.5">
+                    http://{data.syncConfig?.serverUrl || '192.168.1.100'}:{data.syncConfig?.port || 8080}/api/v1/sync
+                  </code>
+                </div>
+                <div className="text-right">
+                  <span className="text-[10px] text-slate-500 block">Kod parowania:</span>
+                  <span className="font-mono font-bold text-amber-300 text-xs">{data.syncConfig?.pairingCode || 'GYM-2026-92'}</span>
+                </div>
+              </div>
+
+              {/* Conflict resolution in Settings */}
+              <div className="space-y-1 pt-1 border-t border-slate-800/60">
+                <span className="text-[11px] font-medium text-slate-400 flex items-center gap-1">
+                  <Shield className="w-3 h-3 text-emerald-400" />
+                  <span>Reguła bezpieczeństwa konfliktów danych:</span>
+                </span>
+                <select
+                  value={data.syncConfig?.conflictResolution || 'ask'}
+                  onChange={(e) => onUpdateSyncConfig?.({ conflictResolution: e.target.value as SyncServerConfig['conflictResolution'] })}
+                  className="w-full px-2.5 py-1.5 rounded-lg bg-slate-900 border border-slate-700 text-slate-200 text-xs font-semibold focus:border-emerald-500 focus:outline-hidden"
+                  id="select-settings-conflict-resolution"
+                >
+                  <option value="ask">Zawsze pytaj użytkownika (Ochrona przed nadpisaniem)</option>
+                  <option value="prefer_desktop">Preferuj dane Windows 10 (%LOCALAPPDATA%)</option>
+                  <option value="prefer_mobile">Preferuj dane ze smartfona Android</option>
+                  <option value="merge_newer">Scal nowsze rekordy (Timestamp)</option>
+                </select>
+              </div>
+
+              <div className="p-2.5 rounded-lg bg-emerald-950/40 border border-emerald-900/60 text-[11px] text-slate-300 space-y-1">
+                <div className="flex items-center gap-1.5 font-bold text-emerald-400">
+                  <ShieldCheck className="w-3.5 h-3.5" />
+                  <span>Bezpieczeństwo bazy danych Pasik92:</span>
+                </div>
+                <p className="text-[10px] text-slate-400 leading-relaxed">
+                  Synchronizacja nigdy nie usunie ani nie zmieni danych użytkownika w tle bez wyraźnego potwierdzenia. Wszystkie operacje tworzą automatyczny snapshot bezpieczeństwa.
+                </p>
+              </div>
+
+              {onNavigateToProfile && (
+                <button
+                  type="button"
+                  onClick={onNavigateToProfile}
+                  className="w-full py-2 px-3 rounded-lg bg-slate-800 hover:bg-slate-700 text-emerald-300 hover:text-emerald-200 text-xs font-bold flex items-center justify-center gap-2 border border-slate-700 transition-colors"
+                  id="btn-navigate-to-profile-from-settings"
+                >
+                  <span>Otwórz pełny Panel Profilu &amp; Testu Połączenia</span>
+                  <ArrowRight className="w-3.5 h-3.5" />
+                </button>
+              )}
+            </div>
           </div>
 
           {/* Actions & Manual Operations */}

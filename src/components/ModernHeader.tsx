@@ -59,6 +59,10 @@ export const ModernHeader: React.FC<ModernHeaderProps> = ({
       title: 'Dziennik Masy Ciała',
       subtitle: 'Monitorowanie wagi, średnie kroczące i trendy'
     },
+    profile: {
+      title: 'Profil Zawodnika & Status Serwera',
+      subtitle: 'Edycja danych, awatar, cele kaloryczne, galeria PR i synchronizacja Android ↔ Windows'
+    },
     cycles: {
       title: 'Kalendarz Dawek & Historia Cykli',
       subtitle: 'Rejestr iniekcji, HCG, środków oraz historia ukończonych i pustych tygodni cyklu'

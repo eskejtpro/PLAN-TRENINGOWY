@@ -71,6 +71,14 @@ export const ModernSidebar: React.FC<ModernSidebarProps> = ({
       label: 'Waga Ciała',
       icon: Scale,
       description: 'Ważenie, trendy i bilans'
+    },
+    {
+      id: 'profile',
+      label: 'Profil',
+      icon: User,
+      badge: 'SYNC',
+      badgeColor: 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20',
+      description: 'Zdjęcie, dane, cele i status serwera Android'
     }
   ];
 
@@ -288,17 +296,21 @@ export const ModernSidebar: React.FC<ModernSidebarProps> = ({
             <div className={`p-2.5 rounded-xl border flex items-center justify-between ${
               isDark ? 'bg-slate-900/90 border-slate-800' : 'bg-white border-slate-200 shadow-xs'
             }`}>
-              <div className="flex items-center gap-2 overflow-hidden">
-                <div className="w-7 h-7 rounded-lg bg-emerald-500/20 text-emerald-400 flex items-center justify-center font-bold text-xs shrink-0">
+              <div 
+                onClick={() => onSelectView('profile')}
+                className="flex items-center gap-2 overflow-hidden cursor-pointer group hover:opacity-90 transition-opacity"
+                title="Przejdź do profilu zawodnika i synchronizacji"
+              >
+                <div className="w-7 h-7 rounded-lg bg-emerald-500/20 text-emerald-400 group-hover:bg-emerald-500/30 flex items-center justify-center font-bold text-xs shrink-0 transition-colors">
                   <User className="w-3.5 h-3.5" />
                 </div>
                 <div className="truncate">
-                  <span className={`text-xs font-bold block truncate ${isDark ? 'text-slate-200' : 'text-slate-800'}`}>
+                  <span className={`text-xs font-bold block truncate group-hover:text-emerald-400 transition-colors ${isDark ? 'text-slate-200' : 'text-slate-800'}`}>
                     {settings.athleteName || 'Zawodnik'}
                   </span>
                   <span className="text-[10px] text-emerald-400 font-medium flex items-center gap-1">
                     <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
-                    <span>Tryb Aktywny</span>
+                    <span>Profil &amp; Sync</span>
                   </span>
                 </div>
               </div>

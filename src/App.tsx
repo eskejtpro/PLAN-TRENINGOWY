@@ -9,9 +9,10 @@ import { SettingsView } from './components/SettingsView';
 import { PythonCodeView } from './components/PythonCodeView';
 import { ExerciseManagerView } from './components/ExerciseManagerView';
 import { CycleProtocolView } from './components/CycleProtocolView';
+import { UserProfileView } from './components/UserProfileView';
 import { ExerciseModal } from './components/ExerciseModal';
 import { ExerciseHistoryModal } from './components/ExerciseHistoryModal';
-import { GymData, TrainingWeek, TrainingDay, Exercise, ExerciseHistoryPoint, BodyWeightEntry, CircumferenceEntry, BodyPartMeasurement, AppSettings, LoggedSet, BackupEntry, ProtocolEntry } from './types';
+import { GymData, TrainingWeek, TrainingDay, Exercise, ExerciseHistoryPoint, BodyWeightEntry, CircumferenceEntry, BodyPartMeasurement, AppSettings, LoggedSet, BackupEntry, ProtocolEntry, UserProfile, SyncServerConfig, SyncLogEntry } from './types';
 import { initialGymData } from './data/initialData';
 import { PYTHON_SOURCE_CODE, BAT_SCRIPT_CODE, REQUIREMENTS_TXT, INSTALL_BAT_CODE } from './data/pythonSource';
 import { getTodayDateString } from './utils/calculations';
@@ -24,7 +25,13 @@ const normalizeGymData = (raw: GymData): GymData => ({
   circumferences: Array.isArray(raw.circumferences) ? raw.circumferences : [],
   bodyPartMeasurements: Array.isArray(raw.bodyPartMeasurements)
     ? raw.bodyPartMeasurements
-    : (initialGymData.bodyPartMeasurements || [])
+    : (initialGymData.bodyPartMeasurements || []),
+  profile: raw.profile || initialGymData.profile,
+  profilesList: Array.isArray(raw.profilesList) && raw.profilesList.length > 0
+    ? raw.profilesList
+    : (initialGymData.profilesList || []),
+  syncConfig: raw.syncConfig || initialGymData.syncConfig,
+  syncLogs: Array.isArray(raw.syncLogs) ? raw.syncLogs : (initialGymData.syncLogs || [])
 });
 
 export default function App() {
@@ -747,6 +754,109 @@ export default function App() {
     }));
   };
 
+  // User Profile & Android Sync handlers
+  const handleUpdateProfile = (updatedProfile: Partial<UserProfile>) => {
+    setData((prev) => {
+      const currentProfile = prev.profile || initialGymData.profile!;
+      const newProfile: UserProfile = { ...currentProfile, ...updatedProfile };
+      const currentList = prev.profilesList || [currentProfile];
+      const updatedList = currentList.some((p) => p.id === newProfile.id)
+        ? currentList.map((p) => (p.id === newProfile.id ? newProfile : p))
+        : [...currentList, newProfile];
+
+      return {
+        ...prev,
+        profile: newProfile,
+        profilesList: updatedList,
+        settings: {
+          ...prev.settings,
+          athleteName: newProfile.name || prev.settings.athleteName
+        }
+      };
+    });
+  };
+
+  const handleUpdateSyncConfig = (updatedSync: Partial<SyncServerConfig>) => {
+    setData((prev) => ({
+      ...prev,
+      syncConfig: {
+        ...(prev.syncConfig || initialGymData.syncConfig!),
+        ...updatedSync
+      }
+    }));
+  };
+
+  const handleAddSyncLog = (log: SyncLogEntry) => {
+    setData((prev) => ({
+      ...prev,
+      syncLogs: [log, ...(prev.syncLogs || [])].slice(0, 40)
+    }));
+  };
+
+  const handleSwitchProfile = (profileId: string) => {
+    setData((prev) => {
+      const target = (prev.profilesList || []).find((p) => p.id === profileId);
+      if (!target) return prev;
+      return {
+        ...prev,
+        profile: target,
+        settings: {
+          ...prev.settings,
+          athleteName: target.name
+        }
+      };
+    });
+  };
+
+  const handleCreateProfile = (name: string) => {
+    const newId = `prof-${Date.now()}`;
+    const newProf: UserProfile = {
+      id: newId,
+      name,
+      athleteTag: `${name} #${Math.floor(Math.random() * 900 + 100)}`,
+      avatarUrl: '',
+      bio: 'Zawodnik GymTracker Pro.',
+      age: 28,
+      heightCm: 180,
+      experienceLevel: 'sredniozaawansowany',
+      primaryGoal: 'masa',
+      targetWeight: 85,
+      activityLevel: 'aktywny',
+      dailyCalories: 3100,
+      proteinGrams: 180,
+      carbsGrams: 390,
+      fatsGrams: 70
+    };
+
+    setData((prev) => ({
+      ...prev,
+      profile: newProf,
+      profilesList: [...(prev.profilesList || []), newProf],
+      settings: {
+        ...prev.settings,
+        athleteName: newProf.name
+      }
+    }));
+  };
+
+  const handleDeleteProfile = (profileId: string) => {
+    setData((prev) => {
+      const currentList = prev.profilesList || [];
+      if (currentList.length <= 1) return prev;
+      const filtered = currentList.filter((p) => p.id !== profileId);
+      const newActive = filtered[0];
+      return {
+        ...prev,
+        profile: newActive,
+        profilesList: filtered,
+        settings: {
+          ...prev.settings,
+          athleteName: newActive.name
+        }
+      };
+    });
+  };
+
   const handleExportJson = () => {
     const jsonStr = JSON.stringify(data, null, 2);
     const blob = new Blob([jsonStr], { type: 'application/json' });
@@ -763,10 +873,11 @@ export default function App() {
   const handleImportJson = (imported: GymData) => {
     if (window.gymDesktop) window.gymDesktop.validate(JSON.stringify(imported));
     createAutoBackup(data, 'manual');
-    setData(imported);
-    if (imported.weeks.length > 0) {
-      setSelectedWeekId(imported.weeks[0].id);
-      setSelectedDayId(imported.weeks[0].days[0]?.id || '');
+    const normalized = normalizeGymData(imported);
+    setData(normalized);
+    if (normalized.weeks.length > 0) {
+      setSelectedWeekId(normalized.weeks[0].id);
+      setSelectedDayId(normalized.weeks[0].days[0]?.id || '');
     }
   };
 
@@ -954,6 +1065,19 @@ export default function App() {
             />
           )}
 
+          {activeView === 'profile' && (
+            <UserProfileView
+              data={data}
+              onUpdateProfile={handleUpdateProfile}
+              onUpdateSyncConfig={handleUpdateSyncConfig}
+              onAddSyncLog={handleAddSyncLog}
+              onSwitchProfile={handleSwitchProfile}
+              onCreateProfile={handleCreateProfile}
+              onDeleteProfile={handleDeleteProfile}
+              unit={data.settings.unit}
+            />
+          )}
+
           {activeView === 'settings' && (
             <SettingsView
               data={data}
@@ -966,6 +1090,8 @@ export default function App() {
               onRestoreBackup={handleRestoreBackup}
               onDownloadBackup={handleDownloadBackup}
               onDeleteBackup={handleDeleteBackup}
+              onUpdateSyncConfig={handleUpdateSyncConfig}
+              onNavigateToProfile={() => setActiveView('profile')}
             />
           )}
 

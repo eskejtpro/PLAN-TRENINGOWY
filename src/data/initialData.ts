@@ -599,6 +599,124 @@ export const initialGymData: GymData = {
       route: 'IM',
       notes: 'Prawy pośladek'
     }
+  ],
+  profile: {
+    id: 'prof-default',
+    name: 'Pasik92',
+    athleteTag: 'Pasik92 #001',
+    avatarUrl: '',
+    bio: 'Trening siłowy & periodyzacja falowa. Budowanie gęstości mięśniowej i czystej siły.',
+    age: 32,
+    heightCm: 182,
+    experienceLevel: 'zaawansowany',
+    primaryGoal: 'masa',
+    targetWeight: 88.0,
+    activityLevel: 'aktywny',
+    dailyCalories: 3350,
+    proteinGrams: 205,
+    carbsGrams: 420,
+    fatsGrams: 75,
+    manualPRs: [
+      {
+        id: 'pr-1',
+        exerciseName: 'Wyciskanie sztangi na ławce płaskiej',
+        weight: 125,
+        reps: 1,
+        date: '2026-08-15',
+        estimated1RM: 125,
+        notes: 'Zatwierdzony PR z pauzą na klatce'
+      },
+      {
+        id: 'pr-2',
+        exerciseName: 'Przysiady ze sztangą na plecach (Back Squat)',
+        weight: 165,
+        reps: 1,
+        date: '2026-08-20',
+        estimated1RM: 165,
+        notes: 'Głęboki przysiad poniżej kąta prostego'
+      },
+      {
+        id: 'pr-3',
+        exerciseName: 'RDL – Rumuński Martwy Ciąg ze sztangą',
+        weight: 180,
+        reps: 2,
+        date: '2026-08-28',
+        estimated1RM: 191,
+        notes: 'Chwyt z paskami, kontrola fazy ekscentrycznej'
+      },
+      {
+        id: 'pr-4',
+        exerciseName: 'OHP (Wyciskanie żołnierskie sztangi stojąc)',
+        weight: 80,
+        reps: 3,
+        date: '2026-09-02',
+        estimated1RM: 85,
+        notes: 'Ścisły lockout'
+      }
+    ],
+    bloodworkDate: '2026-08-10',
+    bloodworkClinic: 'Diagnostyka Lab (Panel Męski)',
+    bloodworkNotes: 'Wszystkie enzymy wątrobowe i nerki w normie. Estrogen pod kontrolą.',
+    bloodMarkers: [
+      { id: 'bm-1', name: 'Testosteron Całkowity', value: '1150', unit: 'ng/dl', referenceRange: '280 - 800', status: 'high', testDate: '2026-08-10' },
+      { id: 'bm-2', name: 'Estradiol (E2)', value: '38.4', unit: 'pg/ml', referenceRange: '11.3 - 43.2', status: 'normal', testDate: '2026-08-10' },
+      { id: 'bm-3', name: 'Prolaktyna', value: '11.2', unit: 'ng/ml', referenceRange: '4.0 - 15.2', status: 'normal', testDate: '2026-08-10' },
+      { id: 'bm-4', name: 'ALT (Aminotransferaza)', value: '31', unit: 'U/l', referenceRange: '< 50', status: 'normal', testDate: '2026-08-10' },
+      { id: 'bm-5', name: 'AST (Aminotransferaza)', value: '28', unit: 'U/l', referenceRange: '< 50', status: 'normal', testDate: '2026-08-10' },
+      { id: 'bm-6', name: 'Morfologia (Hematokryt)', value: '47.8', unit: '%', referenceRange: '40.0 - 52.0', status: 'normal', testDate: '2026-08-10' }
+    ]
+  },
+  profilesList: [
+    {
+      id: 'prof-default',
+      name: 'Pasik92',
+      athleteTag: 'Pasik92 #001',
+      avatarUrl: '',
+      bio: 'Trening siłowy & periodyzacja falowa. Budowanie gęstości mięśniowej i czystej siły.',
+      age: 32,
+      heightCm: 182,
+      experienceLevel: 'zaawansowany',
+      primaryGoal: 'masa',
+      targetWeight: 88.0,
+      activityLevel: 'aktywny',
+      dailyCalories: 3350,
+      proteinGrams: 205,
+      carbsGrams: 420,
+      fatsGrams: 75
+    }
+  ],
+  syncConfig: {
+    serverUrl: 'http://192.168.1.100:8000',
+    port: 8000,
+    deviceId: 'WIN10-PASIK92-DESKTOP-MAIN',
+    deviceName: 'Windows 10 Desktop (Główna stacja)',
+    deviceType: 'windows_desktop',
+    pairingCode: '749-182',
+    authToken: 'gtp_win_sec_89df204e9c1',
+    autoSync: false,
+    conflictResolution: 'ask',
+    lastSyncStatus: 'connected',
+    lastSyncAt: '2026-09-17 08:30',
+    lastSyncDetails: 'Połączono z węzłem lokalnym. Gotowość do przesyłania danych.',
+    lastPingMs: 14
+  },
+  syncLogs: [
+    {
+      id: 'synclog-1',
+      timestamp: '2026-09-17 08:30:12',
+      direction: 'handshake',
+      recordsAffected: 0,
+      status: 'success',
+      summary: 'Handshake nawiązany z węzłem http://192.168.1.100:8000 (Ping 14ms)'
+    },
+    {
+      id: 'synclog-2',
+      timestamp: '2026-09-16 21:15:00',
+      direction: 'push_to_server',
+      recordsAffected: 14,
+      status: 'success',
+      summary: 'Wysłano stan 6 tygodni i 12 pomiarów wagi do synchronizacji z Androidem'
+    }
   ]
 };
 
