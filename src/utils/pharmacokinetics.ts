@@ -1,622 +1,565 @@
-export interface SubstanceProfile {
+/**
+ * PHARMACOKINETICS ENGINE (PK) & COMPOUND DATA
+ * GymTracker Pro - Moduł farmakokinetyki i modelowania krzywych stężeń
+ * 
+ * Zasady:
+ * 1. Każda substancja ma własną linię 0–100% własnego piku (nigdy nie sumuj różnych substancji ani mg).
+ * 2. Model:
+ *    - Przed tMax: płynne narastanie od 0 do dawki (narastanie liniowe / absorption phase)
+ *    - Po tMax: spadek wykładniczy contribution = dose * 2 ** (-(hoursAfterPeak / halfLifeHours))
+ *    - Brak tMax: contribution = dose * 2 ** (-(elapsedHours / halfLifeHours))
+ * 3. Dla wielu podań: superpozycja wkładów tej samej substancji.
+ * 4. Normalizacja: relativeExposure = (rawValue / maxValueInSelectedRange) * 100.
+ * 5. Fluktuacja = ((peak - trough) / mean) * 100 (niższa fluktuacja = wyłącznie równiejsza krzywa modelowa).
+ * 6. Logika estrogenowa wyłącznie opisowa. Brak automatycznych porad E2/PCT.
+ */
+
+export interface PKCompound {
   id: string;
   name: string;
-  category: 'testosterone' | 'aas' | 'hcg' | 'oral' | 'other';
+  category: 'AAS' | 'AAS oral' | 'gonadotropina' | 'inhibitor aromatazy';
+  halfLifeHours: number;
   halfLifeDays: number;
-  timeToPeakHours: number;
+  tMaxHours: [number, number] | null;
+  estrogenPath: 'direct' | 'indirect' | 'none' | 'inhibits';
+  aromatization: 'bezpośrednia' | 'pośrednia' | 'brak' | 'hamuje';
+  confidence: 'wysoka' | 'średnia' | 'niska';
+  reversible?: boolean;
   unit: 'mg' | 'IU';
-  defaultDose: number;
-  recommendedFrequencyDays: number;
   description: string;
-  stabilityAdvice: string;
-  route: 'IM' | 'SC' | 'Oral';
+  note?: string;
+  isOral: boolean;
+  isDepot: boolean;
+  defaultDose: number;
+  defaultFrequency: StackFrequency;
+  color: string;
 }
 
-export const SUBSTANCE_PROFILES: SubstanceProfile[] = [
-  {
-    id: 'test_enanthat',
-    name: 'Testosteron Enanthat',
-    category: 'testosterone',
-    halfLifeDays: 4.5,
-    timeToPeakHours: 24,
-    unit: 'mg',
-    defaultDose: 250,
-    recommendedFrequencyDays: 3.5,
-    description: 'Popularny długi ester testosteronu.',
-    stabilityAdvice: 'Iniekcje 2 razy w tygodniu (co 3.5 dnia) gwarantują wysoką stabilność hormonalną.',
-    route: 'IM'
-  },
-  {
-    id: 'test_cypionat',
-    name: 'Testosteron Cypionat',
-    category: 'testosterone',
-    halfLifeDays: 5.0,
-    timeToPeakHours: 24,
-    unit: 'mg',
-    defaultDose: 200,
-    recommendedFrequencyDays: 3.5,
-    description: 'Długi ester powszechny w protokołach TRT.',
-    stabilityAdvice: 'Zalecana częstotliwość co 3.5–4 dni.',
-    route: 'IM'
-  },
-  {
-    id: 'test_propionat',
-    name: 'Testosteron Propionat',
-    category: 'testosterone',
+export const PK_COMPOUNDS: Record<string, PKCompound> = {
+  testPropionate: {
+    id: 'testPropionate',
+    name: 'Testosteron propionat',
+    halfLifeHours: 19.2,
     halfLifeDays: 0.8,
-    timeToPeakHours: 12,
     unit: 'mg',
+    tMaxHours: [12, 24],
+    category: 'AAS',
+    estrogenPath: 'direct',
+    aromatization: 'bezpośrednia',
+    confidence: 'średnia',
+    description: 'Krótki ester. Szybko narasta, szybko spada; największa zmienność ekspozycji.',
+    isDepot: false,
+    isOral: false,
     defaultDose: 100,
-    recommendedFrequencyDays: 1.0,
-    description: 'Krótki ester testosteronu o szybkiej kinetyce.',
-    stabilityAdvice: 'Wymaga częstych iniekcji (ED lub EOD) aby uniknąć znacznych wahań.',
-    route: 'IM'
+    defaultFrequency: 'eod',
+    color: '#f59e0b' // Amber
   },
-  {
-    id: 'hcg_gonadotropin',
-    name: 'HCG (Choriogonadotropina)',
-    category: 'hcg',
-    halfLifeDays: 1.25,
-    timeToPeakHours: 12,
+  testEnanthate: {
+    id: 'testEnanthate',
+    name: 'Testosteron enantat',
+    halfLifeHours: 108,
+    halfLifeDays: 4.5,
+    unit: 'mg',
+    tMaxHours: [24, 48],
+    category: 'AAS',
+    estrogenPath: 'direct',
+    aromatization: 'bezpośrednia',
+    confidence: 'średnia',
+    description: 'Ester depot. Wolniejsze narastanie i spadek; pełna kumulacja modelowa po około 4–5 okresach półtrwania.',
+    isDepot: true,
+    isOral: false,
+    defaultDose: 250,
+    defaultFrequency: '2x_week',
+    color: '#10b981' // Emerald
+  },
+  testCypionate: {
+    id: 'testCypionate',
+    name: 'Testosteron cypionat',
+    halfLifeHours: 192,
+    halfLifeDays: 8.0,
+    unit: 'mg',
+    tMaxHours: [48, 72],
+    category: 'AAS',
+    estrogenPath: 'direct',
+    aromatization: 'bezpośrednia',
+    confidence: 'średnia',
+    description: 'Długi ester depot. Powolniejszy spadek niż enantat; parametr zależy od formulacji i nośnika.',
+    isDepot: true,
+    isOral: false,
+    defaultDose: 200,
+    defaultFrequency: 'e5d',
+    color: '#06b6d4' // Cyan
+  },
+  testUndecanoate: {
+    id: 'testUndecanoate',
+    name: 'Testosteron undekanian',
+    halfLifeHours: 504,
+    halfLifeDays: 21.0,
+    unit: 'mg',
+    tMaxHours: null,
+    category: 'AAS',
+    estrogenPath: 'direct',
+    aromatization: 'bezpośrednia',
+    confidence: 'średnia',
+    description: 'Bardzo długi ester. Parametry są silnie zależne od konkretnego produktu.',
+    note: 'Parametr zależy od konkretnej formulacji.',
+    isDepot: true,
+    isOral: false,
+    defaultDose: 1000,
+    defaultFrequency: 'e14d',
+    color: '#3b82f6' // Blue
+  },
+  methenoloneEnanthate: {
+    id: 'methenoloneEnanthate',
+    name: 'Metenolon enantat (Primobolan)',
+    halfLifeHours: 252,
+    halfLifeDays: 10.5,
+    unit: 'mg',
+    tMaxHours: [60, 84],
+    category: 'AAS',
+    estrogenPath: 'none',
+    aromatization: 'brak',
+    confidence: 'niska',
+    description: 'Nie aromatyzuje. Nie wyliczaj automatycznie działania antyestrogenowego ani nie traktuj go jako inhibitora aromatazy.',
+    note: 'Nie traktować jako inhibitora aromatazy.',
+    isDepot: true,
+    isOral: false,
+    defaultDose: 200,
+    defaultFrequency: 'e5d',
+    color: '#8b5cf6' // Purple
+  },
+  oxandrolone: {
+    id: 'oxandrolone',
+    name: 'Oksandrolon (Anavar)',
+    halfLifeHours: 9.8,
+    halfLifeDays: 0.41,
+    unit: 'mg',
+    tMaxHours: [1, 2],
+    category: 'AAS oral',
+    estrogenPath: 'none',
+    aromatization: 'brak',
+    confidence: 'średnia',
+    description: 'Doustny, krótki profil. Szybki pik i szybki spadek ekspozycji.',
+    isDepot: false,
+    isOral: true,
+    defaultDose: 30,
+    defaultFrequency: 'ed',
+    color: '#ec4899' // Pink
+  },
+  hcg: {
+    id: 'hcg',
+    name: 'HCG',
+    halfLifeHours: 33,
+    halfLifeDays: 1.38,
     unit: 'IU',
-    defaultDose: 250,
-    recommendedFrequencyDays: 3.5,
-    description: 'Podtrzymanie syntezy wewnątrzjądrowej i płodności.',
-    stabilityAdvice: 'Dawkowanie 250-500 IU podskórnie (SC) co 3.5 dnia.',
-    route: 'SC'
+    tMaxHours: null,
+    category: 'gonadotropina',
+    estrogenPath: 'indirect',
+    aromatization: 'pośrednia',
+    confidence: 'średnia',
+    description: 'Wykres pokazuje ekspozycję HCG, nie wyliczony testosteron ani E2. HCG może pośrednio zwiększać produkcję testosteronu i estradiolu.',
+    note: 'Wykres pokazuje HCG, nie wyliczone testosteron/E2.',
+    isDepot: false,
+    isOral: false,
+    defaultDose: 500,
+    defaultFrequency: '2x_week',
+    color: '#eab308' // Yellow
   },
-  {
-    id: 'npp_nandrolone',
-    name: 'NPP (Nandrolon Phenylpropionat)',
-    category: 'aas',
-    halfLifeDays: 1.5,
-    timeToPeakHours: 16,
+  anastrozole: {
+    id: 'anastrozole',
+    name: 'Anastrozol',
+    halfLifeHours: 46,
+    halfLifeDays: 2.0,
     unit: 'mg',
-    defaultDose: 150,
-    recommendedFrequencyDays: 2.0,
-    description: 'Krótki ester nandrolonu.',
-    stabilityAdvice: 'Podawaj co 2 dni (EOD) dla ustabilizowania poziomu we krwi.',
-    route: 'IM'
+    tMaxHours: [1, 2],
+    category: 'inhibitor aromatazy',
+    estrogenPath: 'inhibits',
+    aromatization: 'hamuje',
+    confidence: 'wysoka',
+    reversible: true,
+    description: 'Odwracalnie hamuje aromatazę. Wykres leku nie jest wykresem E2.',
+    isDepot: false,
+    isOral: true,
+    defaultDose: 0.5,
+    defaultFrequency: 'eod',
+    color: '#ef4444' // Red
   },
-  {
-    id: 'deca_nandrolone',
-    name: 'Deca (Nandrolon Decanoat)',
-    category: 'aas',
-    halfLifeDays: 7.0,
-    timeToPeakHours: 48,
-    unit: 'mg',
-    defaultDose: 200,
-    recommendedFrequencyDays: 5.0,
-    description: 'Bardzo długi ester nandrolonu.',
-    stabilityAdvice: 'Iniekcje co 5-7 dni.',
-    route: 'IM'
-  },
-  {
-    id: 'masteron_propionat',
-    name: 'Masteron Propionat (Drostanolon)',
-    category: 'aas',
-    halfLifeDays: 0.8,
-    timeToPeakHours: 12,
-    unit: 'mg',
-    defaultDose: 100,
-    recommendedFrequencyDays: 2.0,
-    description: 'Krótki ester drostanolonu.',
-    stabilityAdvice: 'Podawaj co 2 dni (EOD).',
-    route: 'IM'
-  },
-  {
-    id: 'masteron_enanthat',
-    name: 'Masteron Enanthat',
-    category: 'aas',
-    halfLifeDays: 4.5,
-    timeToPeakHours: 24,
-    unit: 'mg',
-    defaultDose: 200,
-    recommendedFrequencyDays: 3.5,
-    description: 'Długi ester drostanolonu idealny do łączenia z Enanthatem Testosteronu.',
-    stabilityAdvice: 'Podawaj co 3.5 dnia.',
-    route: 'IM'
-  },
-  {
-    id: 'primobolan_enanthat',
-    name: 'Primobolan Enanthat (Methenolon)',
-    category: 'aas',
-    halfLifeDays: 5.0,
-    timeToPeakHours: 24,
-    unit: 'mg',
-    defaultDose: 200,
-    recommendedFrequencyDays: 3.5,
-    description: 'Łagodny preparat anaboliczny o niskim ryzyku aromatyzacji.',
-    stabilityAdvice: 'Iniekcje co 3.5 dnia.',
-    route: 'IM'
-  },
-  {
-    id: 'anavar_oxandrolone',
-    name: 'Anavar (Oxandrolon)',
-    category: 'oral',
-    halfLifeDays: 0.375,
-    timeToPeakHours: 2,
-    unit: 'mg',
-    defaultDose: 40,
-    recommendedFrequencyDays: 1.0,
-    description: 'Doustna substancja o bardzo krótkim czasie półtrwania.',
-    stabilityAdvice: 'Bierz codziennie (ED) lub w 2 dawkach podzielonych.',
-    route: 'Oral'
-  },
-  {
-    id: 'tren_acetate',
-    name: 'Trenbolon Acetate',
-    category: 'aas',
+  exemestane: {
+    id: 'exemestane',
+    name: 'Eksemestan',
+    halfLifeHours: 27,
     halfLifeDays: 1.0,
-    timeToPeakHours: 12,
     unit: 'mg',
-    defaultDose: 150,
-    recommendedFrequencyDays: 1.0,
-    description: 'Silny preparat o krótkim estrze.',
-    stabilityAdvice: 'Iniekcje codziennie (ED) lub co 2 dni (EOD).',
-    route: 'IM'
+    tMaxHours: [1, 2],
+    category: 'inhibitor aromatazy',
+    estrogenPath: 'inhibits',
+    aromatization: 'hamuje',
+    confidence: 'wysoka',
+    reversible: false,
+    description: 'Nieodwracalny inhibitor aromatazy. Czas wpływu na enzym może być dłuższy niż obecność leku w osoczu.',
+    note: 'Nieodwracalny wpływ na enzym trwa dłużej niż stężenie leku.',
+    isDepot: false,
+    isOral: true,
+    defaultDose: 12.5,
+    defaultFrequency: 'ed',
+    color: '#f97316' // Orange
+  },
+  letrozole: {
+    id: 'letrozole',
+    name: 'Letrozol',
+    halfLifeHours: 48,
+    halfLifeDays: 2.0,
+    unit: 'mg',
+    tMaxHours: [1, 2],
+    category: 'inhibitor aromatazy',
+    estrogenPath: 'inhibits',
+    aromatization: 'hamuje',
+    confidence: 'wysoka',
+    reversible: true,
+    description: 'Silny, odwracalny inhibitor aromatazy. Nie generuj automatycznej wartości E2.',
+    isDepot: false,
+    isOral: true,
+    defaultDose: 1.25,
+    defaultFrequency: 'eod',
+    color: '#14b8a6' // Teal
   }
+};
+
+export const PK_COMPOUND_LIST: PKCompound[] = Object.values(PK_COMPOUNDS);
+
+// Częstotliwości podawania substancji w kalkulatorze
+export type StackFrequency = 
+  | 'ed'        // Codziennie (co 24h)
+  | 'eod'       // Co 2 dni (co 48h)
+  | 'e3d'       // Co 3 dni (co 72h) - DODANE NA PROŚBĘ UŻYTKOWNIKA
+  | '3x_week'   // 3 razy w tygodniu: Pn, Czw, Nd - DODANE NA PROŚBĘ UŻYTKOWNIKA
+  | '2x_week'   // 2 razy w tygodniu (co 3.5 dnia / 84h)
+  | 'e4d'       // Co 4 dni (co 96h)
+  | 'e5d'       // Co 5 dni (co 120h)
+  | '1x_week'   // 1 raz w tygodniu (co 7 dni / 168h)
+  | 'e10d'      // Co 10 dni (co 240h)
+  | 'e14d';     // Co 14 dni (co 336h)
+
+export interface FrequencyOption {
+  id: StackFrequency;
+  label: string;
+  sublabel: string;
+  intervalHours?: number;
+}
+
+export const FREQUENCY_OPTIONS: FrequencyOption[] = [
+  { id: 'ed', label: 'Codziennie (ED)', sublabel: 'Co 24 godziny', intervalHours: 24 },
+  { id: 'eod', label: 'Co 2 dni (EOD)', sublabel: 'Co 48 godzin', intervalHours: 48 },
+  { id: 'e3d', label: 'Co 3 dni (E3D)', sublabel: 'Co 72 godziny (np. D1, D4, D7...)', intervalHours: 72 },
+  { id: '3x_week', label: '3 razy w tygodniu (Pn, Czw, Nd)', sublabel: 'Harmonogram 7-dniowy: Poniedziałek, Czwartek, Niedziela' },
+  { id: '2x_week', label: '2 razy w tygodniu (np. Pn / Czw)', sublabel: 'Co 3.5 dnia (co 84h)', intervalHours: 84 },
+  { id: 'e4d', label: 'Co 4 dni', sublabel: 'Co 96 godzin', intervalHours: 96 },
+  { id: 'e5d', label: 'Co 5 dni', sublabel: 'Co 120 godzin', intervalHours: 120 },
+  { id: '1x_week', label: '1 raz w tygodniu (E7D)', sublabel: 'Co 7 dni (co 168h)', intervalHours: 168 },
+  { id: 'e10d', label: 'Co 10 dni', sublabel: 'Co 240 godzin', intervalHours: 240 },
+  { id: 'e14d', label: 'Co 14 dni (co 2 tyg.)', sublabel: 'Co 336 godzin', intervalHours: 336 },
 ];
 
-export function calculateDecayLevel(
+export interface StackItem {
+  id: string;
+  compoundKey: string;
+  dose: number;
+  frequency: StackFrequency;
+  enabled: boolean;
+  color: string;
+}
+
+export interface DoseEvent {
+  compoundKey: string;
+  dose: number;
+  timeHours: number;
+}
+
+/**
+ * Oblicza wkład pojedynczej dawki w chwili czasu elapsedHours od podania.
+ * Model matematyczny:
+ * - Przed tMax: płynne narastanie od 0 do dawki (contribution = dose * (elapsedHours / tMax))
+ * - Po tMax: contribution = dose * 2 ** (-(hoursAfterPeak / halfLifeHours))
+ * - Bez tMax: contribution = dose * 2 ** (-(elapsedHours / halfLifeHours))
+ */
+export function calculateDoseContribution(
   dose: number,
   elapsedHours: number,
   halfLifeHours: number,
-  timeToPeakHours: number = 24
+  tMaxHours: [number, number] | null
 ): number {
   if (elapsedHours < 0) return 0;
 
-  const ke = Math.LN2 / halfLifeHours;
-  const ka = Math.LN2 / Math.max(2, timeToPeakHours * 0.4);
-
-  if (Math.abs(ka - ke) < 0.0001) {
-    return dose * ka * elapsedHours * Math.exp(-ke * elapsedHours);
-  }
-
-  const fraction = (ka / (ka - ke)) * (Math.exp(-ke * elapsedHours) - Math.exp(-ka * elapsedHours));
-  return Math.max(0, dose * fraction);
-}
-
-export function simulateSteadyState(
-  dosePerShot: number,
-  intervalDays: number,
-  halfLifeDays: number,
-  timeToPeakHours: number,
-  simulationDays: number = 28
-) {
-  const stepHours = 6;
-  const totalHours = simulationDays * 24;
-  const intervalHours = intervalDays * 24;
-  const halfLifeHours = halfLifeDays * 24;
-
-  const injectionTimes: number[] = [];
-  for (let h = 0; h <= totalHours; h += intervalHours) {
-    injectionTimes.push(h);
-  }
-
-  const points = [];
-  for (let h = 0; h <= totalHours; h += stepHours) {
-    let level = 0;
-    const isInjection = injectionTimes.includes(h);
-
-    for (const injH of injectionTimes) {
-      if (h >= injH) {
-        level += calculateDecayLevel(dosePerShot, h - injH, halfLifeHours, timeToPeakHours);
-      }
-    }
-
-    points.push({
-      timeHours: h,
-      timeDays: Math.round((h / 24) * 10) / 10,
-      level: Math.round(level * 10) / 10,
-      isInjection
-    });
-  }
-
-  return points;
-}
-
-export function compareFrequencies(
-  weeklyDose: number,
-  halfLifeDays: number,
-  timeToPeakHours: number
-) {
-  const frequencies = [
-    { label: 'Codziennie (ED)', days: 1.0 },
-    { label: 'Co 2 dni (EOD)', days: 2.0 },
-    { label: 'Co 3.5 dnia (2x/tyg)', days: 3.5 },
-    { label: 'Co 4 dni', days: 4.0 },
-    { label: 'Co 5 dni', days: 5.0 },
-    { label: 'Co 7 dni (1x/tyg)', days: 7.0 }
-  ];
-
-  return frequencies.map((freq) => {
-    const dosePerInjection = Math.round((weeklyDose * (freq.days / 7)) * 10) / 10;
-    const curve = simulateSteadyState(dosePerInjection, freq.days, halfLifeDays, timeToPeakHours, 28);
-    const steadyStateCurve = curve.filter((p) => p.timeDays >= 14);
-
-    const levels = steadyStateCurve.map((p) => p.level);
-    const peak = levels.length > 0 ? Math.max(...levels) : dosePerInjection;
-    const trough = levels.length > 0 ? Math.min(...levels) : dosePerInjection * 0.5;
-    const average = levels.length > 0 ? levels.reduce((a, b) => a + b, 0) / levels.length : dosePerInjection * 0.75;
-
-    const ratio = trough > 0 ? Math.round((peak / trough) * 100) / 100 : 1;
-    const fluctuationPct = trough > 0 ? Math.round(((peak - trough) / trough) * 100) : 0;
-
-    let stabilityScore: 'DOSKONAŁA' | 'DOBRA' | 'ŚREDNIA' | 'NISKA' = 'DOSKONAŁA';
-    let scoreColor = 'text-emerald-400';
-
-    if (ratio <= 1.35) {
-      stabilityScore = 'DOSKONAŁA';
-      scoreColor = 'text-emerald-400';
-    } else if (ratio <= 1.75) {
-      stabilityScore = 'DOBRA';
-      scoreColor = 'text-teal-400';
-    } else if (ratio <= 2.3) {
-      stabilityScore = 'ŚREDNIA';
-      scoreColor = 'text-amber-400';
+  if (tMaxHours && tMaxHours.length === 2) {
+    const tMax = (tMaxHours[0] + tMaxHours[1]) / 2;
+    if (elapsedHours < tMax) {
+      return dose * (elapsedHours / Math.max(0.1, tMax));
     } else {
-      stabilityScore = 'NISKA';
-      scoreColor = 'text-rose-400';
+      const hoursAfterPeak = elapsedHours - tMax;
+      return dose * Math.pow(2, -(hoursAfterPeak / halfLifeHours));
     }
-
-    return {
-      frequencyLabel: freq.label,
-      frequencyDays: freq.days,
-      dosePerInjection,
-      peak: Math.round(peak * 10) / 10,
-      trough: Math.round(trough * 10) / 10,
-      average: Math.round(average * 10) / 10,
-      peakToTroughRatio: ratio,
-      fluctuationPct,
-      stabilityScore,
-      scoreColor
-    };
-  });
-}
-
-export interface StackCompound {
-  id: string;
-  profileId: string;
-  weeklyDose: number;
-  intervalDays: number;
-  color: string;
-  enabled: boolean;
-}
-
-export interface StackPoint {
-  timeHours: number;
-  timeDays: number;
-  dateStr: string;
-  compoundLevels: Record<string, number>;
-  injections: Record<string, number>;
-  totalAasLevel: number;
-}
-
-export interface StackPreset {
-  id: string;
-  name: string;
-  description: string;
-  compounds: Omit<StackCompound, 'id'>[];
-}
-
-export const STACK_COLORS = [
-  '#10b981', // Emerald
-  '#0ea5e9', // Sky Blue
-  '#8b5cf6', // Violet
-  '#f59e0b', // Amber
-  '#f43f5e', // Rose
-  '#14b8a6', // Teal
-  '#ec4899', // Pink
-  '#6366f1'  // Indigo
-];
-
-export const STACK_PRESETS: StackPreset[] = [
-  {
-    id: 'trt_hcg',
-    name: 'TRT + HCG (Złoty Standard)',
-    description: 'Baza testosteronowa + podtrzymanie pracy jąder i płodności poprzez HCG.',
-    compounds: [
-      {
-        profileId: 'test_cypionat',
-        weeklyDose: 140,
-        intervalDays: 3.5,
-        color: '#10b981',
-        enabled: true
-      },
-      {
-        profileId: 'hcg_gonadotropin',
-        weeklyDose: 500,
-        intervalDays: 3.5,
-        color: '#0ea5e9',
-        enabled: true
-      }
-    ]
-  },
-  {
-    id: 'test_npp_bulk',
-    name: 'Testosteron + NPP (Blok Masowy)',
-    description: 'Szybki ester testosteronu i fenylopropionianu nandrolonu (NPP) dla szybkiej kinetyki.',
-    compounds: [
-      {
-        profileId: 'test_enanthat',
-        weeklyDose: 350,
-        intervalDays: 3.5,
-        color: '#10b981',
-        enabled: true
-      },
-      {
-        profileId: 'npp_nandrolone',
-        weeklyDose: 200,
-        intervalDays: 2.0,
-        color: '#8b5cf6',
-        enabled: true
-      }
-    ]
-  },
-  {
-    id: 'test_masteron_cut',
-    name: 'Testosteron + Masteron (Cięcie / Rzeźba)',
-    description: 'Połączenie estru enanthatu testosteronu i masteronu podawane w te same dni (np. Pn/Czw).',
-    compounds: [
-      {
-        profileId: 'test_enanthat',
-        weeklyDose: 250,
-        intervalDays: 3.5,
-        color: '#10b981',
-        enabled: true
-      },
-      {
-        profileId: 'masteron_enanthat',
-        weeklyDose: 200,
-        intervalDays: 3.5,
-        color: '#f59e0b',
-        enabled: true
-      }
-    ]
-  },
-  {
-    id: 'test_primo_quality',
-    name: 'Testosteron + Primobolan (Lean Mass & E2 Control)',
-    description: 'Czysta jakość, Primobolan działa jak łagodny inhibitor aromatazy i stabilizuje estrogen.',
-    compounds: [
-      {
-        profileId: 'test_enanthat',
-        weeklyDose: 300,
-        intervalDays: 3.5,
-        color: '#10b981',
-        enabled: true
-      },
-      {
-        profileId: 'primobolan_enanthat',
-        weeklyDose: 300,
-        intervalDays: 3.5,
-        color: '#14b8a6',
-        enabled: true
-      }
-    ]
-  },
-  {
-    id: 'test_deca_classic',
-    name: 'Testosteron + Deca (Klasyczny Oldschool)',
-    description: 'Długie estry enanthatu i dekanianu nandrolonu na stawy i gęstość mięśniową.',
-    compounds: [
-      {
-        profileId: 'test_enanthat',
-        weeklyDose: 300,
-        intervalDays: 3.5,
-        color: '#10b981',
-        enabled: true
-      },
-      {
-        profileId: 'deca_nandrolone',
-        weeklyDose: 200,
-        intervalDays: 5.0,
-        color: '#8b5cf6',
-        enabled: true
-      }
-    ]
-  },
-  {
-    id: 'test_oxandrolone_cut',
-    name: 'Testosteron + Anavar / Oxandrolone',
-    description: 'Baza testosteronowa w iniekcji + doustny Anavar (krótki t½ 9h) na siłę i rzeźbę.',
-    compounds: [
-      {
-        profileId: 'test_enanthat',
-        weeklyDose: 250,
-        intervalDays: 3.5,
-        color: '#10b981',
-        enabled: true
-      },
-      {
-        profileId: 'anavar_oxandrolone',
-        weeklyDose: 280,
-        intervalDays: 1.0,
-        color: '#f43f5e',
-        enabled: true
-      }
-    ]
-  },
-  {
-    id: 'test_tren_masteron_comp',
-    name: 'Testosteron + Trenbolon + Masteron (Tri-Stack)',
-    description: 'Trzy odrębne substancje zsynchronizowane w cyklu pod docięcie i max twardość.',
-    compounds: [
-      {
-        profileId: 'test_propionat',
-        weeklyDose: 175,
-        intervalDays: 2.0,
-        color: '#10b981',
-        enabled: true
-      },
-      {
-        profileId: 'tren_acetate',
-        weeklyDose: 175,
-        intervalDays: 2.0,
-        color: '#f43f5e',
-        enabled: true
-      },
-      {
-        profileId: 'masteron_propionat',
-        weeklyDose: 210,
-        intervalDays: 2.0,
-        color: '#f59e0b',
-        enabled: true
-      }
-    ]
+  } else {
+    return dose * Math.pow(2, -(elapsedHours / halfLifeHours));
   }
-];
+}
 
 /**
- * Simulates a multi-substance stack simultaneously on a single unified timeline
+ * Generuje harmonogram podania dawek w godzinach dla danej częstotliwości i horyzontu.
  */
-export function simulateMultiSubstanceStack(
-  compounds: StackCompound[],
-  simulationDays: number = 28
-): {
-  points: StackPoint[];
-  compoundStats: Record<
-    string,
-    {
-      profile: SubstanceProfile;
-      dosePerShot: number;
-      peak: number;
-      trough: number;
-      average: number;
-      peakToTroughRatio: number;
-      fluctuationPct: number;
+export function generateAdministrationHours(
+  frequency: StackFrequency,
+  totalHours: number
+): number[] {
+  const hours: number[] = [];
+
+  if (frequency === '3x_week') {
+    // Harmonogram 3 razy w tygodniu: Pn (0h), Czw (72h), Nd (144h) w powtarzającym się oknie 168h
+    let weekStart = 0;
+    while (weekStart < totalHours) {
+      if (weekStart + 0 <= totalHours) hours.push(weekStart + 0);
+      if (weekStart + 72 <= totalHours) hours.push(weekStart + 72);
+      if (weekStart + 144 <= totalHours) hours.push(weekStart + 144);
+      weekStart += 168;
     }
-  >;
-  totalAasPeak: number;
-  totalAasTrough: number;
-  totalWeeklyAasMg: number;
-} {
-  const points: StackPoint[] = [];
-  const stepHours = 6;
-  const totalHours = simulationDays * 24;
-  const now = new Date();
+    return hours;
+  }
 
-  // Prepare active compound meta
-  const activeConfigs = compounds
-    .filter((c) => c.enabled)
-    .map((c) => {
-      const profile = SUBSTANCE_PROFILES.find((p) => p.id === c.profileId) || SUBSTANCE_PROFILES[0];
-      const dosePerShot = Math.round((c.weeklyDose * (c.intervalDays / 7)) * 10) / 10;
-      const intervalHours = c.intervalDays * 24;
-      const halfLifeHours = profile.halfLifeDays * 24;
+  const opt = FREQUENCY_OPTIONS.find((f) => f.id === frequency);
+  const interval = opt?.intervalHours || 24;
 
-      const injectionTimes: number[] = [];
-      for (let h = 0; h <= totalHours; h += intervalHours) {
-        injectionTimes.push(h);
-      }
+  for (let h = 0; h <= totalHours; h += interval) {
+    hours.push(h);
+  }
+  return hours;
+}
 
-      return {
-        compound: c,
-        profile,
-        dosePerShot,
-        injectionTimes,
-        halfLifeHours,
-        timeToPeakHours: profile.timeToPeakHours
-      };
-    });
+export interface SimulationPoint {
+  timeHours: number;
+  timeDays: number;
+  label: string;
+  // Względna ekspozycja modelowa [% własnego piku] dla każdej substancji (osobna skala 0-100%!)
+  relativeLevels: Record<string, number>;
+  // Surowe wartości modelowe w dawkach
+  rawLevels: Record<string, number>;
+  isDoseEvent: Record<string, boolean>;
+}
 
-  let totalWeeklyAasMg = 0;
-  activeConfigs.forEach((cfg) => {
-    if (cfg.profile.unit === 'mg' && cfg.profile.category !== 'hcg') {
-      totalWeeklyAasMg += cfg.compound.weeklyDose;
+export interface CompoundMetrics {
+  compoundKey: string;
+  compound: PKCompound;
+  peak: number; // 100% własnego piku
+  trough: number; // % minimalny w fazie zbliżonej do stacjonarnej
+  mean: number; // % średni w fazie zbliżonej do stacjonarnej
+  peakToTrough: number; // Stosunek peak / trough
+  fluctuationPercent: number; // ((peak - trough) / mean) * 100
+  timeToSteadyStateDays: number; // ~4-5 * halfLifeDays
+  isSteadyStateReached: boolean;
+  color: string;
+}
+
+export interface SimulationResult {
+  points: SimulationPoint[];
+  metricsByCompound: Record<string, CompoundMetrics>;
+  activeCompounds: PKCompound[];
+  viewMode: 'days' | 'hours';
+  totalDurationDays: number;
+  totalDurationHours: number;
+}
+
+/**
+ * Główna funkcja symulacji farmakokinetyki:
+ * - Superpozycja dla dawek tej samej substancji
+ * - Każda substancja ma OSOBNĄ linię 0-100% własnego piku
+ * - Nigdy nie sumuje różnych substancji ani mg
+ */
+export function simulatePharmacokinetics(
+  stackItems: StackItem[],
+  viewMode: 'days' | 'hours',
+  customHorizon?: number,
+  calendarEvents?: DoseEvent[]
+): SimulationResult {
+  const isDaysView = viewMode === 'days';
+  
+  // Domyślny horyzont: 56 dni (długie estry) lub 168 godzin / 7 dni (krótkie/oralne)
+  const totalDurationDays = isDaysView ? (customHorizon || 56) : ((customHorizon || 168) / 24);
+  const totalDurationHours = totalDurationDays * 24;
+
+  // Krok czasowy: dla widoku dniowego co 4h (dokładność i płynność), dla godzinowego co 0.5h
+  const stepHours = isDaysView ? 4 : 0.5;
+
+  const enabledItems = stackItems.filter((item) => item.enabled && PK_COMPOUNDS[item.compoundKey]);
+  const activeCompounds = enabledItems.map((item) => PK_COMPOUNDS[item.compoundKey]);
+
+  // Przygotuj listę zdarzeń podania dawek dla każdego związku
+  const doseEventsByCompound: Record<string, DoseEvent[]> = {};
+
+  for (const item of enabledItems) {
+    const cmp = PK_COMPOUNDS[item.compoundKey];
+    if (!cmp) continue;
+
+    if (calendarEvents && calendarEvents.length > 0) {
+      // Użyj zdarzeń z kalendarza dla tego związku
+      doseEventsByCompound[item.compoundKey] = calendarEvents.filter(
+        (ev) => ev.compoundKey === item.compoundKey && ev.timeHours <= totalDurationHours
+      );
+    } else {
+      // Wygeneruj automatyczny harmonogram ze stacku
+      const adminHours = generateAdministrationHours(item.frequency, totalDurationHours);
+      doseEventsByCompound[item.compoundKey] = adminHours.map((h) => ({
+        compoundKey: item.compoundKey,
+        dose: item.dose,
+        timeHours: h
+      }));
     }
-  });
+  }
 
-  // Timeline loop
-  for (let h = 0; h <= totalHours; h += stepHours) {
-    const compoundLevels: Record<string, number> = {};
-    const injections: Record<string, number> = {};
-    let totalAasLevel = 0;
+  // Oblicz surowe wartości stężeń (superpozycja dawek tej samej substancji)
+  const rawPoints: { timeHours: number; rawByCompound: Record<string, number>; isDoseByCompound: Record<string, boolean> }[] = [];
+  const maxRawByCompound: Record<string, number> = {};
 
-    for (const cfg of activeConfigs) {
-      let level = 0;
-      const isInj = cfg.injectionTimes.includes(h);
-      if (isInj) {
-        injections[cfg.compound.id] = cfg.dosePerShot;
-      }
+  for (const item of enabledItems) {
+    maxRawByCompound[item.compoundKey] = 0;
+  }
 
-      for (const injH of cfg.injectionTimes) {
-        if (h >= injH) {
-          level += calculateDecayLevel(
-            cfg.dosePerShot,
-            h - injH,
-            cfg.halfLifeHours,
-            cfg.timeToPeakHours
-          );
+  for (let h = 0; h <= totalDurationHours; h += stepHours) {
+    const rawByCompound: Record<string, number> = {};
+    const isDoseByCompound: Record<string, boolean> = {};
+
+    for (const item of enabledItems) {
+      const cmp = PK_COMPOUNDS[item.compoundKey];
+      const events = doseEventsByCompound[item.compoundKey] || [];
+      
+      let sum = 0;
+      let hasDoseAtThisHour = false;
+
+      for (const ev of events) {
+        if (h >= ev.timeHours) {
+          sum += calculateDoseContribution(ev.dose, h - ev.timeHours, cmp.halfLifeHours, cmp.tMaxHours);
+        }
+        if (Math.abs(h - ev.timeHours) < stepHours / 2) {
+          hasDoseAtThisHour = true;
         }
       }
 
-      const roundedLevel = Math.round(level * 10) / 10;
-      compoundLevels[cfg.compound.id] = roundedLevel;
+      rawByCompound[item.compoundKey] = sum;
+      isDoseByCompound[item.compoundKey] = hasDoseAtThisHour;
 
-      if (cfg.profile.unit === 'mg' && cfg.profile.category !== 'hcg') {
-        totalAasLevel += roundedLevel;
+      if (sum > (maxRawByCompound[item.compoundKey] || 0)) {
+        maxRawByCompound[item.compoundKey] = sum;
       }
     }
 
-    const pointDate = new Date(now.getTime() + h * 3600 * 1000);
-    const dateStr = pointDate.toISOString().split('T')[0];
-
-    points.push({
+    rawPoints.push({
       timeHours: h,
-      timeDays: Math.round((h / 24) * 10) / 10,
-      dateStr,
-      compoundLevels,
-      injections,
-      totalAasLevel: Math.round(totalAasLevel * 10) / 10
+      rawByCompound,
+      isDoseByCompound
     });
   }
 
-  // Calculate per-compound steady-state statistics (from the last 14 days)
-  const compoundStats: Record<
-    string,
-    {
-      profile: SubstanceProfile;
-      dosePerShot: number;
-      peak: number;
-      trough: number;
-      average: number;
-      peakToTroughRatio: number;
-      fluctuationPct: number;
+  // Znormalizuj do 0–100% własnego piku dla każdej substancji
+  const points: SimulationPoint[] = rawPoints.map((pt) => {
+    const relativeLevels: Record<string, number> = {};
+
+    for (const item of enabledItems) {
+      const max = maxRawByCompound[item.compoundKey] || 1;
+      const raw = pt.rawByCompound[item.compoundKey] || 0;
+      relativeLevels[item.compoundKey] = max > 0 ? Math.round((raw / max) * 1000) / 10 : 0;
     }
-  > = {};
 
-  const steadyPoints = points.filter((p) => p.timeHours >= Math.max(0, totalHours - 14 * 24));
+    const timeDays = Math.round((pt.timeHours / 24) * 10) / 10;
+    const label = isDaysView ? `Dzień ${timeDays}` : `${pt.timeHours}h (${timeDays}d)`;
 
-  for (const cfg of activeConfigs) {
-    const vals = steadyPoints.map((p) => p.compoundLevels[cfg.compound.id] || 0);
-    const peak = vals.length > 0 ? Math.max(...vals) : cfg.dosePerShot;
-    const trough = vals.length > 0 ? Math.min(...vals) : cfg.dosePerShot * 0.5;
-    const average = vals.length > 0 ? vals.reduce((a, b) => a + b, 0) / vals.length : cfg.dosePerShot * 0.75;
-    const ratio = trough > 0 ? Math.round((peak / trough) * 100) / 100 : 1;
-    const fluctuationPct = trough > 0 ? Math.round(((peak - trough) / trough) * 100) : 0;
+    return {
+      timeHours: pt.timeHours,
+      timeDays,
+      label,
+      relativeLevels,
+      rawLevels: pt.rawByCompound,
+      isDoseEvent: pt.isDoseByCompound
+    };
+  });
 
-    compoundStats[cfg.compound.id] = {
-      profile: cfg.profile,
-      dosePerShot: cfg.dosePerShot,
-      peak: Math.round(peak * 10) / 10,
+  // Oblicz metryki stabilności osobno dla każdej substancji
+  const metricsByCompound: Record<string, CompoundMetrics> = {};
+
+  for (const item of enabledItems) {
+    const cmp = PK_COMPOUNDS[item.compoundKey];
+    const timeToSteadyStateHours = 4.5 * cmp.halfLifeHours;
+    const timeToSteadyStateDays = Math.round((4.5 * cmp.halfLifeDays) * 10) / 10;
+    const isSteadyStateReached = totalDurationHours >= timeToSteadyStateHours;
+
+    // Faza stacjonarna: bierzemy punkty od osiągnięcia ~4 okresów półtrwania, lub drugą połowę zakresu
+    const steadyPoints = points.filter((p) => 
+      isSteadyStateReached ? p.timeHours >= timeToSteadyStateHours * 0.8 : p.timeHours >= totalDurationHours * 0.4
+    );
+
+    const levels = (steadyPoints.length > 0 ? steadyPoints : points).map((p) => p.relativeLevels[item.compoundKey] || 0);
+
+    const peak = levels.length > 0 ? Math.max(...levels) : 100;
+    const trough = levels.length > 0 ? Math.min(...levels) : 50;
+    const mean = levels.length > 0 ? levels.reduce((a, b) => a + b, 0) / levels.length : 75;
+
+    const peakToTrough = trough > 0 ? Math.round((peak / trough) * 100) / 100 : 1;
+    const fluctuationPercent = mean > 0 ? Math.round(((peak - trough) / mean) * 100) : 0;
+
+    metricsByCompound[item.compoundKey] = {
+      compoundKey: item.compoundKey,
+      compound: cmp,
+      peak,
       trough: Math.round(trough * 10) / 10,
-      average: Math.round(average * 10) / 10,
-      peakToTroughRatio: ratio,
-      fluctuationPct
+      mean: Math.round(mean * 10) / 10,
+      peakToTrough,
+      fluctuationPercent,
+      timeToSteadyStateDays,
+      isSteadyStateReached,
+      color: item.color || cmp.color
     };
   }
 
-  const totalAasVals = steadyPoints.map((p) => p.totalAasLevel);
-  const totalAasPeak = totalAasVals.length > 0 ? Math.round(Math.max(...totalAasVals) * 10) / 10 : 0;
-  const totalAasTrough = totalAasVals.length > 0 ? Math.round(Math.min(...totalAasVals) * 10) / 10 : 0;
-
   return {
     points,
-    compoundStats,
-    totalAasPeak,
-    totalAasTrough,
-    totalWeeklyAasMg
+    metricsByCompound,
+    activeCompounds,
+    viewMode,
+    totalDurationDays,
+    totalDurationHours
   };
+}
+
+/**
+ * Mapowanie opisu ścieżki estrogenowej dla danego związku
+ */
+export function getEstrogenPathwayDescription(compound: PKCompound): {
+  pathway: string;
+  details: string;
+  type: 'aromatizes' | 'indirect' | 'none' | 'inhibitor';
+} {
+  switch (compound.estrogenPath) {
+    case 'direct':
+      return {
+        pathway: `${compound.name} → aromataza → możliwy wzrost E2`,
+        details: 'Podlega bezpośredniej aromatyzacji do estradiolu (E2). Stopień konwersji zależy od indywidualnej aktywności aromatazy i tkanki tłuszczowej.',
+        type: 'aromatizes'
+      };
+    case 'indirect':
+      return {
+        pathway: 'HCG → stymulacja komórek Leydiga → możliwy wzrost testosteronu i E2',
+        details: 'HCG stymuluje gonady do endogennej produkcji testosteronu oraz wewnątrzjądrowej aromatyzacji do E2. Nie jest to syntetyczny steryd.',
+        type: 'indirect'
+      };
+    case 'none':
+      return {
+        pathway: `${compound.name} → nie aromatyzuje`,
+        details: 'Związek nie podlega konwersji do estrogenów przez aromatazę. Nie należy jednak przypisywać mu automatycznego działania antyestrogenowego ani mylić z inhibitorem.',
+        type: 'none'
+      };
+    case 'inhibits':
+      return {
+        pathway: `${compound.name} → hamuje enzym aromatazy`,
+        details: compound.reversible === false
+          ? 'Nieodwracalny samobójczy inhibitor aromatazy (suicide inhibitor). Czas wyłączenia enzymu trwa dłużej niż obecność leku w osoczu.'
+          : 'Odwracalny inhibitor aromatazy. Blokuje enzym w sposób zależny od aktualnego stężenia we krwi.',
+        type: 'inhibitor'
+      };
+  }
 }

@@ -4,7 +4,7 @@ import { ModernHeader } from './components/ModernHeader';
 import { WorkoutPlanView } from './components/WorkoutPlanView';
 import { StatsView } from './components/StatsView';
 import { MuscleProgressView } from './components/MuscleProgressView';
-import { BodyWeightView } from './components/BodyWeightView';
+import { BodyWeightView, WeightSubcategoryType } from './components/BodyWeightView';
 import { SettingsView } from './components/SettingsView';
 import { PythonCodeView } from './components/PythonCodeView';
 import { ExerciseManagerView } from './components/ExerciseManagerView';
@@ -13,8 +13,9 @@ import { UserProfileView } from './components/UserProfileView';
 import { HoverAnnotationSystem } from './components/HoverAnnotationSystem';
 import { ExerciseModal } from './components/ExerciseModal';
 import { ExerciseHistoryModal } from './components/ExerciseHistoryModal';
-import { GymData, TrainingWeek, TrainingDay, Exercise, ExerciseHistoryPoint, BodyWeightEntry, CircumferenceEntry, BodyPartMeasurement, AppSettings, LoggedSet, BackupEntry, ProtocolEntry, UserProfile, SyncServerConfig, SyncLogEntry } from './types';
+import { GymData, TrainingWeek, TrainingDay, Exercise, ExerciseHistoryPoint, BodyWeightEntry, CircumferenceEntry, BodyPartMeasurement, AppSettings, LoggedSet, BackupEntry, ProtocolEntry, UserProfile, SyncServerConfig, SyncLogEntry, CatalogExercise } from './types';
 import { initialGymData } from './data/initialData';
+import { DEFAULT_CATALOG_EXERCISES } from './data/defaultCatalogExercises';
 import { PYTHON_SOURCE_CODE, BAT_SCRIPT_CODE, REQUIREMENTS_TXT, INSTALL_BAT_CODE } from './data/pythonSource';
 import { getTodayDateString } from './utils/calculations';
 import { persistence } from './utils/persistence';
@@ -32,7 +33,10 @@ const normalizeGymData = (raw: GymData): GymData => ({
     ? raw.profilesList
     : (initialGymData.profilesList || []),
   syncConfig: raw.syncConfig || initialGymData.syncConfig,
-  syncLogs: Array.isArray(raw.syncLogs) ? raw.syncLogs : (initialGymData.syncLogs || [])
+  syncLogs: Array.isArray(raw.syncLogs) ? raw.syncLogs : (initialGymData.syncLogs || []),
+  catalogExercises: Array.isArray(raw.catalogExercises) && raw.catalogExercises.length > 0
+    ? raw.catalogExercises
+    : DEFAULT_CATALOG_EXERCISES
 });
 
 export default function App() {
@@ -51,6 +55,20 @@ export default function App() {
   });
 
   const [activeView, setActiveView] = useState<string>(data.settings.startupView || 'plan');
+  const [weightSubcategory, setWeightSubcategory] = useState<WeightSubcategoryType>('all');
+
+  const handleSelectView = (view: string) => {
+    if (view.startsWith('weight:')) {
+      const sub = view.slice(7) as WeightSubcategoryType;
+      setWeightSubcategory(sub);
+      setActiveView('weight');
+    } else if (view === 'weight') {
+      setActiveView('weight');
+    } else {
+      setActiveView(view);
+    }
+  };
+
   useEffect(() => {
     if (data.settings.rememberLastView && data.settings.startupView !== activeView) {
       setData(prev => ({ ...prev, settings: { ...prev.settings, startupView: activeView as AppSettings['startupView'] } }));
@@ -635,6 +653,74 @@ export default function App() {
     }
   };
 
+  // Standalone Exercise Catalog Handlers (100% Isolated from Analysis)
+  const catalogExercises = data.catalogExercises || DEFAULT_CATALOG_EXERCISES;
+
+  const handleAddCatalogExercise = (newCatalogEx: Omit<CatalogExercise, 'id'>) => {
+    const item: CatalogExercise = {
+      ...newCatalogEx,
+      id: `cat-custom-${Date.now()}`
+    };
+    setData((prev) => ({
+      ...prev,
+      catalogExercises: [item, ...(prev.catalogExercises || DEFAULT_CATALOG_EXERCISES)]
+    }));
+  };
+
+  const handleEditCatalogExercise = (id: string, updates: Partial<CatalogExercise>) => {
+    setData((prev) => ({
+      ...prev,
+      catalogExercises: (prev.catalogExercises || DEFAULT_CATALOG_EXERCISES).map((ex) =>
+        ex.id === id ? { ...ex, ...updates } : ex
+      )
+    }));
+  };
+
+  const handleDeleteCatalogExercise = (id: string) => {
+    setData((prev) => ({
+      ...prev,
+      catalogExercises: (prev.catalogExercises || DEFAULT_CATALOG_EXERCISES).filter((ex) => ex.id !== id)
+    }));
+  };
+
+  const handleResetCatalogToDefaults = () => {
+    setData((prev) => ({
+      ...prev,
+      catalogExercises: DEFAULT_CATALOG_EXERCISES
+    }));
+  };
+
+  const handleInsertCatalogToPlan = (catalogEx: CatalogExercise, weekId: string, dayId: string, initialWeight: number) => {
+    const newEx: Exercise = {
+      id: `ex-${Date.now()}`,
+      name: catalogEx.name,
+      category: catalogEx.category,
+      sets: catalogEx.defaultSets,
+      reps: catalogEx.defaultReps,
+      weight: initialWeight,
+      rpe: catalogEx.defaultRpe || 8,
+      notes: catalogEx.notes || '',
+      history: []
+    };
+
+    setData((prev) => ({
+      ...prev,
+      weeks: prev.weeks.map((w) => {
+        if (w.id !== weekId) return w;
+        return {
+          ...w,
+          days: w.days.map((d) => {
+            if (d.id !== dayId) return d;
+            return {
+              ...d,
+              exercises: [...d.exercises, newEx]
+            };
+          })
+        };
+      })
+    }));
+  };
+
   // Body weight entries
   const handleAddBodyWeight = (entry: Omit<BodyWeightEntry, 'id'>) => {
     const newEntry: BodyWeightEntry = {
@@ -893,14 +979,19 @@ export default function App() {
   const isDark = data.settings.theme === 'dark';
   const currentWeek = data.weeks.find((w) => w.id === selectedWeekId) || data.weeks[0];
   const currentDay = currentWeek?.days.find((d) => d.id === selectedDayId) || currentWeek?.days[0];
+  const uiScale = data.settings.uiScale || 'high';
 
   return (
-    <div className={`min-h-screen ${isDark ? 'bg-slate-950 text-slate-100' : 'bg-slate-50 text-slate-900'} ${data.settings.reducedMotion ? 'reduce-motion' : ''} flex font-sans selection:bg-emerald-500 selection:text-white`}>
+    <div 
+      data-ui-scale={uiScale}
+      className={`min-h-screen ${isDark ? 'bg-slate-950 text-slate-100' : 'bg-slate-50 text-slate-900'} ${data.settings.reducedMotion ? 'reduce-motion' : ''} flex font-sans antialiased crisp-pixel selection:bg-emerald-500 selection:text-white`}
+    >
       {/* Modern Desktop Sidebar (Left Side) */}
       <div className="hidden md:flex shrink-0">
         <ModernSidebar
           activeView={activeView}
-          onSelectView={setActiveView}
+          weightSubcategory={weightSubcategory}
+          onSelectView={handleSelectView}
           settings={data.settings}
           onUpdateSettings={handleUpdateSettings}
           autoSaveStatus={autoSaveStatus}
@@ -908,6 +999,10 @@ export default function App() {
           onToggleCollapse={() => setIsSidebarCollapsed(!isSidebarCollapsed)}
           weeksCount={data.weeks.length}
           position="left"
+          profile={data.profile}
+          onUpdateProfile={handleUpdateProfile}
+          syncConfig={data.syncConfig}
+          onUpdateSyncConfig={handleUpdateSyncConfig}
         />
       </div>
 
@@ -915,7 +1010,7 @@ export default function App() {
       <div className="flex-1 flex flex-col h-screen overflow-hidden">
         <ModernHeader
           activeView={activeView}
-          onSelectView={setActiveView}
+          onSelectView={handleSelectView}
           settings={data.settings}
           onUpdateSettings={handleUpdateSettings}
           autoSaveStatus={autoSaveStatus}
@@ -1014,9 +1109,9 @@ export default function App() {
               <MuscleProgressView weeks={data.weeks} unit={data.settings.unit} analysisOnlyCompleted={data.settings.analysisOnlyCompleted !== false} analysisHideEmptyGroups={data.settings.analysisHideEmptyGroups !== false} analysisIncludePartialHistory={data.settings.analysisIncludePartialHistory === true} analysisStartWeek={data.settings.analysisStartWeek || 1} analysisEndWeek={data.settings.analysisEndWeek || 999} analysisDefaultMetric={data.settings.analysisDefaultMetric || 'progressPct'} analysisShowDataQualityWarnings={data.settings.analysisShowDataQualityWarnings !== false} analysisRequireHistoryForCompleted={data.settings.analysisRequireHistoryForCompleted !== false} analysisMinExecutedSets={data.settings.analysisMinExecutedSets || 1} analysisWarnMissingHistory={data.settings.analysisWarnMissingHistory !== false} analysisShowExecutionSummary={data.settings.analysisShowExecutionSummary !== false} analysisShowMuscleFrequency={data.settings.analysisShowMuscleFrequency !== false} />
           )}
 
-          {activeView === 'weight' && (
+          {(activeView === 'weight' || activeView.startsWith('weight:')) && (
             <BodyWeightView
-              bodyWeights={data.bodyWeights}
+              bodyWeights={data.bodyWeights || []}
               onAddBodyWeight={handleAddBodyWeight}
               onDeleteBodyWeight={handleDeleteBodyWeight}
               circumferences={data.circumferences || []}
@@ -1028,6 +1123,8 @@ export default function App() {
               onUpdateCircumference={handleUpdateCircumference}
               onDeleteCircumference={handleDeleteCircumference}
               unit={data.settings.unit}
+              activeSubcategory={weightSubcategory}
+              onSelectSubcategory={setWeightSubcategory}
             />
           )}
 
@@ -1047,21 +1144,13 @@ export default function App() {
 
           {activeView === 'exercises' && (
             <ExerciseManagerView
+              catalogExercises={catalogExercises}
               weeks={data.weeks}
-              onOpenAddExerciseModal={() => {
-                setExerciseToEdit(null);
-                setIsExerciseModalOpen(true);
-              }}
-              onOpenEditExerciseModal={(ex) => {
-                setExerciseToEdit(ex);
-                setIsExerciseModalOpen(true);
-              }}
-              onDeleteExercise={(exerciseId) => {
-                for (const week of data.weeks) {
-                  const day = week.days.find(d => d.exercises.some(ex => ex.id === exerciseId));
-                  if (day) { handleDeleteExercise(week.id, day.id, exerciseId); return; }
-                }
-              }}
+              onAddCatalogExercise={handleAddCatalogExercise}
+              onEditCatalogExercise={handleEditCatalogExercise}
+              onDeleteCatalogExercise={handleDeleteCatalogExercise}
+              onResetCatalogToDefaults={handleResetCatalogToDefaults}
+              onInsertToPlan={handleInsertCatalogToPlan}
               unit={data.settings.unit}
             />
           )}
@@ -1117,8 +1206,9 @@ export default function App() {
           <div className="relative z-10 w-72 h-full shadow-2xl">
             <ModernSidebar
               activeView={activeView}
+              weightSubcategory={weightSubcategory}
               onSelectView={(v) => {
-                setActiveView(v);
+                handleSelectView(v);
                 setIsMobileMenuOpen(false);
               }}
               settings={data.settings}
@@ -1128,6 +1218,10 @@ export default function App() {
               onToggleCollapse={() => setIsMobileMenuOpen(false)}
               weeksCount={data.weeks.length}
               position="left"
+              profile={data.profile}
+              onUpdateProfile={handleUpdateProfile}
+              syncConfig={data.syncConfig}
+              onUpdateSyncConfig={handleUpdateSyncConfig}
             />
           </div>
         </div>

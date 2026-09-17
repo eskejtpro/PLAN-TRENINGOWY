@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Settings, Save, Download, Upload, RotateCcw, Folder, Check, Copy, ShieldCheck, Archive, Clock, RefreshCw, Trash2, HardDrive, Smartphone, Wifi, ArrowRight, Shield, Sparkles, Info } from 'lucide-react';
+import { Settings, Save, Download, Upload, RotateCcw, Folder, Check, Copy, ShieldCheck, Archive, Clock, RefreshCw, Trash2, HardDrive, Smartphone, Wifi, ArrowRight, Shield, Sparkles, Info, Monitor } from 'lucide-react';
 import { GymData, AppSettings, BackupEntry, SyncServerConfig } from '../types';
 import { initialGymData } from '../data/initialData';
 
@@ -155,6 +155,72 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
             </p>
           </div>
 
+          {/* UI Scale and Pixel Density Engine */}
+          <div className="p-3.5 rounded-xl bg-slate-950 border border-slate-800 space-y-2.5">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <Monitor className="w-4 h-4 text-emerald-400" />
+                <span className="text-xs font-bold text-slate-100">Rozdzielczość & Zagęszczenie Pikseli (HiDPI)</span>
+              </div>
+              <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-emerald-500/15 text-emerald-300 border border-emerald-500/30">
+                {data.settings.uiScale === 'compact' ? '90% (Kompakt)' : data.settings.uiScale === 'standard' ? '100% (Standard)' : data.settings.uiScale === 'ultra' ? '125% (Ultra HD)' : '110% (HiDPI Sharp)'}
+              </span>
+            </div>
+            <p className="text-[11px] text-slate-400 leading-relaxed">
+              Dopasuj zagęszczenie elementów, wielkość czcionki oraz ostrość renderowania tekstu i krawędzi (High-DPI / Retina / 4K).
+            </p>
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-1.5 pt-1">
+              <button
+                type="button"
+                onClick={() => onUpdateSettings({ uiScale: 'compact' })}
+                className={`px-2.5 py-2 rounded-lg text-xs font-bold border flex flex-col items-center justify-center gap-0.5 transition-all cursor-pointer ${
+                  data.settings.uiScale === 'compact'
+                    ? 'bg-emerald-600 text-white border-emerald-500 shadow-sm'
+                    : 'bg-slate-900 border-slate-800 text-slate-400 hover:text-slate-200 hover:bg-slate-850'
+                }`}
+              >
+                <span>90%</span>
+                <span className="text-[9px] font-normal opacity-80">Kompakt</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => onUpdateSettings({ uiScale: 'standard' })}
+                className={`px-2.5 py-2 rounded-lg text-xs font-bold border flex flex-col items-center justify-center gap-0.5 transition-all cursor-pointer ${
+                  data.settings.uiScale === 'standard'
+                    ? 'bg-emerald-600 text-white border-emerald-500 shadow-sm'
+                    : 'bg-slate-900 border-slate-800 text-slate-400 hover:text-slate-200 hover:bg-slate-850'
+                }`}
+              >
+                <span>100%</span>
+                <span className="text-[9px] font-normal opacity-80">Standard</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => onUpdateSettings({ uiScale: 'high' })}
+                className={`px-2.5 py-2 rounded-lg text-xs font-bold border flex flex-col items-center justify-center gap-0.5 transition-all cursor-pointer ${
+                  (data.settings.uiScale === 'high' || !data.settings.uiScale)
+                    ? 'bg-emerald-600 text-white border-emerald-500 shadow-sm'
+                    : 'bg-slate-900 border-slate-800 text-slate-400 hover:text-slate-200 hover:bg-slate-850'
+                }`}
+              >
+                <span>110%</span>
+                <span className="text-[9px] font-normal opacity-80">HiDPI Ostre</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => onUpdateSettings({ uiScale: 'ultra' })}
+                className={`px-2.5 py-2 rounded-lg text-xs font-bold border flex flex-col items-center justify-center gap-0.5 transition-all cursor-pointer ${
+                  data.settings.uiScale === 'ultra'
+                    ? 'bg-emerald-600 text-white border-emerald-500 shadow-sm'
+                    : 'bg-slate-900 border-slate-800 text-slate-400 hover:text-slate-200 hover:bg-slate-850'
+                }`}
+              >
+                <span>125%</span>
+                <span className="text-[9px] font-normal opacity-80">Ultra 4K</span>
+              </button>
+            </div>
+          </div>
+
           {/* Unit Toggle */}
           <div>
             <label className="block text-xs font-semibold text-slate-300 mb-1">
@@ -241,6 +307,7 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
             <div className="p-3 rounded-xl bg-emerald-950/20 border border-emerald-800/40 text-[11px] text-slate-300 space-y-1">
               <p className="font-bold text-emerald-300">Jak działa silnik analiz GymTracker Pro?</p>
               <p>• <strong>Filtrowanie:</strong> Zlicza tylko zatwierdzone dni i faktycznie wykonane serie, zapobiegając zawyżaniu tonażu.</p>
+              <p>• <strong>Izolacja Katalogu:</strong> Baza i katalog ćwiczeń to tylko słownik wzorcowy. Pozycje z katalogu nigdy nie są brane pod uwagę w analizach wykresów, 1RM ani tonażu.</p>
               <p>• <strong>Kalkulacja tonażu:</strong> Suma pracy mechanicznej: Ciężar × Powtórzenia dla każdej ukończonej serii.</p>
               <p>• <strong>Szacowanie 1RM:</strong> Wzór Epleya: Ciężar × (1 + Powtórzenia / 30) wyznaczany z najcięższej serii dnia.</p>
               <p>• <strong>Alerty balansu:</strong> Wykrywanie dysproporcji objętościowych pomiędzy ruchami Push, Pull i Legs.</p>
@@ -1028,8 +1095,8 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
                     <option value="stats">Progres & Wykresy</option>
                     <option value="muscle">Partie Mięśniowe</option>
                     <option value="weight">Dziennik Wagi</option>
-                    <option value="cycles">Kalendarz Cyklu</option>
-                    <option value="exercises">Katalog Ćwiczeń</option>
+                    <option value="cycles">Kalendarz</option>
+                    <option value="exercises">Katalog &amp; Baza Wzorcowa</option>
                     <option value="profile">Centrum Synchronizacji &amp; Badania</option>
                     <option value="settings">Ustawienia</option>
                   </select>

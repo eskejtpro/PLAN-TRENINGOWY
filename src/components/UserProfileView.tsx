@@ -22,9 +22,29 @@ import {
   QrCode,
   Monitor,
   HeartPulse,
-  Clock
+  Clock,
+  User,
+  Camera,
+  Target,
+  Scale,
+  Dumbbell,
+  Flame,
+  Edit2,
+  Sparkles,
+  Sliders
 } from 'lucide-react';
 import { GymData, UserProfile, SyncServerConfig, SyncLogEntry, HealthBloodworkEntry } from '../types';
+
+const PRESET_AVATARS = [
+  { id: 'preset:muscle', label: 'Siła & Masa', emoji: '💪', bg: 'from-amber-500 to-orange-600' },
+  { id: 'preset:barbell', label: 'Sztanga', emoji: '🏋️', bg: 'from-emerald-500 to-teal-600' },
+  { id: 'preset:trophy', label: 'Mistrz / PRO', emoji: '🏆', bg: 'from-yellow-400 to-amber-600' },
+  { id: 'preset:flash', label: 'Dynamika & Hipertrofia', emoji: '⚡', bg: 'from-cyan-500 to-blue-600' },
+  { id: 'preset:shield', label: 'Pancerz', emoji: '🛡️', bg: 'from-indigo-500 to-purple-600' },
+  { id: 'preset:eagle', label: 'Dyscyplina', emoji: '🦅', bg: 'from-rose-500 to-red-600' },
+  { id: 'preset:target', label: 'Cel & Rekord', emoji: '🎯', bg: 'from-emerald-600 to-green-700' },
+  { id: 'preset:crown', label: 'Mistrzowski Poziom', emoji: '👑', bg: 'from-amber-400 to-yellow-600' },
+];
 
 interface UserProfileViewProps {
   data: GymData;
@@ -66,8 +86,25 @@ export const UserProfileView: React.FC<UserProfileViewProps> = ({
 
   const syncLogs = data.syncLogs || [];
 
-  // Active subtab: only Sync Center and Health/Bloodwork (dates + notes + JSON)
-  const [activeTab, setActiveTab] = useState<'sync' | 'bloodwork'>('sync');
+  // Active subtab: Profile & Account Settings, Sync Center, and Health/Bloodwork
+  const [activeTab, setActiveTab] = useState<'profile' | 'sync' | 'bloodwork'>('profile');
+
+  // Profile Edit State
+  const [nameInput, setNameInput] = useState(profile.name || data.settings.athleteName || 'Pasik92');
+  const [bioInput, setBioInput] = useState(profile.bio || 'Zawodnik trójboju / hipertrofii sylwetkowej');
+  const [goalInput, setGoalInput] = useState(profile.goal || 'Budowa masy i siły (Hipertrofia)');
+  const [experienceInput, setExperienceInput] = useState(profile.experienceLevel || 'intermediate');
+  const [ageInput, setAgeInput] = useState<number | ''>(profile.age || 28);
+  const [heightInput, setHeightInput] = useState<number | ''>(profile.height || 180);
+  const [targetWeightInput, setTargetWeightInput] = useState<number | ''>(profile.targetWeight || 88.0);
+  const [caloriesInput, setCaloriesInput] = useState<number | ''>(profile.dietaryMacros?.calories || 3200);
+  const [proteinInput, setProteinInput] = useState<number | ''>(profile.dietaryMacros?.protein || 180);
+  const [carbsInput, setCarbsInput] = useState<number | ''>(profile.dietaryMacros?.carbs || 380);
+  const [fatsInput, setFatsInput] = useState<number | ''>(profile.dietaryMacros?.fats || 85);
+  const [customAvatarUrl, setCustomAvatarUrl] = useState('');
+  const [avatarTab, setAvatarTab] = useState<'presets' | 'upload' | 'url'>('presets');
+  const [isProfileSaved, setIsProfileSaved] = useState(false);
+  const avatarFileRef = useRef<HTMLInputElement>(null);
 
   // Copy states
   const [copiedToken, setCopiedToken] = useState(false);
@@ -297,8 +334,22 @@ export const UserProfileView: React.FC<UserProfileViewProps> = ({
         </div>
       </div>
 
-      {/* Navigation Subtabs (Only Sync & Bloodwork) */}
+      {/* Navigation Subtabs */}
       <div className="flex items-center gap-2 border-b border-slate-800 pb-2 overflow-x-auto no-scrollbar text-xs font-semibold">
+        <button
+          type="button"
+          onClick={() => setActiveTab('profile')}
+          className={`px-4 py-2.5 rounded-xl transition-colors flex items-center gap-2 shrink-0 ${
+            activeTab === 'profile'
+              ? 'bg-emerald-600 text-white font-bold shadow-xs'
+              : 'bg-slate-900 text-slate-400 hover:text-slate-200 hover:bg-slate-800 border border-slate-800'
+          }`}
+          id="tab-athlete-profile"
+        >
+          <User className="w-4 h-4" />
+          <span>Profil &amp; Ustawienia Konta</span>
+        </button>
+
         <button
           type="button"
           onClick={() => setActiveTab('sync')}
@@ -333,6 +384,428 @@ export const UserProfileView: React.FC<UserProfileViewProps> = ({
           )}
         </button>
       </div>
+
+      {/* SUBTAB 0: Athlete Profile & Account Settings */}
+      {activeTab === 'profile' && (
+        <div className="space-y-6">
+          {isProfileSaved && (
+            <div className="p-4 bg-emerald-950/60 border border-emerald-500/50 rounded-2xl flex items-center justify-between text-emerald-300 text-sm animate-fadeIn">
+              <div className="flex items-center gap-2">
+                <Check className="w-5 h-5 text-emerald-400" />
+                <span>Zmiany w profilu i ustawieniach konta zostały pomyślnie zapisane!</span>
+              </div>
+              <button
+                type="button"
+                onClick={() => setIsProfileSaved(false)}
+                className="text-emerald-400 hover:text-white"
+              >
+                &times;
+              </button>
+            </div>
+          )}
+
+          {/* Profile Overview & Avatar Management */}
+          <div className="bg-slate-900 border border-slate-800 rounded-2xl p-5 sm:p-6 shadow-sm space-y-6">
+            <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-6 pb-6 border-b border-slate-800">
+              <div className="flex items-center gap-4">
+                {/* Large Profile Avatar Display */}
+                <div className="relative group">
+                  {profile.avatarUrl?.startsWith('preset:') ? (
+                    (() => {
+                      const preset = PRESET_AVATARS.find(p => p.id === profile.avatarUrl);
+                      return (
+                        <div className={`w-20 h-20 rounded-2xl bg-gradient-to-br ${preset?.bg || 'from-emerald-500 to-teal-700'} flex items-center justify-center text-3xl shadow-lg border-2 border-emerald-400/40 font-bold`}>
+                          <span>{preset?.emoji || '💪'}</span>
+                        </div>
+                      );
+                    })()
+                  ) : profile.avatarUrl ? (
+                    <img
+                      src={profile.avatarUrl}
+                      alt={nameInput}
+                      className="w-20 h-20 rounded-2xl object-cover border-2 border-emerald-500/40 shadow-lg"
+                    />
+                  ) : (
+                    <div className="w-20 h-20 rounded-2xl bg-gradient-to-br from-emerald-600 to-teal-800 text-white font-black flex items-center justify-center text-2xl shadow-lg border-2 border-emerald-400/40">
+                      {nameInput.slice(0, 2).toUpperCase()}
+                    </div>
+                  )}
+
+                  {/* Status Indicator Dot */}
+                  <span
+                    className={`absolute -bottom-1 -right-1 w-4 h-4 rounded-full border-2 border-slate-900 ${
+                      syncConfig.lastSyncStatus === 'connected' ? 'bg-emerald-400' : 'bg-amber-400'
+                    }`}
+                    title={syncConfig.lastSyncStatus === 'connected' ? `Serwer połączony (${syncConfig.lastPingMs || 14} ms)` : 'Tryb lokalny'}
+                  />
+                </div>
+
+                <div>
+                  <div className="flex items-center gap-2">
+                    <h3 className="text-xl font-black text-slate-100">{nameInput}</h3>
+                    <span className="px-2 py-0.5 rounded-md bg-emerald-500/20 text-emerald-400 text-xs font-mono font-bold border border-emerald-500/30">
+                      PRO ATHLETE
+                    </span>
+                  </div>
+                  <p className="text-xs text-slate-400 mt-0.5">{goalInput || 'Brak sprecyzowanego celu'}</p>
+                  
+                  {/* Server connection tag */}
+                  <div className="flex items-center gap-2 mt-2 text-xs font-mono">
+                    <span className="flex items-center gap-1 text-slate-300">
+                      <Wifi className={`w-3.5 h-3.5 ${syncConfig.lastSyncStatus === 'connected' ? 'text-emerald-400' : 'text-amber-400'}`} />
+                      <span>{syncConfig.lastSyncStatus === 'connected' ? `Serwer: ${syncConfig.serverUrl}` : 'Węzeł lokalny offline'}</span>
+                    </span>
+                    <span className="text-slate-600">•</span>
+                    <span className="text-emerald-400">{syncConfig.lastPingMs || 14} ms</span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Quick Save Action */}
+              <button
+                type="button"
+                onClick={() => {
+                  onUpdateProfile({
+                    name: nameInput,
+                    bio: bioInput,
+                    goal: goalInput,
+                    experienceLevel: experienceInput as any,
+                    age: Number(ageInput) || undefined,
+                    height: Number(heightInput) || undefined,
+                    targetWeight: Number(targetWeightInput) || undefined,
+                    dietaryMacros: {
+                      calories: Number(caloriesInput) || 3000,
+                      protein: Number(proteinInput) || 180,
+                      carbs: Number(carbsInput) || 350,
+                      fats: Number(fatsInput) || 80
+                    }
+                  });
+                  setIsProfileSaved(true);
+                  setTimeout(() => setIsProfileSaved(false), 3500);
+                }}
+                className="px-5 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs flex items-center gap-2 transition-colors shadow-md shadow-emerald-950"
+                id="btn-save-athlete-profile-top"
+              >
+                <Check className="w-4 h-4" />
+                <span>Zapisz zmiany w profilu</span>
+              </button>
+            </div>
+
+            {/* Avatar Selection Section */}
+            <div className="space-y-3">
+              <div className="flex items-center justify-between">
+                <label className="text-xs font-bold text-slate-200 uppercase tracking-wider flex items-center gap-2">
+                  <Camera className="w-4 h-4 text-emerald-400" />
+                  <span>Zdjęcie Profilowe &amp; Awatar</span>
+                </label>
+                {profile.avatarUrl && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      onUpdateProfile({ avatarUrl: undefined });
+                      setCustomAvatarUrl('');
+                    }}
+                    className="text-xs text-rose-400 hover:text-rose-300 flex items-center gap-1 transition-colors"
+                  >
+                    <Trash2 className="w-3.5 h-3.5" />
+                    <span>Usuń zdjęcie</span>
+                  </button>
+                )}
+              </div>
+
+              {/* Avatar Option Switcher */}
+              <div className="flex items-center gap-2 p-1 bg-slate-950/60 rounded-xl border border-slate-800 text-xs">
+                <button
+                  type="button"
+                  onClick={() => setAvatarTab('presets')}
+                  className={`flex-1 py-1.5 rounded-lg font-medium transition-colors ${
+                    avatarTab === 'presets' ? 'bg-emerald-600 text-white font-bold shadow-xs' : 'text-slate-400 hover:text-slate-200'
+                  }`}
+                >
+                  ⚡ Gotowe Motywy
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setAvatarTab('upload')}
+                  className={`flex-1 py-1.5 rounded-lg font-medium transition-colors ${
+                    avatarTab === 'upload' ? 'bg-emerald-600 text-white font-bold shadow-xs' : 'text-slate-400 hover:text-slate-200'
+                  }`}
+                >
+                  📁 Wgraj z Dysku
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setAvatarTab('url')}
+                  className={`flex-1 py-1.5 rounded-lg font-medium transition-colors ${
+                    avatarTab === 'url' ? 'bg-emerald-600 text-white font-bold shadow-xs' : 'text-slate-400 hover:text-slate-200'
+                  }`}
+                >
+                  🔗 Link URL
+                </button>
+              </div>
+
+              {/* Avatar Presets Grid */}
+              {avatarTab === 'presets' && (
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 pt-1">
+                  {PRESET_AVATARS.map((p) => {
+                    const isSelected = profile.avatarUrl === p.id;
+                    return (
+                      <button
+                        key={p.id}
+                        type="button"
+                        onClick={() => onUpdateProfile({ avatarUrl: p.id })}
+                        className={`p-2.5 rounded-xl border flex items-center gap-2.5 transition-all text-left ${
+                          isSelected
+                            ? 'bg-emerald-500/20 border-emerald-500 text-emerald-300 ring-2 ring-emerald-500/30'
+                            : 'bg-slate-950/40 border-slate-800 text-slate-400 hover:border-slate-700 hover:text-slate-200'
+                        }`}
+                      >
+                        <div className={`w-9 h-9 rounded-lg bg-gradient-to-br ${p.bg} flex items-center justify-center text-lg shrink-0 shadow-xs`}>
+                          {p.emoji}
+                        </div>
+                        <div className="truncate min-w-0">
+                          <span className="text-xs font-bold block truncate text-slate-200">{p.label}</span>
+                          <span className="text-[10px] text-slate-500 font-mono">{isSelected ? 'Wybrany' : 'Wybierz'}</span>
+                        </div>
+                      </button>
+                    );
+                  })}
+                </div>
+              )}
+
+              {/* Upload from Local Disk */}
+              {avatarTab === 'upload' && (
+                <div className="p-4 rounded-xl border border-dashed border-slate-700 bg-slate-950/40 text-center space-y-3">
+                  <div className="w-10 h-10 rounded-full bg-emerald-500/10 text-emerald-400 flex items-center justify-center mx-auto">
+                    <Upload className="w-5 h-5" />
+                  </div>
+                  <div>
+                    <p className="text-xs font-bold text-slate-200">Wybierz plik graficzny z komputera lub telefonu</p>
+                    <p className="text-[11px] text-slate-400 mt-0.5">Obsługiwane formaty: PNG, JPG, WEBP, GIF (maks. 5MB)</p>
+                  </div>
+                  <input
+                    type="file"
+                    ref={avatarFileRef}
+                    accept="image/*"
+                    className="hidden"
+                    onChange={(e) => {
+                      const file = e.target.files?.[0];
+                      if (file) {
+                        const reader = new FileReader();
+                        reader.onload = () => {
+                          if (typeof reader.result === 'string') {
+                            onUpdateProfile({ avatarUrl: reader.result });
+                          }
+                        };
+                        reader.readAsDataURL(file);
+                      }
+                    }}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => avatarFileRef.current?.click()}
+                    className="px-4 py-2 rounded-xl bg-slate-800 hover:bg-slate-700 text-emerald-400 text-xs font-bold border border-slate-700 transition-colors inline-flex items-center gap-1.5"
+                  >
+                    <Upload className="w-4 h-4" />
+                    <span>Przeglądaj pliki...</span>
+                  </button>
+                </div>
+              )}
+
+              {/* URL Avatar */}
+              {avatarTab === 'url' && (
+                <div className="flex gap-2">
+                  <input
+                    type="url"
+                    placeholder="https://twojadomena.pl/zdjecie.jpg"
+                    value={customAvatarUrl}
+                    onChange={(e) => setCustomAvatarUrl(e.target.value)}
+                    className="flex-1 bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs text-slate-200 placeholder-slate-500 focus:outline-hidden focus:border-emerald-500 font-mono"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (customAvatarUrl.trim()) {
+                        onUpdateProfile({ avatarUrl: customAvatarUrl.trim() });
+                      }
+                    }}
+                    className="px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs transition-colors shrink-0"
+                  >
+                    Zastosuj URL
+                  </button>
+                </div>
+              )}
+            </div>
+
+            {/* Profile Detail Fields */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-2">
+              <div className="space-y-1.5">
+                <label className="text-xs font-bold text-slate-300 flex items-center gap-1.5">
+                  <User className="w-3.5 h-3.5 text-emerald-400" />
+                  <span>Nazwa / Imię Zawodnika</span>
+                </label>
+                <input
+                  type="text"
+                  value={nameInput}
+                  onChange={(e) => setNameInput(e.target.value)}
+                  className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs text-slate-100 focus:outline-hidden focus:border-emerald-500 font-bold"
+                  placeholder="np. Pasik92"
+                />
+              </div>
+
+              <div className="space-y-1.5">
+                <label className="text-xs font-bold text-slate-300 flex items-center gap-1.5">
+                  <Target className="w-3.5 h-3.5 text-emerald-400" />
+                  <span>Główny Cel Treningowy</span>
+                </label>
+                <input
+                  type="text"
+                  value={goalInput}
+                  onChange={(e) => setGoalInput(e.target.value)}
+                  className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs text-slate-100 focus:outline-hidden focus:border-emerald-500"
+                  placeholder="np. Budowa masy i siły (Hipertrofia)"
+                />
+              </div>
+
+              <div className="space-y-1.5">
+                <label className="text-xs font-bold text-slate-300 flex items-center gap-1.5">
+                  <Sparkles className="w-3.5 h-3.5 text-emerald-400" />
+                  <span>Poziom Zaawansowania</span>
+                </label>
+                <select
+                  value={experienceInput}
+                  onChange={(e) => setExperienceInput(e.target.value)}
+                  className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs text-slate-100 focus:outline-hidden focus:border-emerald-500 cursor-pointer"
+                >
+                  <option value="beginner">Początkujący (0-1 rok stażu)</option>
+                  <option value="intermediate">Średniozaawansowany (1-3 lata)</option>
+                  <option value="advanced">Zaawansowany (3-6 lat)</option>
+                  <option value="elite">Elita / Zawodnik PRO (6+ lat)</option>
+                </select>
+              </div>
+
+              <div className="space-y-1.5">
+                <label className="text-xs font-bold text-slate-300 flex items-center gap-1.5">
+                  <Scale className="w-3.5 h-3.5 text-emerald-400" />
+                  <span>Parametry Fizyczne (Wiek / Wzrost / Waga docelowa)</span>
+                </label>
+                <div className="grid grid-cols-3 gap-2">
+                  <input
+                    type="number"
+                    value={ageInput}
+                    onChange={(e) => setAgeInput(e.target.value === '' ? '' : Number(e.target.value))}
+                    className="w-full bg-slate-950 border border-slate-800 rounded-xl px-2.5 py-2 text-xs text-slate-100 focus:outline-hidden focus:border-emerald-500 font-mono text-center"
+                    placeholder="Wiek (lat)"
+                  />
+                  <input
+                    type="number"
+                    value={heightInput}
+                    onChange={(e) => setHeightInput(e.target.value === '' ? '' : Number(e.target.value))}
+                    className="w-full bg-slate-950 border border-slate-800 rounded-xl px-2.5 py-2 text-xs text-slate-100 focus:outline-hidden focus:border-emerald-500 font-mono text-center"
+                    placeholder="Wzrost (cm)"
+                  />
+                  <input
+                    type="number"
+                    step="0.1"
+                    value={targetWeightInput}
+                    onChange={(e) => setTargetWeightInput(e.target.value === '' ? '' : Number(e.target.value))}
+                    className="w-full bg-slate-950 border border-slate-800 rounded-xl px-2.5 py-2 text-xs text-slate-100 focus:outline-hidden focus:border-emerald-500 font-mono text-center"
+                    placeholder="Cel wagi (kg)"
+                  />
+                </div>
+              </div>
+            </div>
+
+            {/* Dietary & Macro Targets */}
+            <div className="pt-4 border-t border-slate-800 space-y-3">
+              <label className="text-xs font-bold text-slate-200 uppercase tracking-wider flex items-center gap-2">
+                <Flame className="w-4 h-4 text-amber-400" />
+                <span>Docelowe Makroskładniki i Kalorie Dzienne</span>
+              </label>
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                <div className="p-3 rounded-xl bg-slate-950/60 border border-slate-800">
+                  <span className="text-[11px] text-amber-400 font-bold block mb-1">🔥 Kalorie</span>
+                  <input
+                    type="number"
+                    value={caloriesInput}
+                    onChange={(e) => setCaloriesInput(e.target.value === '' ? '' : Number(e.target.value))}
+                    className="w-full bg-slate-900 border border-slate-800 rounded-lg px-2.5 py-1.5 text-xs text-slate-100 font-mono font-bold focus:outline-hidden focus:border-amber-500"
+                    placeholder="3200"
+                  />
+                  <span className="text-[10px] text-slate-500 block mt-1">kcal / dzień</span>
+                </div>
+
+                <div className="p-3 rounded-xl bg-slate-950/60 border border-slate-800">
+                  <span className="text-[11px] text-rose-400 font-bold block mb-1">🥩 Białko</span>
+                  <input
+                    type="number"
+                    value={proteinInput}
+                    onChange={(e) => setProteinInput(e.target.value === '' ? '' : Number(e.target.value))}
+                    className="w-full bg-slate-900 border border-slate-800 rounded-lg px-2.5 py-1.5 text-xs text-slate-100 font-mono font-bold focus:outline-hidden focus:border-rose-500"
+                    placeholder="180"
+                  />
+                  <span className="text-[10px] text-slate-500 block mt-1">g / dzień (~2g/kg)</span>
+                </div>
+
+                <div className="p-3 rounded-xl bg-slate-950/60 border border-slate-800">
+                  <span className="text-[11px] text-cyan-400 font-bold block mb-1">🍚 Węglowodany</span>
+                  <input
+                    type="number"
+                    value={carbsInput}
+                    onChange={(e) => setCarbsInput(e.target.value === '' ? '' : Number(e.target.value))}
+                    className="w-full bg-slate-900 border border-slate-800 rounded-lg px-2.5 py-1.5 text-xs text-slate-100 font-mono font-bold focus:outline-hidden focus:border-cyan-500"
+                    placeholder="380"
+                  />
+                  <span className="text-[10px] text-slate-500 block mt-1">g / dzień</span>
+                </div>
+
+                <div className="p-3 rounded-xl bg-slate-950/60 border border-slate-800">
+                  <span className="text-[11px] text-yellow-400 font-bold block mb-1">🥑 Tłuszcze</span>
+                  <input
+                    type="number"
+                    value={fatsInput}
+                    onChange={(e) => setFatsInput(e.target.value === '' ? '' : Number(e.target.value))}
+                    className="w-full bg-slate-900 border border-slate-800 rounded-lg px-2.5 py-1.5 text-xs text-slate-100 font-mono font-bold focus:outline-hidden focus:border-yellow-500"
+                    placeholder="85"
+                  />
+                  <span className="text-[10px] text-slate-500 block mt-1">g / dzień</span>
+                </div>
+              </div>
+            </div>
+
+            {/* Bottom Save Button */}
+            <div className="flex justify-end pt-2">
+              <button
+                type="button"
+                onClick={() => {
+                  onUpdateProfile({
+                    name: nameInput,
+                    bio: bioInput,
+                    goal: goalInput,
+                    experienceLevel: experienceInput as any,
+                    age: Number(ageInput) || undefined,
+                    height: Number(heightInput) || undefined,
+                    targetWeight: Number(targetWeightInput) || undefined,
+                    dietaryMacros: {
+                      calories: Number(caloriesInput) || 3000,
+                      protein: Number(proteinInput) || 180,
+                      carbs: Number(carbsInput) || 350,
+                      fats: Number(fatsInput) || 80
+                    }
+                  });
+                  setIsProfileSaved(true);
+                  setTimeout(() => setIsProfileSaved(false), 3500);
+                }}
+                className="px-6 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs flex items-center gap-2 transition-colors shadow-md"
+                id="btn-save-athlete-profile-bottom"
+              >
+                <Check className="w-4 h-4" />
+                <span>Zapisz profil i parametry</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* SUBTAB 1: Windows ↔ Android Sync Center */}
       {activeTab === 'sync' && (

@@ -104,13 +104,13 @@ export const BodyPartMeasurementsPanel: React.FC<BodyPartMeasurementsPanelProps>
     setTimeout(() => setFormSuccess(null), 3000);
   };
 
-  // Modern SVG Line / Area Chart calculations
+  // Modern SVG Line / Area Chart calculations (Zmniejszone, kompaktowe)
   const chartW = 680;
-  const chartH = 220;
-  const pL = 55;
-  const pR = 30;
-  const pT = 30;
-  const pB = 40;
+  const chartH = 170;
+  const pL = 45;
+  const pR = 25;
+  const pT = 20;
+  const pB = 30;
   const innerW = chartW - pL - pR;
   const innerH = chartH - pT - pB;
 
@@ -138,30 +138,30 @@ export const BodyPartMeasurementsPanel: React.FC<BodyPartMeasurementsPanelProps>
   return (
     <div
       id="panel-body-part-measurements"
-      className="bg-slate-900/90 border border-slate-800 rounded-2xl p-5 sm:p-6 shadow-xl space-y-6 backdrop-blur-xs"
+      className="bg-slate-900 border border-slate-800 rounded-xl p-3.5 sm:p-4 shadow-xs space-y-3.5"
     >
       {/* 1. Header & Title */}
-      <div className="flex flex-wrap items-center justify-between gap-4 pb-2 border-b border-slate-800/80">
+      <div className="flex flex-wrap items-center justify-between gap-2.5 pb-2 border-b border-slate-800/80">
         <div>
-          <h2 className="text-base sm:text-lg font-bold text-slate-100 flex items-center gap-2.5">
-            <span className="p-2 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-400">
-              <Ruler className="w-5 h-5" />
+          <h2 className="text-sm font-bold text-slate-100 flex items-center gap-2">
+            <span className="p-1.5 rounded-lg bg-emerald-500/10 border border-emerald-500/20 text-emerald-400">
+              <Ruler className="w-4 h-4" />
             </span>
             <span>Pomiary Partii Ciała & Analiza Progresu</span>
           </h2>
-          <p className="text-xs text-slate-400 mt-1">
-            Nowoczesny rejestr: wpisujesz tylko datę i obwód w cm. Wykres i analiza progresu wyliczają się automatycznie.
+          <p className="text-[11px] text-slate-400 mt-0.5">
+            Wprowadzaj obwód w cm (biceps, triceps, klata, barki, nogi) – wykres i tempo wzrostu wyliczają się na bieżąco.
           </p>
         </div>
 
         {/* Quick status badge */}
         {activeStats.currentValue !== null && (
-          <div className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-slate-950/80 border border-slate-800 font-mono text-xs">
-            <span className="text-slate-400">{activeConfig.label}:</span>
-            <span className="font-bold text-emerald-400 text-sm">{formatCm(activeStats.currentValue)}</span>
+          <div className="flex items-center gap-2 px-2.5 py-1 rounded-lg bg-slate-950/80 border border-slate-800 font-mono text-xs">
+            <span className="text-slate-400 text-[11px]">{activeConfig.label}:</span>
+            <span className="font-bold text-emerald-400 text-xs">{formatCm(activeStats.currentValue)}</span>
             {activeStats.totalChange !== 0 && (
               <span
-                className={`font-semibold ${
+                className={`font-semibold text-[10px] ${
                   activeStats.totalChange > 0
                     ? 'text-emerald-400'
                     : activeStats.totalChange < 0
@@ -177,7 +177,7 @@ export const BodyPartMeasurementsPanel: React.FC<BodyPartMeasurementsPanelProps>
       </div>
 
       {/* 2. Sleek Selector for Body Parts */}
-      <div className="grid grid-cols-2 sm:grid-cols-5 gap-2" role="tablist">
+      <div className="grid grid-cols-2 sm:grid-cols-5 gap-1.5" role="tablist">
         {BODY_PARTS.map((part) => {
           const cfg = BODY_PART_CONFIG[part];
           const st = statsMap[part];
@@ -193,19 +193,19 @@ export const BodyPartMeasurementsPanel: React.FC<BodyPartMeasurementsPanelProps>
                 setFormError(null);
                 setFormSuccess(null);
               }}
-              className={`flex flex-col items-start p-3 rounded-xl border text-left transition-all relative overflow-hidden ${
+              className={`flex flex-col items-start p-2 rounded-lg border text-left transition-all relative overflow-hidden ${
                 isSelected
-                  ? 'bg-slate-800/90 border-emerald-500/60 shadow-md shadow-emerald-950/20 ring-1 ring-emerald-500/30'
+                  ? 'bg-slate-800/90 border-emerald-500/60 shadow-xs ring-1 ring-emerald-500/30 font-bold'
                   : 'bg-slate-950/40 border-slate-800/80 hover:bg-slate-800/50 hover:border-slate-700 text-slate-400'
               }`}
             >
-              <div className="flex items-center justify-between w-full mb-1">
-                <span className={`text-xs font-bold ${isSelected ? 'text-slate-100' : 'text-slate-300'}`}>
+              <div className="flex items-center justify-between w-full mb-0.5">
+                <span className={`text-[11px] ${isSelected ? 'text-slate-100 font-bold' : 'text-slate-300 font-medium'}`}>
                   {cfg.label}
                 </span>
                 {st.totalChange !== 0 && (
                   <span
-                    className={`text-[10px] font-mono font-semibold px-1.5 py-0.5 rounded ${
+                    className={`text-[9px] font-mono font-semibold px-1 py-0.2 rounded ${
                       st.totalChange > 0
                         ? 'bg-emerald-500/15 text-emerald-300'
                         : 'bg-rose-500/15 text-rose-300'
@@ -216,13 +216,13 @@ export const BodyPartMeasurementsPanel: React.FC<BodyPartMeasurementsPanelProps>
                 )}
               </div>
 
-              <div className="text-base font-extrabold font-mono text-slate-200">
+              <div className="text-sm font-bold font-mono text-slate-200">
                 {st.currentValue !== null ? formatCm(st.currentValue) : '--'}
               </div>
 
-              <div className="text-[10px] text-slate-500 mt-0.5">
+              <div className="text-[9px] text-slate-500">
                 {st.count === 0
-                  ? 'Brak pomiarów'
+                  ? 'Brak'
                   : st.count === 1
                   ? '1 pomiar'
                   : `${st.count} pomiary`}
@@ -239,11 +239,11 @@ export const BodyPartMeasurementsPanel: React.FC<BodyPartMeasurementsPanelProps>
       {/* 3. Simple & Modern Input Strip: Data + Pomiar cm */}
       <form
         onSubmit={handleSubmit}
-        className="bg-slate-950/60 border border-slate-800/90 rounded-xl p-3.5 sm:p-4 flex flex-wrap items-end gap-3 shadow-inner"
+        className="bg-slate-950/60 border border-slate-800/90 rounded-lg p-2.5 sm:p-3 flex flex-wrap items-end gap-2.5 shadow-inner"
       >
-        <div className="flex-1 min-w-[140px]">
-          <label htmlFor="input-body-part-date" className="block text-[11px] font-semibold text-slate-400 uppercase tracking-wider mb-1.5 flex items-center gap-1.5">
-            <Calendar className="w-3.5 h-3.5 text-emerald-400" />
+        <div className="flex-1 min-w-[120px]">
+          <label htmlFor="input-body-part-date" className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1 flex items-center gap-1">
+            <Calendar className="w-3 h-3 text-emerald-400" />
             <span>Data</span>
           </label>
           <input
@@ -251,21 +251,21 @@ export const BodyPartMeasurementsPanel: React.FC<BodyPartMeasurementsPanelProps>
             type="date"
             value={formDate}
             onChange={(e) => setFormDate(e.target.value)}
-            className="w-full bg-slate-900 border border-slate-800 rounded-lg px-3 py-2 text-xs font-mono text-slate-100 focus:outline-none focus:border-emerald-500"
+            className="w-full bg-slate-900 border border-slate-800 rounded-md px-2.5 py-1 text-xs font-mono text-slate-100 focus:outline-none focus:border-emerald-500"
             required
           />
         </div>
 
-        <div className="w-36 min-w-[120px]">
-          <label htmlFor="select-body-part" className="block text-[11px] font-semibold text-slate-400 uppercase tracking-wider mb-1.5 flex items-center gap-1.5">
-            <Ruler className="w-3.5 h-3.5 text-emerald-400" />
+        <div className="w-32 min-w-[110px]">
+          <label htmlFor="select-body-part" className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1 flex items-center gap-1">
+            <Ruler className="w-3 h-3 text-emerald-400" />
             <span>Partia</span>
           </label>
           <select
             id="select-body-part"
             value={selectedPart}
             onChange={(e) => setSelectedPart(e.target.value as BodyPartType)}
-            className="w-full bg-slate-900 border border-slate-800 rounded-lg px-3 py-2 text-xs font-medium text-slate-100 focus:outline-none focus:border-emerald-500"
+            className="w-full bg-slate-900 border border-slate-800 rounded-md px-2.5 py-1 text-xs font-medium text-slate-100 focus:outline-none focus:border-emerald-500"
           >
             {BODY_PARTS.map((p) => (
               <option key={p} value={p}>
@@ -275,9 +275,9 @@ export const BodyPartMeasurementsPanel: React.FC<BodyPartMeasurementsPanelProps>
           </select>
         </div>
 
-        <div className="flex-1 min-w-[140px]">
-          <label htmlFor="input-body-part-value" className="block text-[11px] font-semibold text-slate-400 uppercase tracking-wider mb-1.5 flex items-center gap-1.5">
-            <TrendingUp className="w-3.5 h-3.5 text-emerald-400" />
+        <div className="flex-1 min-w-[120px]">
+          <label htmlFor="input-body-part-value" className="block text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1 flex items-center gap-1">
+            <TrendingUp className="w-3 h-3 text-emerald-400" />
             <span>Pomiar (cm)</span>
           </label>
           <div className="relative">
@@ -288,30 +288,30 @@ export const BodyPartMeasurementsPanel: React.FC<BodyPartMeasurementsPanelProps>
               placeholder={activeConfig.placeholder}
               value={formValue}
               onChange={(e) => setFormValue(e.target.value)}
-              className="w-full bg-slate-900 border border-slate-800 rounded-lg px-3 py-2 pr-10 text-xs font-mono font-bold text-slate-100 placeholder:text-slate-600 focus:outline-none focus:border-emerald-500"
+              className="w-full bg-slate-900 border border-slate-800 rounded-md px-2.5 py-1 pr-8 text-xs font-mono font-bold text-slate-100 placeholder:text-slate-600 focus:outline-none focus:border-emerald-500"
             />
-            <span className="absolute right-3 top-2 text-xs text-slate-500 font-mono">cm</span>
+            <span className="absolute right-2.5 top-1.5 text-[11px] text-slate-500 font-mono">cm</span>
           </div>
         </div>
 
         <button
           id="btn-submit-body-measurement"
           type="submit"
-          className="px-5 py-2 rounded-lg bg-emerald-600 hover:bg-emerald-500 active:bg-emerald-700 text-white text-xs font-bold transition-all shadow-md shadow-emerald-950/40 flex items-center gap-2 h-[35px]"
+          className="px-3.5 py-1 rounded-md bg-emerald-600 hover:bg-emerald-500 active:bg-emerald-700 text-white text-xs font-bold transition-all shadow-xs flex items-center gap-1.5 h-[30px]"
         >
-          <Plus className="w-4 h-4" />
-          <span>Zapisz pomiar</span>
+          <Plus className="w-3.5 h-3.5" />
+          <span>Zapisz</span>
         </button>
 
         {/* Feedback notices */}
         {formError && (
-          <div className="w-full text-xs text-rose-400 flex items-center gap-1.5 mt-1">
+          <div className="w-full text-xs text-rose-400 flex items-center gap-1.5 mt-0.5">
             <AlertCircle className="w-3.5 h-3.5 shrink-0" />
             <span>{formError}</span>
           </div>
         )}
         {formSuccess && (
-          <div className="w-full text-xs text-emerald-400 flex items-center gap-1.5 mt-1">
+          <div className="w-full text-xs text-emerald-400 flex items-center gap-1.5 mt-0.5">
             <CheckCircle2 className="w-3.5 h-3.5 shrink-0" />
             <span>{formSuccess}</span>
           </div>
@@ -319,30 +319,30 @@ export const BodyPartMeasurementsPanel: React.FC<BodyPartMeasurementsPanelProps>
       </form>
 
       {/* 4. Analysis Cards: Aktualny, Progres z datami, Analiza tempa */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-2.5">
         {/* Aktualny wymiar */}
-        <div className="bg-slate-950/50 border border-slate-800/80 rounded-xl p-3.5 flex flex-col justify-between">
-          <span className="text-[11px] font-semibold text-slate-400 uppercase tracking-wider block">
+        <div className="bg-slate-950/50 border border-slate-800/80 rounded-lg p-2.5 flex flex-col justify-between">
+          <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">
             Aktualny {activeConfig.label}
           </span>
-          <div className="my-1">
-            <span className="text-2xl font-extrabold font-mono text-slate-100">
+          <div className="my-0.5">
+            <span className="text-base font-bold font-mono text-slate-100">
               {activeStats.currentValue !== null ? formatCm(activeStats.currentValue) : '--'}
             </span>
           </div>
-          <span className="text-[11px] text-slate-500">
+          <span className="text-[10px] text-slate-500">
             {activeStats.latest ? `Data: ${activeStats.latest.date}` : 'Brak danych'}
           </span>
         </div>
 
         {/* Całkowity progres */}
-        <div className="bg-slate-950/50 border border-slate-800/80 rounded-xl p-3.5 flex flex-col justify-between">
-          <span className="text-[11px] font-semibold text-slate-400 uppercase tracking-wider block">
+        <div className="bg-slate-950/50 border border-slate-800/80 rounded-lg p-2.5 flex flex-col justify-between">
+          <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">
             Progres od startu
           </span>
-          <div className="my-1 flex items-center gap-1.5">
+          <div className="my-0.5 flex items-center gap-1">
             <span
-              className={`text-2xl font-extrabold font-mono flex items-center ${
+              className={`text-base font-bold font-mono flex items-center ${
                 activeStats.totalChange > 0
                   ? 'text-emerald-400'
                   : activeStats.totalChange < 0
@@ -350,30 +350,30 @@ export const BodyPartMeasurementsPanel: React.FC<BodyPartMeasurementsPanelProps>
                   : 'text-slate-300'
               }`}
             >
-              {activeStats.totalChange > 0 && <ArrowUpRight className="w-5 h-5 mr-0.5 inline" />}
-              {activeStats.totalChange < 0 && <ArrowDownRight className="w-5 h-5 mr-0.5 inline" />}
-              {activeStats.totalChange === 0 && <Minus className="w-4 h-4 mr-1 inline" />}
+              {activeStats.totalChange > 0 && <ArrowUpRight className="w-4 h-4 mr-0.5 inline" />}
+              {activeStats.totalChange < 0 && <ArrowDownRight className="w-4 h-4 mr-0.5 inline" />}
+              {activeStats.totalChange === 0 && <Minus className="w-3.5 h-3.5 mr-0.5 inline" />}
               {activeStats.totalChange !== 0 ? formatSignedCm(activeStats.totalChange) : '0.0 cm'}
             </span>
             {activeStats.totalChangePct !== 0 && (
-              <span className="text-xs font-mono font-medium text-slate-400">
+              <span className="text-[10px] font-mono font-medium text-slate-400">
                 ({activeStats.totalChangePct > 0 ? `+${activeStats.totalChangePct}%` : `${activeStats.totalChangePct}%`})
               </span>
             )}
           </div>
-          <span className="text-[11px] text-slate-500">
+          <span className="text-[10px] text-slate-500 truncate">
             {activeStats.first ? `Baza: ${formatCm(activeStats.first.value)} (${activeStats.first.date})` : '--'}
           </span>
         </div>
 
         {/* Ostatnia zmiana */}
-        <div className="bg-slate-950/50 border border-slate-800/80 rounded-xl p-3.5 flex flex-col justify-between">
-          <span className="text-[11px] font-semibold text-slate-400 uppercase tracking-wider block">
+        <div className="bg-slate-950/50 border border-slate-800/80 rounded-lg p-2.5 flex flex-col justify-between">
+          <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">
             Ostatnia zmiana
           </span>
-          <div className="my-1">
+          <div className="my-0.5">
             <span
-              className={`text-2xl font-extrabold font-mono ${
+              className={`text-base font-bold font-mono ${
                 activeStats.changeFromPrevious === null
                   ? 'text-slate-500'
                   : activeStats.changeFromPrevious > 0
@@ -388,49 +388,49 @@ export const BodyPartMeasurementsPanel: React.FC<BodyPartMeasurementsPanelProps>
                 : '--'}
             </span>
           </div>
-          <span className="text-[11px] text-slate-500">
+          <span className="text-[10px] text-slate-500 truncate">
             {activeStats.previous
               ? `Względem ${activeStats.previous.date}`
               : activeStats.count === 1
-              ? 'Pierwszy wpis w bazie'
+              ? 'Pierwszy wpis'
               : '--'}
           </span>
         </div>
 
         {/* Analiza i tempo */}
-        <div className="bg-slate-950/50 border border-slate-800/80 rounded-xl p-3.5 flex flex-col justify-between">
-          <span className="text-[11px] font-semibold text-slate-400 uppercase tracking-wider block flex items-center gap-1.5">
-            <Sparkles className="w-3.5 h-3.5 text-amber-400" />
+        <div className="bg-slate-950/50 border border-slate-800/80 rounded-lg p-2.5 flex flex-col justify-between">
+          <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block flex items-center gap-1">
+            <Sparkles className="w-3 h-3 text-amber-400" />
             <span>Analiza & Tempo</span>
           </span>
-          <div className="my-1">
-            <span className="text-sm font-bold text-slate-200 block truncate">
+          <div className="my-0.5">
+            <span className="text-xs font-bold text-slate-200 block truncate">
               {activeStats.trendLabel}
             </span>
           </div>
-          <span className="text-[11px] text-emerald-400 font-mono">
+          <span className="text-[10px] text-emerald-400 font-mono truncate">
             {activeStats.monthlyRate !== null
-              ? `${activeStats.monthlyRate > 0 ? `+${activeStats.monthlyRate}` : activeStats.monthlyRate} cm / miesiąc`
+              ? `${activeStats.monthlyRate > 0 ? `+${activeStats.monthlyRate}` : activeStats.monthlyRate} cm / msc`
               : activeStats.daysElapsed > 0
-              ? `${activeStats.daysElapsed} dni obserwacji`
-              : 'Wymaga min. 2 pomiarów'}
+              ? `${activeStats.daysElapsed} dni obs.`
+              : 'Min. 2 pomiary'}
           </span>
         </div>
       </div>
 
       {/* 5. Modern Chart & History with Dates */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-3">
         {/* Modern SVG Area Chart (2 columns) */}
-        <div className="lg:col-span-2 bg-slate-950/60 border border-slate-800/90 rounded-xl p-4 flex flex-col justify-between">
-          <div className="flex items-center justify-between mb-3">
-            <div className="flex items-center gap-2">
-              <div className="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-pulse" />
-              <span className="text-xs font-bold text-slate-200 uppercase tracking-wider">
-                Wykres Progresu: {activeConfig.fullLabel}
+        <div className="lg:col-span-2 bg-slate-950/60 border border-slate-800/90 rounded-xl p-3 flex flex-col justify-between">
+          <div className="flex items-center justify-between mb-2">
+            <div className="flex items-center gap-1.5">
+              <div className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+              <span className="text-[11px] font-bold text-slate-200 uppercase tracking-wider">
+                Wykres: {activeConfig.fullLabel}
               </span>
             </div>
-            <span className="text-[11px] text-slate-500 font-mono">
-              Oś X: Daty pomiarów • Oś Y: Centymetry (cm)
+            <span className="text-[10px] text-slate-500 font-mono">
+              Oś X: Daty • Oś Y: cm
             </span>
           </div>
 
@@ -610,24 +610,24 @@ export const BodyPartMeasurementsPanel: React.FC<BodyPartMeasurementsPanelProps>
 
         {/* 6. Progres z datami: Tabela / Oś Czasu (1 column) */}
         <div className="bg-slate-950/60 border border-slate-800/90 rounded-xl overflow-hidden flex flex-col">
-          <div className="p-3 border-b border-slate-800 bg-slate-950 flex items-center justify-between">
+          <div className="p-2.5 border-b border-slate-800 bg-slate-950 flex items-center justify-between">
             <span className="text-xs font-bold text-slate-200">
-              Historia i Daty ({activeConfig.label})
+              Historia ({activeConfig.label})
             </span>
-            <span className="text-[11px] text-slate-500 font-mono">
+            <span className="text-[10px] text-slate-400 font-mono">
               {partEntries.length} {partEntries.length === 1 ? 'wpis' : 'wpisów'}
             </span>
           </div>
 
-          <div className="overflow-y-auto max-h-[230px] divide-y divide-slate-800/50">
+          <div className="overflow-y-auto max-h-[190px] divide-y divide-slate-800/50">
             {partEntries.length > 0 ? (
               <table id="table-body-part-history" className="w-full text-left text-xs">
-                <thead className="bg-slate-900/60 text-slate-400 text-[10px] uppercase font-semibold tracking-wider sticky top-0">
+                <thead className="bg-slate-900/60 text-slate-400 text-[10px] uppercase font-bold tracking-wider sticky top-0">
                   <tr>
-                    <th className="py-2 px-3">Data</th>
-                    <th className="py-2 px-3">Wymiar</th>
-                    <th className="py-2 px-3">Zmiana</th>
-                    <th className="py-2 px-2 text-right">Usuń</th>
+                    <th className="py-1.5 px-2.5">Data</th>
+                    <th className="py-1.5 px-2.5">Wymiar</th>
+                    <th className="py-1.5 px-2.5">Zmiana</th>
+                    <th className="py-1.5 px-2 text-right">Usuń</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-800/40 text-slate-300">

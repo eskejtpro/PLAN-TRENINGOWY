@@ -105,13 +105,13 @@ export const CombinedBodyMetricsChart: React.FC<CombinedBodyMetricsChartProps> =
     return map;
   }, [sortedParts]);
 
-  // SVG Chart Dimensions
+  // SVG Chart Dimensions (Zmniejszone, kompaktowe wymiary)
   const chartW = 740;
-  const chartH = 260;
-  const pL = mode === 'correlation' ? 55 : 50;
-  const pR = mode === 'correlation' ? 55 : 30;
-  const pT = 35;
-  const pB = 45;
+  const chartH = 200;
+  const pL = mode === 'correlation' ? 50 : 45;
+  const pR = mode === 'correlation' ? 50 : 25;
+  const pT = 25;
+  const pB = 35;
   const innerW = chartW - pL - pR;
   const innerH = chartH - pT - pB;
 
@@ -213,82 +213,82 @@ export const CombinedBodyMetricsChart: React.FC<CombinedBodyMetricsChartProps> =
   return (
     <div
       id="combined-body-metrics-chart-panel"
-      className="bg-slate-900 border border-slate-800 rounded-2xl p-5 sm:p-6 shadow-xl space-y-5"
+      className="bg-slate-900 border border-slate-800 rounded-xl p-3.5 sm:p-4 shadow-xs space-y-3"
     >
       {/* 1. Header & Controls */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-4 border-b border-slate-800">
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-2.5 pb-2.5 border-b border-slate-800">
         <div>
           <div className="flex items-center gap-2">
             <span className="p-1.5 rounded-lg bg-emerald-500/10 border border-emerald-500/20 text-emerald-400">
               <Activity className="w-4 h-4" />
             </span>
-            <h3 className="text-base font-bold text-white">
+            <h3 className="text-sm font-bold text-white">
               Zintegrowany Wykres Wagi i Wymiarów Mięśniowych
             </h3>
           </div>
-          <p className="text-xs text-slate-400 mt-1">
+          <p className="text-[11px] text-slate-400 mt-0.5">
             Wspólna oś czasu: zobacz dokładną korelację między zmianą wagi ciała a rozwojem poszczególnych partii mięśni.
           </p>
         </div>
 
         {/* View Mode Switcher Pills */}
-        <div className="flex flex-wrap items-center gap-1.5 p-1 rounded-xl bg-slate-950/80 border border-slate-800">
+        <div className="flex flex-wrap items-center gap-1 p-0.5 rounded-lg bg-slate-950/80 border border-slate-800">
           <button
             type="button"
             onClick={() => setMode('correlation')}
-            className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 ${
+            className={`px-2.5 py-1 rounded-md text-[11px] font-semibold transition-all flex items-center gap-1.5 ${
               mode === 'correlation'
                 ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 shadow-xs'
                 : 'text-slate-400 hover:text-slate-200'
             }`}
           >
-            <Sparkles className="w-3.5 h-3.5 text-emerald-400" />
-            <span>Korelacja (Podwójna Oś)</span>
+            <Sparkles className="w-3 h-3 text-emerald-400" />
+            <span>Korelacja</span>
           </button>
           <button
             type="button"
             onClick={() => setMode('weight')}
-            className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 ${
+            className={`px-2.5 py-1 rounded-md text-[11px] font-semibold transition-all flex items-center gap-1.5 ${
               mode === 'weight'
                 ? 'bg-slate-800 text-emerald-300 border border-slate-700'
                 : 'text-slate-400 hover:text-slate-200'
             }`}
           >
-            <Scale className="w-3.5 h-3.5 text-emerald-400" />
+            <Scale className="w-3 h-3 text-emerald-400" />
             <span>Tylko Waga</span>
           </button>
           <button
             type="button"
             onClick={() => setMode('part')}
-            className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 ${
+            className={`px-2.5 py-1 rounded-md text-[11px] font-semibold transition-all flex items-center gap-1.5 ${
               mode === 'part'
                 ? 'bg-slate-800 text-purple-300 border border-slate-700'
                 : 'text-slate-400 hover:text-slate-200'
             }`}
           >
-            <Ruler className="w-3.5 h-3.5 text-purple-400" />
+            <Ruler className="w-3 h-3 text-purple-400" />
             <span>Tylko {activeConfig.label}</span>
           </button>
           <button
             type="button"
             onClick={() => setMode('all_parts')}
-            className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 ${
+            className={`px-2.5 py-1 rounded-md text-[11px] font-semibold transition-all flex items-center gap-1.5 ${
               mode === 'all_parts'
                 ? 'bg-slate-800 text-sky-300 border border-slate-700'
                 : 'text-slate-400 hover:text-slate-200'
             }`}
           >
-            <Layers className="w-3.5 h-3.5 text-sky-400" />
+            <Layers className="w-3 h-3 text-sky-400" />
             <span>Wszystkie Partie</span>
           </button>
         </div>
       </div>
 
       {/* 2. Part Selector Chips with live current cm and delta */}
-      <div className="flex flex-wrap items-center gap-2">
-        <span className="text-xs font-semibold text-slate-400 mr-1 flex items-center gap-1">
-          <Ruler className="w-3.5 h-3.5 text-emerald-400" />
-          <span>Partia do porównania:</span>
+      <div className="flex flex-wrap items-center gap-1.5">
+        <span className="text-[11px] font-semibold text-slate-400 mr-1 flex items-center gap-1">
+          <Ruler className="w-3 h-3 text-emerald-400" />
+          <span>Porównaj:</span>
         </span>
         {BODY_PARTS.map((part) => {
           const cfg = BODY_PART_CONFIG[part];
@@ -300,19 +300,19 @@ export const CombinedBodyMetricsChart: React.FC<CombinedBodyMetricsChartProps> =
               key={part}
               type="button"
               onClick={() => onSelectPart(part)}
-              className={`px-3 py-1.5 rounded-xl text-xs font-medium transition-all flex items-center gap-1.5 border ${
+              className={`px-2.5 py-1 rounded-lg text-[11px] font-medium transition-all flex items-center gap-1.5 border ${
                 isSelected
-                  ? 'bg-slate-800 border-emerald-500/60 text-white shadow-xs ring-1 ring-emerald-500/40'
+                  ? 'bg-slate-800 border-emerald-500/60 text-white shadow-xs ring-1 ring-emerald-500/40 font-bold'
                   : 'bg-slate-950/60 border-slate-800 text-slate-400 hover:text-slate-200 hover:bg-slate-800/40'
               }`}
             >
-              <span className={isSelected ? 'font-bold text-emerald-300' : ''}>{cfg.label}</span>
-              <span className="font-mono text-[11px] text-slate-300 font-bold">
+              <span className={isSelected ? 'text-emerald-300' : ''}>{cfg.label}</span>
+              <span className="font-mono text-[10px] text-slate-300 font-bold">
                 {st.currentValue !== null ? formatCm(st.currentValue) : '--'}
               </span>
               {st.totalChange !== 0 && (
                 <span
-                  className={`text-[10px] font-mono px-1 rounded ${
+                  className={`text-[9px] font-mono px-1 rounded ${
                     st.totalChange > 0
                       ? 'bg-emerald-500/20 text-emerald-300'
                       : 'bg-rose-500/20 text-rose-300'
@@ -328,26 +328,26 @@ export const CombinedBodyMetricsChart: React.FC<CombinedBodyMetricsChartProps> =
 
       {/* 3. Correlation Insight Banner */}
       {mode === 'correlation' && correlationInsight && (
-        <div className="p-3 rounded-xl bg-slate-950/70 border border-slate-800 flex items-center justify-between gap-3 text-xs">
+        <div className="p-2.5 rounded-lg bg-slate-950/70 border border-slate-800 flex items-center justify-between gap-2.5 text-xs">
           <div className="flex items-center gap-2">
-            <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
-            <span className="font-semibold text-slate-300">Logika korelacji:</span>
-            <span className={`font-mono font-bold ${correlationInsight.color}`}>
+            <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse shrink-0" />
+            <span className="font-semibold text-slate-300">Wniosek:</span>
+            <span className={`font-mono text-[11px] font-bold ${correlationInsight.color}`}>
               {correlationInsight.text}
             </span>
           </div>
-          <div className="text-[11px] text-slate-500 font-mono hidden sm:block">
+          <div className="text-[10px] text-slate-500 font-mono hidden sm:block shrink-0">
             Waga: {currentWeight ? `${currentWeight} ${unit}` : '--'} ({weightDelta > 0 ? `+${weightDelta}` : weightDelta} {unit})
           </div>
         </div>
       )}
 
       {/* 4. The SVG Unified Chart Canvas */}
-      <div className="bg-slate-950/60 border border-slate-800/90 rounded-2xl p-4 overflow-x-auto">
+      <div className="bg-slate-950/60 border border-slate-800/90 rounded-xl p-3 overflow-x-auto">
         {timelineDates.length > 0 ? (
           <svg
             viewBox={`0 0 ${chartW} ${chartH}`}
-            className="w-full h-auto select-none min-w-[550px]"
+            className="w-full h-auto select-none min-w-[500px]"
           >
             <defs>
               <linearGradient id="weightGrad" x1="0" y1="0" x2="0" y2="1">

@@ -10,7 +10,9 @@ import {
   Sun, 
   Moon, 
   Dumbbell,
-  Sparkles
+  Sparkles,
+  Monitor,
+  Maximize2
 } from 'lucide-react';
 import { AppSettings } from '../types';
 
@@ -65,12 +67,12 @@ export const ModernHeader: React.FC<ModernHeaderProps> = ({
       subtitle: 'Lokalna synchronizacja Windows ↔ Android oraz rejestr badań zdrowotnych z plikami JSON'
     },
     cycles: {
-      title: 'Kalendarz Dawek & Historia Cykli',
-      subtitle: 'Rejestr iniekcji, HCG, środków oraz historia ukończonych i pustych tygodni cyklu'
+      title: 'Kalendarz',
+      subtitle: 'Kalendarz iniekcji, historia tygodni oraz kalkulator stężeń modelowych'
     },
     exercises: {
-      title: 'Katalog & Baza Ćwiczeń',
-      subtitle: 'Dodawanie, edycja parametrów oraz zarządzanie ćwiczeniami w planie'
+      title: 'Katalog & Baza Wzorcowa Ćwiczeń',
+      subtitle: 'Słownik szablonów ćwiczeń – baza referencyjna w 100% odizolowana od analiz i wykresów progresu'
     },
     settings: {
       title: 'Ustawienia & Auto-Backup JSON',
@@ -134,6 +136,62 @@ export const ModernHeader: React.FC<ModernHeaderProps> = ({
             <span className="sm:hidden">Dodaj</span>
           </button>
         )}
+
+        {/* Quick DPI & Resolution Scale Selector */}
+        <div className="hidden md:flex items-center rounded-xl p-1 bg-slate-900/90 border border-slate-800 text-[11px] font-bold" title="Rozdzielczość, zagęszczenie pikseli i ostrość interfejsu (HiDPI)">
+          <span className="flex items-center gap-1 text-slate-400 px-1.5 py-0.5 text-[10px]">
+            <Monitor className="w-3 h-3 text-emerald-400" />
+            <span className="hidden 2xl:inline">DPI:</span>
+          </span>
+          <button
+            type="button"
+            onClick={() => onUpdateSettings({ uiScale: 'compact' })}
+            className={`px-1.5 py-0.5 rounded-lg transition-colors cursor-pointer ${
+              settings.uiScale === 'compact'
+                ? 'bg-emerald-600 text-white shadow-xs'
+                : 'text-slate-400 hover:text-slate-200'
+            }`}
+            title="Kompaktowe (90%) - maksymalne zagęszczenie informacji na ekranie"
+          >
+            90%
+          </button>
+          <button
+            type="button"
+            onClick={() => onUpdateSettings({ uiScale: 'standard' })}
+            className={`px-1.5 py-0.5 rounded-lg transition-colors cursor-pointer ${
+              settings.uiScale === 'standard'
+                ? 'bg-emerald-600 text-white shadow-xs'
+                : 'text-slate-400 hover:text-slate-200'
+            }`}
+            title="Standardowa rozdzielczość (100% 1080p/1440p)"
+          >
+            100%
+          </button>
+          <button
+            type="button"
+            onClick={() => onUpdateSettings({ uiScale: 'high' })}
+            className={`px-1.5 py-0.5 rounded-lg transition-colors cursor-pointer ${
+              (settings.uiScale === 'high' || !settings.uiScale)
+                ? 'bg-emerald-600 text-white shadow-xs'
+                : 'text-slate-400 hover:text-slate-200'
+            }`}
+            title="Wysoka rozdzielczość i wyrazistość HiDPI (110% - ostre jak brzytwa)"
+          >
+            110%
+          </button>
+          <button
+            type="button"
+            onClick={() => onUpdateSettings({ uiScale: 'ultra' })}
+            className={`px-1.5 py-0.5 rounded-lg transition-colors cursor-pointer ${
+              settings.uiScale === 'ultra'
+                ? 'bg-emerald-600 text-white shadow-xs'
+                : 'text-slate-400 hover:text-slate-200'
+            }`}
+            title="Ultra HD / 4K (125% - duża krystaliczna czcionka i elementy)"
+          >
+            125%
+          </button>
+        </div>
 
         {/* Quick Backup Trigger */}
         {onCreateBackup && (

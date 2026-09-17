@@ -1,4 +1,5 @@
 import { GymData } from '../types';
+import { DEFAULT_CATALOG_EXERCISES } from './defaultCatalogExercises';
 
 export const initialGymData: GymData = {
   settings: {
@@ -549,6 +550,13 @@ export const initialGymData: GymData = {
     { id: 'bpm-14', date: '2026-08-29', part: 'nogi', value: 61.2, notes: 'Po przysiadach i RDL' },
     { id: 'bpm-15', date: '2026-09-12', part: 'nogi', value: 62.0, notes: 'Gęstość czwórogłowych' }
   ],
+  circumferences: [
+    { id: 'circ-1', date: '2026-08-15', bodyPart: 'ramię', side: 'left', variant: 'flexed', millimeters: 375, notes: 'Start mezocyklu' },
+    { id: 'circ-2', date: '2026-08-29', bodyPart: 'ramię', side: 'left', variant: 'flexed', millimeters: 380, notes: 'Po 2 tyg.' },
+    { id: 'circ-3', date: '2026-09-12', bodyPart: 'ramię', side: 'left', variant: 'flexed', millimeters: 385, notes: 'Bieżący wynik' },
+    { id: 'circ-4', date: '2026-08-15', bodyPart: 'klatka', side: null, variant: 'relaxed', millimeters: 1060, notes: 'Na wydechu' },
+    { id: 'circ-5', date: '2026-09-12', bodyPart: 'klatka', side: null, variant: 'relaxed', millimeters: 1085, notes: 'Progres klatki' }
+  ],
   protocolEntries: [
     {
       id: 'proto-1',
@@ -716,7 +724,8 @@ export const initialGymData: GymData = {
       status: 'success',
       summary: 'Wysłano stan 6 tygodni i 12 pomiarów wagi do synchronizacji z Androidem'
     }
-  ]
+  ],
+  catalogExercises: DEFAULT_CATALOG_EXERCISES
 };
 
 export const commonExerciseLibrary = [

@@ -129,27 +129,152 @@ export const CircumferenceProgressPanel: React.FC<Props> = ({ circumferences, bo
   };
   const edit = (entry: CircumferenceEntry) => { setEditingId(entry.id); setDate(entry.date); setBodyPart(entry.bodyPart); setSide(entry.side); setVariant(entry.variant); setValue(formatCm(entry.millimeters)); setNotes(entry.notes); setError(''); };
 
-  return <section className="space-y-5" id="circumference-progress-panel">
-    <div className="bg-slate-900 border border-slate-800 rounded-xl p-4 shadow-sm flex flex-wrap items-center justify-between gap-3"><div><h3 className="text-base font-bold text-slate-100 flex items-center gap-2"><Ruler className="w-5 h-5 text-sky-400" />Obwody i progres</h3><p className="text-xs text-slate-400 mt-0.5">Porównania dotyczą wyłącznie tej samej partii, strony i wariantu pomiaru.</p></div><span className="text-[11px] rounded-md px-2 py-1 bg-slate-950 border border-slate-700 text-slate-400">Zapis w mm · prezentacja w cm</span></div>
-    <div className="grid grid-cols-1 xl:grid-cols-3 gap-5">
-      <form onSubmit={submit} className="bg-slate-900 border border-slate-800 rounded-xl p-4 space-y-3 text-xs"><h4 className="font-bold text-slate-200 flex gap-2 items-center"><Plus className="w-4 h-4 text-emerald-400" />{editingId ? 'Edytuj obwód' : 'Dodaj obwód'}</h4>
-        <label className="block text-slate-300 font-semibold">Data<input id="input-circ-date" type="date" required value={date} onChange={(event) => setDate(event.target.value)} className="mt-1 w-full px-3 py-2 rounded-lg bg-slate-950 border border-slate-700" /></label>
-        <label className="block text-slate-300 font-semibold">Partia<select id="select-circ-body-part" value={bodyPart} onChange={(event) => selectPart(event.target.value as CircumferenceBodyPart)} className="mt-1 w-full px-3 py-2 rounded-lg bg-slate-950 border border-slate-700">{CIRCUMFERENCE_BODY_PARTS.map((part) => <option key={part} value={part}>{bodyPartLabel[part]}</option>)}</select></label>
-        {sideParts.includes(bodyPart) && <label className="block text-slate-300 font-semibold">Strona<select id="select-circ-side" value={side || 'left'} onChange={(event) => setSide(event.target.value as Exclude<CircumferenceSide, null>)} className="mt-1 w-full px-3 py-2 rounded-lg bg-slate-950 border border-slate-700"><option value="left">Lewa</option><option value="right">Prawa</option></select></label>}
-        {bodyPart === 'ramię' && <label className="block text-slate-300 font-semibold">Wariant<select id="select-circ-variant" value={variant} onChange={(event) => setVariant(event.target.value as CircumferenceVariant)} className="mt-1 w-full px-3 py-2 rounded-lg bg-slate-950 border border-slate-700"><option value="flexed">Napięte</option><option value="relaxed">Rozluźnione</option></select></label>}
-        <label className="block text-slate-300 font-semibold">Obwód (cm)<input id="input-circ-value" inputMode="decimal" required placeholder="np. 35,7" value={value} onChange={(event) => setValue(event.target.value)} className="mt-1 w-full px-3 py-2 rounded-lg bg-slate-950 border border-slate-700 text-sky-300 font-mono" /></label>
-        <label className="block text-slate-300 font-semibold">Notatka<input id="input-circ-notes" value={notes} onChange={(event) => setNotes(event.target.value)} className="mt-1 w-full px-3 py-2 rounded-lg bg-slate-950 border border-slate-700" /></label>
-        {error && <p className="text-rose-400" role="alert">{error}</p>}<div className="flex gap-2"><button id="btn-submit-circumference" type="submit" className="flex-1 py-2 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white font-bold">{editingId ? 'Zapisz zmianę' : 'Zapisz obwód'}</button>{editingId && <button type="button" onClick={resetForm} className="px-3 py-2 rounded-lg bg-slate-800 text-slate-200">Anuluj</button>}</div>
+  return <section className="space-y-3.5" id="circumference-progress-panel">
+    <div className="bg-slate-900 border border-slate-800 rounded-xl p-3 sm:p-3.5 shadow-xs flex flex-wrap items-center justify-between gap-2.5">
+      <div>
+        <h3 className="text-sm font-bold text-slate-100 flex items-center gap-2">
+          <Ruler className="w-4 h-4 text-sky-400" />
+          <span>Obwody i progres</span>
+        </h3>
+        <p className="text-[11px] text-slate-400 mt-0.5">Porównania dotyczą wyłącznie tej samej partii, strony i wariantu pomiaru.</p>
+      </div>
+      <span className="text-[10px] rounded-md px-2 py-0.5 bg-slate-950 border border-slate-800 text-slate-400 font-mono">Zapis w mm · prezentacja w cm</span>
+    </div>
+
+    <div className="grid grid-cols-1 xl:grid-cols-3 gap-3.5">
+      <form onSubmit={submit} className="bg-slate-900 border border-slate-800 rounded-xl p-3 space-y-2.5 text-xs">
+        <h4 className="text-xs font-bold text-slate-200 flex gap-1.5 items-center">
+          <Plus className="w-3.5 h-3.5 text-emerald-400" />
+          <span>{editingId ? 'Edytuj obwód' : 'Dodaj obwód'}</span>
+        </h4>
+        <label className="block text-slate-300 font-medium text-[11px]">
+          Data
+          <input id="input-circ-date" type="date" required value={date} onChange={(event) => setDate(event.target.value)} className="mt-0.5 w-full px-2.5 py-1 text-xs rounded-md bg-slate-950 border border-slate-800 text-slate-200 focus:outline-none focus:border-sky-500 font-mono" />
+        </label>
+        <label className="block text-slate-300 font-medium text-[11px]">
+          Partia
+          <select id="select-circ-body-part" value={bodyPart} onChange={(event) => selectPart(event.target.value as CircumferenceBodyPart)} className="mt-0.5 w-full px-2.5 py-1 text-xs rounded-md bg-slate-950 border border-slate-800 text-slate-200 focus:outline-none focus:border-sky-500">{CIRCUMFERENCE_BODY_PARTS.map((part) => <option key={part} value={part}>{bodyPartLabel[part]}</option>)}</select>
+        </label>
+        {sideParts.includes(bodyPart) && (
+          <label className="block text-slate-300 font-medium text-[11px]">
+            Strona
+            <select id="select-circ-side" value={side || 'left'} onChange={(event) => setSide(event.target.value as Exclude<CircumferenceSide, null>)} className="mt-0.5 w-full px-2.5 py-1 text-xs rounded-md bg-slate-950 border border-slate-800 text-slate-200 focus:outline-none focus:border-sky-500"><option value="left">Lewa</option><option value="right">Prawa</option></select>
+          </label>
+        )}
+        {bodyPart === 'ramię' && (
+          <label className="block text-slate-300 font-medium text-[11px]">
+            Wariant
+            <select id="select-circ-variant" value={variant} onChange={(event) => setVariant(event.target.value as CircumferenceVariant)} className="mt-0.5 w-full px-2.5 py-1 text-xs rounded-md bg-slate-950 border border-slate-800 text-slate-200 focus:outline-none focus:border-sky-500"><option value="flexed">Napięte</option><option value="relaxed">Rozluźnione</option></select>
+          </label>
+        )}
+        <label className="block text-slate-300 font-medium text-[11px]">
+          Obwód (cm)
+          <input id="input-circ-value" inputMode="decimal" required placeholder="np. 35,7" value={value} onChange={(event) => setValue(event.target.value)} className="mt-0.5 w-full px-2.5 py-1 text-xs rounded-md bg-slate-950 border border-slate-800 text-sky-300 font-mono font-bold focus:outline-none focus:border-sky-500" />
+        </label>
+        <label className="block text-slate-300 font-medium text-[11px]">
+          Notatka
+          <input id="input-circ-notes" value={notes} onChange={(event) => setNotes(event.target.value)} placeholder="Opcjonalnie..." className="mt-0.5 w-full px-2.5 py-1 text-xs rounded-md bg-slate-950 border border-slate-800 text-slate-200 focus:outline-none focus:border-sky-500" />
+        </label>
+        {error && <p className="text-rose-400 text-xs" role="alert">{error}</p>}
+        <div className="flex gap-2 pt-1">
+          <button id="btn-submit-circumference" type="submit" className="flex-1 py-1 px-3 rounded-md bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold transition-all shadow-xs">{editingId ? 'Zapisz zmianę' : 'Zapisz obwód'}</button>
+          {editingId && <button type="button" onClick={resetForm} className="px-2.5 py-1 rounded-md bg-slate-800 text-slate-300 text-xs">Anuluj</button>}
+        </div>
       </form>
-      <div className="xl:col-span-2 bg-slate-900 border border-slate-800 rounded-xl p-4 space-y-3"><div className="flex flex-wrap items-center justify-between gap-2"><h4 className="font-bold text-slate-200 flex items-center gap-2"><LineChart className="w-4 h-4 text-sky-400" />Progres obwodu</h4><div className="flex gap-2"><select id="select-circ-series" value={selectedSeriesKey} onChange={(event) => setSelectedSeriesKey(event.target.value)} className="px-3 py-2 rounded-lg bg-slate-950 border border-slate-700 text-xs">{series.length === 0 ? <option value="">Brak serii pomiarów</option> : series.map((entry) => <option key={seriesKey(entry)} value={seriesKey(entry)}>{seriesLabel(entry)}</option>)}</select><button id="btn-circ-trend-raw" type="button" onClick={() => setTrendMode('raw')} className={`px-2 rounded-lg text-[11px] ${trendMode === 'raw' ? 'bg-sky-500/20 text-sky-200' : 'bg-slate-950 text-slate-400'}`}>Surowe</button><button id="btn-circ-trend-ema" type="button" onClick={() => setTrendMode('ema')} className={`px-2 rounded-lg text-[11px] ${trendMode === 'ema' ? 'bg-sky-500/20 text-sky-200' : 'bg-slate-950 text-slate-400'}`}>EMA 0,3</button></div></div>
-        {latest && sinceFirst ? <div id="circumference-series-summary" className="grid grid-cols-1 sm:grid-cols-3 gap-2 text-xs"><div className="rounded-lg bg-slate-950 p-3"><span className="text-slate-500 block">Aktualny</span><strong className="text-sky-300 font-mono">{formatCm(latest.millimeters)} cm</strong></div><div className="rounded-lg bg-slate-950 p-3"><span className="text-slate-500 block">Od pierwszego</span><strong className="text-emerald-300 font-mono">{formatSigned(sinceFirst.centimeters, ' cm')} · {formatSigned(sinceFirst.percent, '%')}</strong></div><div className="rounded-lg bg-slate-950 p-3"><span className="text-slate-500 block">Od poprzedniego</span><strong className="text-slate-200 font-mono">{sincePrevious ? `${formatSigned(sincePrevious.millimeters, ' mm')} · ${formatSigned(sincePrevious.centimeters, ' cm')}` : '--'}</strong></div></div> : <div id="circumference-empty-series" className="h-20 flex items-center justify-center text-xs text-slate-500">Dodaj pomiary tej samej serii, aby zobaczyć porównanie.</div>}
+
+      <div className="xl:col-span-2 bg-slate-900 border border-slate-800 rounded-xl p-3 space-y-2.5">
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <h4 className="text-xs font-bold text-slate-200 flex items-center gap-1.5">
+            <LineChart className="w-3.5 h-3.5 text-sky-400" />
+            <span>Progres obwodu</span>
+          </h4>
+          <div className="flex gap-1.5">
+            <select id="select-circ-series" value={selectedSeriesKey} onChange={(event) => setSelectedSeriesKey(event.target.value)} className="px-2 py-1 rounded-md bg-slate-950 border border-slate-800 text-xs text-slate-200">{series.length === 0 ? <option value="">Brak serii pomiarów</option> : series.map((entry) => <option key={seriesKey(entry)} value={seriesKey(entry)}>{seriesLabel(entry)}</option>)}</select>
+            <button id="btn-circ-trend-raw" type="button" onClick={() => setTrendMode('raw')} className={`px-2 py-0.5 rounded-md text-[10px] font-medium ${trendMode === 'raw' ? 'bg-sky-500/20 text-sky-200 border border-sky-500/30' : 'bg-slate-950 text-slate-400 border border-slate-800'}`}>Surowe</button>
+            <button id="btn-circ-trend-ema" type="button" onClick={() => setTrendMode('ema')} className={`px-2 py-0.5 rounded-md text-[10px] font-medium ${trendMode === 'ema' ? 'bg-sky-500/20 text-sky-200 border border-sky-500/30' : 'bg-slate-950 text-slate-400 border border-slate-800'}`}>EMA 0,3</button>
+          </div>
+        </div>
+
+        {latest && sinceFirst ? (
+          <div id="circumference-series-summary" className="grid grid-cols-1 sm:grid-cols-3 gap-2 text-xs">
+            <div className="rounded-lg bg-slate-950/70 border border-slate-800/80 p-2.5">
+              <span className="text-slate-400 text-[10px] uppercase font-bold tracking-wider block">Aktualny</span>
+              <strong className="text-sky-300 font-mono text-sm font-bold">{formatCm(latest.millimeters)} cm</strong>
+            </div>
+            <div className="rounded-lg bg-slate-950/70 border border-slate-800/80 p-2.5">
+              <span className="text-slate-400 text-[10px] uppercase font-bold tracking-wider block">Od pierwszego</span>
+              <strong className="text-emerald-300 font-mono text-sm font-bold">{formatSigned(sinceFirst.centimeters, ' cm')} · {formatSigned(sinceFirst.percent, '%')}</strong>
+            </div>
+            <div className="rounded-lg bg-slate-950/70 border border-slate-800/80 p-2.5">
+              <span className="text-slate-400 text-[10px] uppercase font-bold tracking-wider block">Od poprzedniego</span>
+              <strong className="text-slate-200 font-mono text-sm font-bold">{sincePrevious ? `${formatSigned(sincePrevious.millimeters, ' mm')} · ${formatSigned(sincePrevious.centimeters, ' cm')}` : '--'}</strong>
+            </div>
+          </div>
+        ) : (
+          <div id="circumference-empty-series" className="h-16 flex items-center justify-center text-xs text-slate-500">Dodaj pomiary tej samej serii, aby zobaczyć porównanie.</div>
+        )}
+
         {chart(circumferenceLinePoints, '#38bdf8', (item) => `${formatCm(item)} cm`, 'chart-circumference', 'Brak punktów obwodu dla wybranej serii.', selectedEntries.map((entry) => ({ date: entry.date, value: entry.millimeters })), new Set(circumferenceAnalysis.raw.filter((point) => point.uncertain).map((point) => `${point.entry.date}|${point.entry.millimeters}`)))}
-        <div id="circumference-interpretation" className="rounded-lg bg-slate-950 border border-slate-800 p-3 text-[11px] text-slate-400 space-y-1"><strong className="text-slate-200">Interpretacja orientacyjna:</strong> {interpretation}. <span>Trend obwodu: {circumferenceAnalysis.slopePerWeek === null ? 'potrzeba min. 3 pewnych dat' : `${formatSigned(circumferenceAnalysis.slopePerWeek, ' mm/tydz.')}`}; trend e1RM: {strengthSlope === null ? 'potrzeba min. 3 dat' : `${formatSigned(strengthSlope, ` ${unit}/tydz.`)}`}.</span>{circumferenceAnalysis.isConstant && <span className="block">Seria stała — Z-Score nie jest liczony.</span>}{circumferenceAnalysis.raw.some((point) => point.uncertain) && <span className="block text-rose-300">Punkty oznaczone „?” są niepewne: pozostają widoczne, ale są pomijane tylko w trendzie.</span>}</div>
+        <div id="circumference-interpretation" className="rounded-lg bg-slate-950 border border-slate-800 p-2.5 text-[10px] text-slate-400 space-y-0.5">
+          <strong className="text-slate-200">Interpretacja orientacyjna:</strong> {interpretation}. <span>Trend obwodu: {circumferenceAnalysis.slopePerWeek === null ? 'potrzeba min. 3 pewnych dat' : `${formatSigned(circumferenceAnalysis.slopePerWeek, ' mm/tydz.')}`}; trend e1RM: {strengthSlope === null ? 'potrzeba min. 3 dat' : `${formatSigned(strengthSlope, ` ${unit}/tydz.`)}`}.</span>
+          {circumferenceAnalysis.isConstant && <span className="block">Seria stała — Z-Score nie jest liczony.</span>}
+          {circumferenceAnalysis.raw.some((point) => point.uncertain) && <span className="block text-rose-300">Punkty oznaczone „?” są niepewne: pozostają widoczne, ale są pomijane tylko w trendzie.</span>}
+        </div>
       </div>
     </div>
-    <div className="bg-slate-900 border border-slate-800 rounded-xl overflow-hidden"><div className="p-3 border-b border-slate-800 text-xs font-bold text-slate-200">Historia obwodów</div><div className="max-h-64 overflow-y-auto"><table className="w-full text-left text-xs"><thead className="sticky top-0 bg-slate-950 text-slate-400"><tr><th className="p-2">Data</th><th className="p-2">Seria</th><th className="p-2">Obwód</th><th className="p-2">Notatka</th><th className="p-2 text-right">Akcja</th></tr></thead><tbody className="divide-y divide-slate-800">{[...entries].reverse().map((entry) => <tr key={entry.id} data-circumference-id={entry.id}><td className="p-2 font-mono">{entry.date}</td><td className="p-2">{seriesLabel(entry)}</td><td className="p-2 font-mono text-sky-300">{formatCm(entry.millimeters)} cm</td><td className="p-2 text-slate-400">{entry.notes || '-'}</td><td className="p-2 text-right"><button id={`btn-edit-circumference-${entry.id}`} type="button" onClick={() => edit(entry)} className="p-1.5 text-slate-400 hover:text-sky-300"><Pencil className="w-3.5 h-3.5" /></button><button id={`btn-delete-circumference-${entry.id}`} type="button" onClick={() => onDelete(entry.id)} className="p-1.5 text-slate-400 hover:text-rose-400"><Trash2 className="w-3.5 h-3.5" /></button></td></tr>)}</tbody></table></div></div>
-    <div className="bg-slate-900 border border-slate-800 rounded-xl p-4 space-y-3"><div className="flex flex-wrap items-center justify-between gap-2"><div><h4 className="font-bold text-slate-200 flex items-center gap-2"><Dumbbell className="w-4 h-4 text-amber-400" />Szacowany 1RM wybranego ćwiczenia</h4><p className="text-[11px] text-slate-500">Ta sama oś dat co obwód, osobna jednostka {unit}; brakujące punkty nie są uzupełniane.</p></div><select id="select-circumference-exercise" value={selectedExercise} onChange={(event) => setSelectedExercise(event.target.value)} className="px-3 py-2 rounded-lg bg-slate-950 border border-slate-700 text-xs">{exerciseHistory.length === 0 ? <option value="">Brak historii ćwiczeń</option> : exerciseHistory.map((item) => <option key={item.name} value={item.name}>{item.name}</option>)}</select></div>
-      {rangeStart && <p className="text-[11px] text-slate-500">Wspólny zakres dat: {rangeStart} — {rangeEnd}</p>}{chart(oneRmLinePoints.map((item) => ({ date: item.date, value: item.oneRm })), '#f59e0b', (item) => `${item.toLocaleString('pl-PL', { maximumFractionDigits: 1 })} ${unit}`, 'chart-circumference-e1rm', 'Brak zapisanej historii dla wybranego ćwiczenia.', oneRmPoints.map((item) => ({ date: item.date, value: item.oneRm })))}<div className="flex flex-wrap gap-2 text-[11px] text-slate-400"><span className="rounded-md bg-slate-950 px-2 py-1">Próg obwodu: {ANALYSIS_THRESHOLDS.circumferenceMillimetersPerWeek} mm/tydz.</span><span className="rounded-md bg-slate-950 px-2 py-1">Próg siły: {ANALYSIS_THRESHOLDS.strengthKilogramsPerWeek} {unit}/tydz.</span>{bodyWeightContext && <span className="rounded-md bg-slate-950 px-2 py-1">Masa ciała — kontekst: {formatSigned(bodyWeightContext.change, ` ${unit}`)} (ostatnio {bodyWeightContext.latest} {unit})</span>}</div><p id="circumference-correlation" className="text-[11px] text-slate-500">{correlation.r === null ? `Korelacja niewyliczona: potrzeba min. 5 wspólnych dat (${correlation.count}).` : `Pearson r = ${correlation.r.toLocaleString('pl-PL', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} dla ${correlation.count} wspólnych dat; korelacja nie oznacza przyczynowości.`}</p><p className="text-[11px] text-slate-500">Wykresy prezentują równoległe dane pomiarowe i nie wskazują przyczyn zmian.</p>
+
+    <div className="bg-slate-900 border border-slate-800 rounded-xl overflow-hidden">
+      <div className="p-2.5 border-b border-slate-800 text-xs font-bold text-slate-200">Historia obwodów</div>
+      <div className="max-h-56 overflow-y-auto">
+        <table className="w-full text-left text-xs">
+          <thead className="sticky top-0 bg-slate-950 text-slate-400 text-[10px] uppercase font-bold tracking-wider">
+            <tr>
+              <th className="py-1.5 px-2.5">Data</th>
+              <th className="py-1.5 px-2.5">Seria</th>
+              <th className="py-1.5 px-2.5">Obwód</th>
+              <th className="py-1.5 px-2.5">Notatka</th>
+              <th className="py-1.5 px-2 text-right">Akcja</th>
+            </tr>
+          </thead>
+          <tbody className="divide-y divide-slate-800/60 text-slate-300">
+            {[...entries].reverse().map((entry) => (
+              <tr key={entry.id} data-circumference-id={entry.id} className="hover:bg-slate-800/30">
+                <td className="py-1.5 px-2.5 font-mono text-[11px] text-slate-400">{entry.date}</td>
+                <td className="py-1.5 px-2.5 font-medium">{seriesLabel(entry)}</td>
+                <td className="py-1.5 px-2.5 font-mono font-bold text-sky-400">{formatCm(entry.millimeters)} cm</td>
+                <td className="py-1.5 px-2.5 text-slate-400 text-[11px]">{entry.notes || '-'}</td>
+                <td className="py-1.5 px-2 text-right">
+                  <button id={`btn-edit-circumference-${entry.id}`} type="button" onClick={() => edit(entry)} className="p-1 text-slate-400 hover:text-sky-300" title="Edytuj"><Pencil className="w-3.5 h-3.5" /></button>
+                  <button id={`btn-delete-circumference-${entry.id}`} type="button" onClick={() => onDelete(entry.id)} className="p-1 text-slate-400 hover:text-rose-400" title="Usuń"><Trash2 className="w-3.5 h-3.5" /></button>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <div className="bg-slate-900 border border-slate-800 rounded-xl p-3 space-y-2.5">
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <div>
+          <h4 className="text-xs font-bold text-slate-200 flex items-center gap-1.5">
+            <Dumbbell className="w-3.5 h-3.5 text-amber-400" />
+            <span>Szacowany 1RM wybranego ćwiczenia</span>
+          </h4>
+          <p className="text-[10px] text-slate-500">Ta sama oś dat co obwód, osobna jednostka {unit}; brakujące punkty nie są uzupełniane.</p>
+        </div>
+        <select id="select-circumference-exercise" value={selectedExercise} onChange={(event) => setSelectedExercise(event.target.value)} className="px-2.5 py-1 rounded-md bg-slate-950 border border-slate-800 text-xs text-slate-200">
+          {exerciseHistory.length === 0 ? <option value="">Brak historii ćwiczeń</option> : exerciseHistory.map((item) => <option key={item.name} value={item.name}>{item.name}</option>)}
+        </select>
+      </div>
+      {rangeStart && <p className="text-[10px] text-slate-500 font-mono">Wspólny zakres dat: {rangeStart} — {rangeEnd}</p>}
+      {chart(oneRmLinePoints.map((item) => ({ date: item.date, value: item.oneRm })), '#f59e0b', (item) => `${item.toLocaleString('pl-PL', { maximumFractionDigits: 1 })} ${unit}`, 'chart-circumference-e1rm', 'Brak zapisanej historii dla wybranego ćwiczenia.', oneRmPoints.map((item) => ({ date: item.date, value: item.oneRm })))}
+      <div className="flex flex-wrap gap-1.5 text-[10px] text-slate-400">
+        <span className="rounded-md bg-slate-950 border border-slate-800/80 px-2 py-0.5">Próg obwodu: {ANALYSIS_THRESHOLDS.circumferenceMillimetersPerWeek} mm/tydz.</span>
+        <span className="rounded-md bg-slate-950 border border-slate-800/80 px-2 py-0.5">Próg siły: {ANALYSIS_THRESHOLDS.strengthKilogramsPerWeek} {unit}/tydz.</span>
+        {bodyWeightContext && <span className="rounded-md bg-slate-950 border border-slate-800/80 px-2 py-0.5">Masa ciała: {formatSigned(bodyWeightContext.change, ` ${unit}`)} (ostatnio {bodyWeightContext.latest} {unit})</span>}
+      </div>
+      <p id="circumference-correlation" className="text-[10px] text-slate-500">{correlation.r === null ? `Korelacja: potrzeba min. 5 wspólnych dat (${correlation.count}).` : `Pearson r = ${correlation.r.toLocaleString('pl-PL', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} dla ${correlation.count} wspólnych dat; korelacja nie oznacza przyczynowości.`}</p>
     </div>
   </section>;
 };

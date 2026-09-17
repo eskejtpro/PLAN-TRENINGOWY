@@ -424,7 +424,7 @@ export const CycleProtocolView: React.FC<CycleProtocolViewProps> = ({
           id="tab-btn-calendar"
         >
           <CalendarDays className="w-4 h-4" />
-          <span>Kalendarz Iniekcji & Środków (HCG / Sterydy)</span>
+          <span>Kalendarz</span>
           <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-slate-800 text-slate-300">
             {protocolEntries.length}
           </span>
@@ -441,7 +441,7 @@ export const CycleProtocolView: React.FC<CycleProtocolViewProps> = ({
           id="tab-btn-weeks-history"
         >
           <Clock className="w-4 h-4" />
-          <span>Historia Tygodni Cyklu (Daty Od - Do)</span>
+          <span>Historia tygodni</span>
           <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-slate-800 text-slate-300">
             {weekTimeline.length}
           </span>
@@ -458,7 +458,7 @@ export const CycleProtocolView: React.FC<CycleProtocolViewProps> = ({
           id="tab-btn-blood-concentration"
         >
           <TrendingUp className="w-4 h-4 text-emerald-400" />
-          <span>Kalkulator Stężeń & Półtrwania (Blood Concentration Curve)</span>
+          <span>Kalkulator stężeń</span>
         </button>
       </div>
 

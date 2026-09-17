@@ -140,12 +140,10 @@ export const ExerciseCard: React.FC<ExerciseCardProps> = ({
 
   // Detailed sets operations
   const toggleSetComplete = (setIndex: number) => {
-    setDetailedSets((prev) => {
-      const next = prev.map((s, idx) => (idx === setIndex ? { ...s, completed: !s.completed } : s));
-      // Auto save on set check
-      onSavePerformance(weekId, dayId, exercise.id, sets, reps, weight, next);
-      return next;
-    });
+    const next = detailedSets.map((s, idx) => (idx === setIndex ? { ...s, completed: !s.completed } : s));
+    setDetailedSets(next);
+    // Auto save on set check outside setState updater
+    onSavePerformance(weekId, dayId, exercise.id, sets, reps, weight, next);
   };
 
   const updateSetRow = (setIndex: number, field: 'weight' | 'reps', val: number) => {
@@ -155,29 +153,25 @@ export const ExerciseCard: React.FC<ExerciseCardProps> = ({
   };
 
   const addDetailedSet = () => {
-    setDetailedSets((prev) => {
-      const nextNum = prev.length + 1;
-      const lastSet = prev[prev.length - 1];
-      const newSet: LoggedSet = {
-        setNumber: nextNum,
-        weight: lastSet ? lastSet.weight : weight,
-        reps: lastSet ? lastSet.reps : reps,
-        completed: false
-      };
-      const updated = [...prev, newSet];
-      setSets(updated.length);
-      return updated;
-    });
+    const nextNum = detailedSets.length + 1;
+    const lastSet = detailedSets[detailedSets.length - 1];
+    const newSet: LoggedSet = {
+      setNumber: nextNum,
+      weight: lastSet ? lastSet.weight : weight,
+      reps: lastSet ? lastSet.reps : reps,
+      completed: false
+    };
+    const updated = [...detailedSets, newSet];
+    setDetailedSets(updated);
+    setSets(updated.length);
   };
 
   const removeDetailedSet = (setIndex: number) => {
     if (detailedSets.length <= 1) return;
-    setDetailedSets((prev) => {
-      const filtered = prev.filter((_, idx) => idx !== setIndex);
-      const renumbered = filtered.map((s, idx) => ({ ...s, setNumber: idx + 1 }));
-      setSets(renumbered.length);
-      return renumbered;
-    });
+    const filtered = detailedSets.filter((_, idx) => idx !== setIndex);
+    const renumbered = filtered.map((s, idx) => ({ ...s, setNumber: idx + 1 }));
+    setDetailedSets(renumbered);
+    setSets(renumbered.length);
   };
 
   // Save changes and log to history

@@ -156,6 +156,10 @@ export interface AppSettings {
   /** v2.8: compare two executed training periods from real history. */
   analysisShowPeriodComparison?: boolean;
   analysisPeriodComparisonMetric?: 'volume' | 'executedSets' | 'executedReps' | 'executedDays';
+  /** v2.9: Ultra-sharp display rendering, resolution & pixel density scaling */
+  uiScale?: 'compact' | 'standard' | 'high' | 'ultra';
+  pixelDensity?: 'ultra' | 'crisp' | 'standard';
+  fontSharpness?: 'retina' | 'sharp' | 'standard';
 }
 
 export interface ProtocolEntry {
@@ -195,15 +199,23 @@ export interface UserProfile {
   bio?: string;
   age?: number;
   heightCm?: number;
-  experienceLevel?: 'poczatkujacy' | 'sredniozaawansowany' | 'zaawansowany' | 'zawodnik';
-  primaryGoal?: 'masa' | 'redukcja' | 'rekompozycja' | 'sila' | 'utrzymanie';
+  height?: number;
+  experienceLevel?: 'poczatkujacy' | 'sredniozaawansowany' | 'zaawansowany' | 'zawodnik' | 'beginner' | 'intermediate' | 'advanced' | 'elite' | string;
+  primaryGoal?: 'masa' | 'redukcja' | 'rekompozycja' | 'sila' | 'utrzymanie' | string;
+  goal?: string;
   targetWeight?: number;
-  activityLevel?: 'siedzacy' | 'umiarkowany' | 'aktywny' | 'bardzo_aktywny';
+  activityLevel?: 'siedzacy' | 'umiarkowany' | 'aktywny' | 'bardzo_aktywny' | string;
   // Feature 1: Nutrition & Macro Goals
   dailyCalories?: number;
   proteinGrams?: number;
   carbsGrams?: number;
   fatsGrams?: number;
+  dietaryMacros?: {
+    calories?: number;
+    protein?: number;
+    carbs?: number;
+    fats?: number;
+  };
   // Feature 2: Official PRs
   manualPRs?: AthletePersonalRecord[];
   // Feature 3: Health & Bloodwork (Daty z notatką i plikami JSON)
@@ -236,6 +248,18 @@ export interface SyncLogEntry {
   summary: string;
 }
 
+export interface CatalogExercise {
+  id: string;
+  name: string;
+  category: 'klatka' | 'plecy' | 'biceps' | 'triceps' | 'barki' | 'nogi';
+  equipment?: 'sztanga' | 'hantle' | 'maszyna' | 'wyciag' | 'masa_ciala' | 'inne';
+  defaultSets: number;
+  defaultReps: number;
+  defaultRpe?: number;
+  notes?: string;
+  isCustom?: boolean;
+}
+
 export interface GymData {
   settings: AppSettings;
   weeks: TrainingWeek[];
@@ -248,5 +272,6 @@ export interface GymData {
   profilesList?: UserProfile[];
   syncConfig?: SyncServerConfig;
   syncLogs?: SyncLogEntry[];
+  catalogExercises?: CatalogExercise[];
 }
 
