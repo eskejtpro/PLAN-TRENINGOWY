@@ -35,6 +35,7 @@ import {
 import { GymData, AppSettings, BackupEntry, SyncServerConfig } from '../types';
 import { initialGymData } from '../data/initialData';
 import { PYTHON_SOURCE_CODE, BAT_SCRIPT_CODE, REQUIREMENTS_TXT, INSTALL_BAT_CODE } from '../data/pythonSource';
+import { AgentSettingsPanel } from './AgentSettingsPanel';
 
 interface SettingsViewProps {
   data: GymData;
@@ -1258,152 +1259,13 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
               </div>
             </div>
 
-            {/* Podgrupa 8: Konfiguracja Agenta Analitycznego & AI Coach */}
-            <div className="space-y-1.5 pt-2 border-t border-slate-800/60">
-              <div className="flex items-center justify-between">
-                <span className="text-[10px] font-bold uppercase tracking-wider text-emerald-400 flex items-center gap-1.5">
-                  <span>8. Konfiguracja Agenta Analitycznego & AI Coach</span>
-                </span>
-                <span className="text-[9px] px-2 py-0.5 rounded font-mono font-bold bg-emerald-500/10 text-emerald-300 border border-emerald-500/30">
-                  {data.settings.aiAgentMode === 'server_endpoint' ? 'Tryb Serwer API' : 'Tryb Heurystyka Offline'}
-                </span>
-              </div>
-              
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-[11px]">
-                <label
-                  id="chk-analysis-show-ai-agent"
-                  data-annotation-title="Pokaż Agenta AI w Raporcie Mezocyklu"
-                  data-annotation-desc="Włącza interaktywny boks asystenta analizującego mezocykl z możliwością generowania podpowiedzi per partia mięśniowa."
-                  data-annotation-category="Asystent AI"
-                  className="flex items-center justify-between gap-2 p-2 rounded-lg bg-slate-950 border border-slate-800 hover:border-slate-700 transition-colors cursor-pointer sm:col-span-2"
-                >
-                  <div className="flex items-center gap-2">
-                    <input
-                      type="checkbox"
-                      checked={data.settings.analysisShowAiAgent !== false}
-                      onChange={(e) => onUpdateSettings({ analysisShowAiAgent: e.target.checked })}
-                      className="accent-emerald-500 cursor-pointer"
-                    />
-                    <span>Pokaż moduł Agenta Analitycznego &amp; AI Coach w Raporcie</span>
-                  </div>
-                  <span className="text-[9px] px-1.5 py-0.5 rounded bg-emerald-500/10 text-emerald-400 font-mono">Aktywny</span>
-                </label>
-
-                <label
-                  id="select-ai-agent-mode"
-                  data-annotation-title="Tryb Działania Agenta"
-                  data-annotation-desc="Heurystyka Offline (działa lokalnie w przeglądarce bez serwera) lub Zewnętrzny Serwer API (gdy podłączony zostanie dedykowany backend)."
-                  data-annotation-category="Architektura Agenta"
-                  className="flex items-center justify-between gap-2 p-2 rounded-lg bg-slate-950 border border-slate-800 hover:border-slate-700 transition-colors"
-                >
-                  <span>Silnik analizy</span>
-                  <select
-                    value={data.settings.aiAgentMode || 'heuristic_local'}
-                    onChange={(e) => onUpdateSettings({ aiAgentMode: e.target.value as AppSettings['aiAgentMode'] })}
-                    className="px-2 py-0.5 rounded bg-slate-900 border border-slate-700 text-xs text-slate-200"
-                  >
-                    <option value="heuristic_local">Wbudowany Silnik Heurystyczny (Offline)</option>
-                    <option value="server_endpoint">Zewnętrzny Serwer API / Endpoint</option>
-                  </select>
-                </label>
-
-                <label
-                  id="select-ai-agent-persona"
-                  data-annotation-title="Osobowość i Styl Trenera AI"
-                  data-annotation-desc="Determinuje styl podpowiedzi: od rygorystycznego trenera siłowego, przez biomechanika sportowego, po regenerację."
-                  data-annotation-category="Stylistyka AI"
-                  className="flex items-center justify-between gap-2 p-2 rounded-lg bg-slate-950 border border-slate-800 hover:border-slate-700 transition-colors"
-                >
-                  <span>Styl / Persona trenera</span>
-                  <select
-                    value={data.settings.aiAgentPersona || 'balanced'}
-                    onChange={(e) => onUpdateSettings({ aiAgentPersona: e.target.value as AppSettings['aiAgentPersona'] })}
-                    className="px-2 py-0.5 rounded bg-slate-900 border border-slate-700 text-xs text-slate-200"
-                  >
-                    <option value="balanced">Zrównoważony Trener Personalny</option>
-                    <option value="coach_hardcore">Trener Siłowy (Hardcore &amp; Intensywność)</option>
-                    <option value="sports_scientist">Naukowiec Sportowy (Biomechanika)</option>
-                    <option value="regenerative">Fizjoterapeuta &amp; Regeneracja</option>
-                  </select>
-                </label>
-
-                <label
-                  id="select-ai-agent-focus"
-                  data-annotation-title="Priorytet Analityczny Agenta"
-                  data-annotation-desc="Kierunek optymalizacji wskazówek: hipertrofia, progresja siłowa 1RM lub kontrola zmęczenia i deload."
-                  data-annotation-category="Cele Treningowe"
-                  className="flex items-center justify-between gap-2 p-2 rounded-lg bg-slate-950 border border-slate-800 hover:border-slate-700 transition-colors"
-                >
-                  <span>Priorytet analizy</span>
-                  <select
-                    value={data.settings.aiAgentFocus || 'all_muscles'}
-                    onChange={(e) => onUpdateSettings({ aiAgentFocus: e.target.value as AppSettings['aiAgentFocus'] })}
-                    className="px-2 py-0.5 rounded bg-slate-900 border border-slate-700 text-xs text-slate-200"
-                  >
-                    <option value="all_muscles">Wszystkie partie równomiernie</option>
-                    <option value="hypertrophy_volume">Hipertrofia i tonaż roboczy</option>
-                    <option value="strength_progression">Progresja siłowa &amp; 1RM</option>
-                    <option value="fatigue_management">Zarządzanie zmęczeniem &amp; Deload</option>
-                  </select>
-                </label>
-
-                <label
-                  id="select-ai-agent-response-length"
-                  data-annotation-title="Format i Długość Wskazówek"
-                  data-annotation-desc="Wybór długości generowanych wniosków: zwięzła (2-3 zdania), pełny raport ze szczegółami lub punktowane wytyczne."
-                  data-annotation-category="Format Danych"
-                  className="flex items-center justify-between gap-2 p-2 rounded-lg bg-slate-950 border border-slate-800 hover:border-slate-700 transition-colors"
-                >
-                  <span>Format odpowiedzi</span>
-                  <select
-                    value={data.settings.aiAgentResponseLength || 'concise'}
-                    onChange={(e) => onUpdateSettings({ aiAgentResponseLength: e.target.value as AppSettings['aiAgentResponseLength'] })}
-                    className="px-2 py-0.5 rounded bg-slate-900 border border-slate-700 text-xs text-slate-200"
-                  >
-                    <option value="concise">Krótka i zwięzła (2-3 zdania)</option>
-                    <option value="detailed">Szczegółowa z wytycznymi</option>
-                    <option value="bullet_points">Punkty taktyczne (Lista)</option>
-                  </select>
-                </label>
-
-                {data.settings.aiAgentMode === 'server_endpoint' && (
-                  <>
-                    <label
-                      id="input-ai-agent-server-url"
-                      data-annotation-title="Adres URL Serwera API Agenta"
-                      data-annotation-desc="Adres endpointu zewnętrznego serwera backendowego (np. http://localhost:8000/api/analyze)."
-                      data-annotation-category="Konfiguracja Serwera"
-                      className="flex flex-col gap-1 p-2 rounded-lg bg-slate-950 border border-slate-800 hover:border-slate-700 transition-colors sm:col-span-2"
-                    >
-                      <span className="text-slate-300">Adres URL serwera analizy:</span>
-                      <input
-                        type="url"
-                        placeholder="http://localhost:8000/api/analyze"
-                        value={data.settings.aiAgentServerUrl || ''}
-                        onChange={(e) => onUpdateSettings({ aiAgentServerUrl: e.target.value })}
-                        className="w-full px-2 py-1 rounded bg-slate-900 border border-slate-700 text-xs text-slate-100 font-mono"
-                      />
-                    </label>
-
-                    <label
-                      id="input-ai-agent-api-key"
-                      data-annotation-title="Klucz API / Bearer Token"
-                      data-annotation-desc="Opcjonalny token autoryzacji do komunikacji z własnym serwerem analitycznym."
-                      data-annotation-category="Konfiguracja Serwera"
-                      className="flex flex-col gap-1 p-2 rounded-lg bg-slate-950 border border-slate-800 hover:border-slate-700 transition-colors sm:col-span-2"
-                    >
-                      <span className="text-slate-300">Klucz autoryzacyjny serwera (opcjonalny):</span>
-                      <input
-                        type="password"
-                        placeholder="Wpisz klucz lub token serwera..."
-                        value={data.settings.aiAgentApiKey || ''}
-                        onChange={(e) => onUpdateSettings({ aiAgentApiKey: e.target.value })}
-                        className="w-full px-2 py-1 rounded bg-slate-900 border border-slate-700 text-xs text-slate-100 font-mono"
-                      />
-                    </label>
-                  </>
-                )}
-              </div>
+            {/* Podgrupa 8: Dedykowany Panel Agenta Analitycznego & AI Coach */}
+            <div className="pt-2 border-t border-slate-800/60">
+              <AgentSettingsPanel
+                settings={data.settings}
+                weeks={data.weeks}
+                onUpdateSettings={onUpdateSettings}
+              />
             </div>
 
             {/* Podgrupa 9: Preferencje Ogólne i Nawigacja */}

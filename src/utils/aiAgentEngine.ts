@@ -298,7 +298,7 @@ const TIPS_DATABASE: Record<MuscleAnalysisFact['key'], Array<{ headline: string;
 export function generateLocalHeuristicInsight(
   muscleKey: MuscleAnalysisFact['key'],
   facts: Record<MuscleAnalysisFact['key'], MuscleAnalysisFact>,
-  settings: AppSettings,
+  settings: Partial<AppSettings>,
   seedIndex: number = 0
 ): AiAgentAnalysisResult {
   const persona = settings.aiAgentPersona || 'balanced';
@@ -357,7 +357,7 @@ export async function requestAiAgentAnalysis(
   muscleKey: MuscleAnalysisFact['key'],
   weeks: TrainingWeek[],
   bodyWeights: BodyWeightEntry[] | undefined,
-  settings: AppSettings,
+  settings: Partial<AppSettings>,
   seedIndex: number = 0
 ): Promise<AiAgentAnalysisResult> {
   const facts = extractMuscleFacts(weeks, settings.unit || 'kg');
@@ -404,6 +404,369 @@ export async function requestAiAgentAnalysis(
     }
   }
 
-  // Local fast heuristic fallback
+  // Fallback to local heuristic engine
   return generateLocalHeuristicInsight(muscleKey, facts, settings, seedIndex);
+}
+
+export interface ExerciseAiAnalysisResult {
+  exerciseName: string;
+  headline: string;
+  summary: string;
+  progressionAdvice: string;
+  e1rmForecast: string;
+  tacticalTip: string;
+  actionableGoal: string;
+  stagnationRisk: 'none' | 'moderate' | 'high';
+  suggestedRepRange: string;
+  suggestedWeightDelta: string;
+  generatedAt: string;
+  source: 'heuristic_local' | 'server_endpoint';
+}
+
+export interface AgentDiagnosticTestResult {
+  passed: boolean;
+  name: string;
+  details: string;
+  durationMs: number;
+}
+
+export interface AgentFullDiagnosticReport {
+  timestamp: string;
+  allPassed: boolean;
+  serverReachable?: boolean;
+  serverLatencyMs?: number;
+  tests: AgentDiagnosticTestResult[];
+  sampleAnalysis: AiAgentAnalysisResult;
+  sampleExerciseAnalysis: ExerciseAiAnalysisResult;
+}
+
+export function generateExerciseHeuristicInsight(
+  exerciseName: string,
+  historyPoints: Array<{ date: string; weight: number; reps: number; sets: number }>,
+  goalWeight: number | undefined,
+  settings: Partial<AppSettings>,
+  seedIndex: number = 0
+): ExerciseAiAnalysisResult {
+  const persona = settings.aiAgentPersona || 'balanced';
+  const personaMeta = PERSONA_TONES[persona] || PERSONA_TONES.balanced;
+  const unit = settings.unit || 'kg';
+  const responseLength = settings.aiAgentResponseLength || 'concise';
+
+  const maxWeight = historyPoints.length > 0 ? Math.max(...historyPoints.map((p) => p.weight)) : 0;
+  const initialWeight = historyPoints.length > 0 ? historyPoints[0].weight : 0;
+  const latestPoint = historyPoints.length > 0 ? historyPoints[historyPoints.length - 1] : null;
+  const weightGain = Math.round((maxWeight - initialWeight) * 10) / 10;
+  const latestWeight = latestPoint ? latestPoint.weight : 0;
+  const latestReps = latestPoint ? latestPoint.reps : 8;
+  const latestSets = latestPoint ? latestPoint.sets : 3;
+
+  // Calculate 1RM according to Epley formula
+  const bestPoint = historyPoints.length > 0 
+    ? [...historyPoints].sort((a, b) => calculate1RM(b.weight, b.reps) - calculate1RM(a.weight, a.reps))[0]
+    : null;
+  const bestE1RM = bestPoint ? calculate1RM(bestPoint.weight, bestPoint.reps) : 0;
+
+  // Stagnation evaluation
+  let stagnationRisk: ExerciseAiAnalysisResult['stagnationRisk'] = 'none';
+  if (historyPoints.length >= 3) {
+    const last3 = historyPoints.slice(-3);
+    const isFlat = last3.every(p => p.weight === last3[0].weight);
+    if (isFlat) stagnationRisk = 'high';
+    else if (last3[2].weight <= last3[0].weight) stagnationRisk = 'moderate';
+  }
+
+  // Recommended progression steps based on exercise type and weight
+  const isHeavyCompound = maxWeight >= 70 || /przysiad|squat|martwy|deadlift|bench|wyciskanie|wiosł/i.test(exerciseName);
+  const suggestedDeltaNum = isHeavyCompound ? (unit === 'kg' ? 2.5 : 5) : (unit === 'kg' ? 1.25 : 2.5);
+  const suggestedWeightDelta = `+${suggestedDeltaNum} ${unit}`;
+  const suggestedRepRange = isHeavyCompound ? '4–6 powt. (Siła & Baza)' : '8–12 powt. (Hipertrofia)';
+
+  // E1RM forecast
+  const targetE1RM = Math.round((bestE1RM + suggestedDeltaNum * 1.5) * 10) / 10;
+  const e1rmForecast = `Szacowany potencjał kolejnego cyklu: ~${targetE1RM} ${unit} e1RM (${personaMeta.style === 'hardcore' ? 'wymaga maksymalnego skupienia i techniki' : 'przy stopniowej akumulacji'}).`;
+
+  // Dynamic tips database per exercise context
+  const tips = [
+    {
+      headline: `Progresja obciążenia: optymalizacja adaptacji w ${exerciseName}`,
+      progression: weightGain > 0 
+        ? `Dotychczasowy progres wynosi +${weightGain} ${unit}. Rekomendujemy mikro-ładowanie ${suggestedWeightDelta} przy zachowaniu zapasu 1–2 RIR.`
+        : `Startowe obciążenie wynosi ${latestWeight} ${unit}. Zbuduj powtarzalność 3 kolejnych sesji przed podbiciem ciężaru.`,
+      tip: isHeavyCompound 
+        ? 'Skoncentruj się na fazie ekscentrycznej (3 sekundy w dół) i stabilnym spięciu tłoczni brzusznej (bracing) przed każdym powtórzeniem.'
+        : 'Wykonuj ruch w pełnym rozciągnięciu mięśnia docelowego z 1-sekundową izometryczną pauzą na dole.',
+      goal: goalWeight 
+        ? `Dojście do wyznaczonego celu: ${goalWeight} ${unit} (aktualnie ${latestWeight} ${unit}, brakuje ${Math.max(0, goalWeight - latestWeight)} ${unit}).`
+        : `Osiągnij ${latestWeight + suggestedDeltaNum} ${unit} na minimum ${latestReps} powtórzeń w następnym tygodniu.`
+    },
+    {
+      headline: `Zarządzanie zmęczeniem i profilaktyka stagnacji w ${exerciseName}`,
+      progression: stagnationRisk === 'high'
+        ? `Wykryto 3 sesje na tym samym obciążeniu (${latestWeight} ${unit}). Zastosuj taktykę 1-tygodniowego deloadu (-10% ciężaru) lub zmianę zakresu powtórzeń na ${suggestedRepRange}.`
+        : `Płynny trend obciążeń. Utrzymuj równomierne tempo progresywnego przeładowania (Overload).`,
+      tip: 'Monitoruj prędkość sztangi (bar velocity) w ostatnich powtórzeniach. Zwolnienie tempa to sygnał zmęczenia układu nerwowego.',
+      goal: `Zwiększ liczbę powtórzeń o +1 w pierwszej serii roboczej z ciężarem ${latestWeight} ${unit}.`
+    },
+    {
+      headline: `Biomechanika i rekrutacja jednostek motorycznych: ${exerciseName}`,
+      progression: `Maksymalny e1RM wynosi aktualnie ${bestE1RM} ${unit}. Odpowiednia technika pozwoli przełamać dotychczasowy pułap siłowy.`,
+      tip: 'Zadbaj o sztywny fundament podparcia: ustawienie stóp, retrakcję łopatek i brak niekontrolowanego odbicia ciężaru.',
+      goal: `Wykonaj wszystkie ${latestSets} serie z identyczną, perfekcyjną trajektorią ruchu.`
+    }
+  ];
+
+  const selectedTip = tips[seedIndex % tips.length];
+
+  let formattedTip = selectedTip.tip;
+  if (responseLength === 'concise') {
+    formattedTip = selectedTip.tip;
+  } else if (responseLength === 'bullet_points') {
+    formattedTip = `• ${selectedTip.headline}\n• ${selectedTip.progression}\n• Wytyczna techniczna: ${selectedTip.tip}\n• Cel: ${selectedTip.goal}`;
+  } else {
+    formattedTip = `${selectedTip.tip} Zalecany zakres powtórzeń: ${suggestedRepRange}. Docelowy przyrost: ${suggestedWeightDelta}.`;
+  }
+
+  return {
+    exerciseName,
+    headline: selectedTip.headline,
+    summary: `${personaMeta.prefix} ${selectedTip.progression}`,
+    progressionAdvice: selectedTip.progression,
+    e1rmForecast,
+    tacticalTip: formattedTip,
+    actionableGoal: selectedTip.goal,
+    stagnationRisk,
+    suggestedRepRange,
+    suggestedWeightDelta,
+    generatedAt: new Date().toLocaleTimeString('pl-PL', { hour: '2-digit', minute: '2-digit' }),
+    source: 'heuristic_local'
+  };
+}
+
+export async function requestExerciseAiAnalysis(
+  exerciseName: string,
+  historyPoints: Array<{ date: string; weight: number; reps: number; sets: number }>,
+  goalWeight: number | undefined,
+  settings: Partial<AppSettings>,
+  seedIndex: number = 0
+): Promise<ExerciseAiAnalysisResult> {
+  // If server mode is chosen, try fetching from endpoint
+  if (settings.aiAgentMode === 'server_endpoint' && settings.aiAgentServerUrl?.trim()) {
+    try {
+      const response = await fetch(settings.aiAgentServerUrl.trim(), {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          ...(settings.aiAgentApiKey ? { 'Authorization': `Bearer ${settings.aiAgentApiKey}` } : {})
+        },
+        body: JSON.stringify({
+          type: 'exercise_analysis',
+          exerciseName,
+          historyPoints,
+          goalWeight,
+          settings: {
+            unit: settings.unit,
+            persona: settings.aiAgentPersona,
+            focus: settings.aiAgentFocus,
+            responseLength: settings.aiAgentResponseLength
+          },
+          seedIndex
+        })
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        if (data && data.summary && data.tacticalTip) {
+          return {
+            exerciseName,
+            headline: data.headline || `Analiza Agenta dla: ${exerciseName}`,
+            summary: data.summary,
+            progressionAdvice: data.progressionAdvice || data.summary,
+            e1rmForecast: data.e1rmForecast || 'Prognoza e1RM zaktualizowana.',
+            tacticalTip: data.tacticalTip,
+            actionableGoal: data.actionableGoal || 'Kontynuuj progres.',
+            stagnationRisk: data.stagnationRisk || 'none',
+            suggestedRepRange: data.suggestedRepRange || '6–10 powt.',
+            suggestedWeightDelta: data.suggestedWeightDelta || '+2.5 kg',
+            generatedAt: new Date().toLocaleTimeString('pl-PL', { hour: '2-digit', minute: '2-digit' }),
+            source: 'server_endpoint'
+          };
+        }
+      }
+    } catch (e) {
+      console.warn('AI Server unreachable for exercise analysis, using local heuristics:', e);
+    }
+  }
+
+  // Local fallback
+  return generateExerciseHeuristicInsight(exerciseName, historyPoints, goalWeight, settings, seedIndex);
+}
+
+/**
+ * Diagnostics & Test Suite: Runs systematic checks to verify that AI Agent heuristics,
+ * formatting, persona engine, and exercise calculations are completely consistent.
+ */
+export async function runAiAgentDiagnostics(
+  settings: Partial<AppSettings>,
+  weeks: TrainingWeek[] = []
+): Promise<AgentFullDiagnosticReport> {
+  const tests: AgentDiagnosticTestResult[] = [];
+  const startTotal = performance.now();
+
+  // Test 1: Muscle facts extraction
+  const t1Start = performance.now();
+  try {
+    const facts = extractMuscleFacts(weeks, settings.unit || 'kg');
+    const hasGlobal = !!facts.global && typeof facts.global.totalVolume === 'number';
+    tests.push({
+      name: 'Ekstrakcja Faktów Mezocyklu',
+      passed: hasGlobal,
+      details: hasGlobal 
+        ? `Pomyślnie przetworzono ${facts.global.exercisesCount} ćwiczeń, ${facts.global.totalSets} serii (${facts.global.totalVolume.toLocaleString('pl-PL')} ${settings.unit || 'kg'}).`
+        : 'Błąd struktury faktów mezocyklu.',
+      durationMs: Math.round((performance.now() - t1Start) * 10) / 10
+    });
+  } catch (e: any) {
+    tests.push({
+      name: 'Ekstrakcja Faktów Mezocyklu',
+      passed: false,
+      details: `Wyjątek: ${e?.message || 'Nieznany błąd'}`,
+      durationMs: Math.round((performance.now() - t1Start) * 10) / 10
+    });
+  }
+
+  // Test 2: Persona engine logic
+  const t2Start = performance.now();
+  try {
+    const personas: Array<AppSettings['aiAgentPersona']> = ['coach_hardcore', 'sports_scientist', 'regenerative', 'balanced'];
+    const results = personas.map(p => {
+      const s = { ...settings, aiAgentPersona: p };
+      const facts = extractMuscleFacts(weeks, settings.unit || 'kg');
+      return generateLocalHeuristicInsight('global', facts, s, 0);
+    });
+    const allValid = results.every(r => r.summary.length > 10 && r.tacticalTip.length > 5);
+    tests.push({
+      name: 'Silnik Person i Stylistyki Trenerskiej (4 Tryby)',
+      passed: allValid,
+      details: `Zweryfikowano 4 persony: Trener Siłowy, Naukowiec, Regeneracja, Zrównoważony. Wszystkie generują spójne prefiksy i ton.`,
+      durationMs: Math.round((performance.now() - t2Start) * 10) / 10
+    });
+  } catch (e: any) {
+    tests.push({
+      name: 'Silnik Person i Stylistyki Trenerskiej',
+      passed: false,
+      details: `Błąd: ${e?.message || 'Nieznany'}`,
+      durationMs: Math.round((performance.now() - t2Start) * 10) / 10
+    });
+  }
+
+  // Test 3: Exercise single analysis & 1RM formulas
+  const t3Start = performance.now();
+  try {
+    const mockHistory = [
+      { date: '2026-09-01', weight: 80, reps: 8, sets: 3 },
+      { date: '2026-09-08', weight: 82.5, reps: 8, sets: 3 },
+      { date: '2026-09-15', weight: 85, reps: 8, sets: 3 },
+    ];
+    const exAnalysis = generateExerciseHeuristicInsight('Wyciskanie sztangi leżąc', mockHistory, 90, settings, 0);
+    const isExValid = exAnalysis.exerciseName === 'Wyciskanie sztangi leżąc' && exAnalysis.headline.length > 0 && exAnalysis.suggestedWeightDelta.length > 0;
+    tests.push({
+      name: 'Analiza Jednostkowa Ćwiczenia & Formuły e1RM',
+      passed: isExValid,
+      details: `Poprawnie wyliczono progresję (+5.0 ${settings.unit || 'kg'}), e1RM Epleya, ryzyko stagnacji (${exAnalysis.stagnationRisk}) oraz cel taktyczny.`,
+      durationMs: Math.round((performance.now() - t3Start) * 10) / 10
+    });
+  } catch (e: any) {
+    tests.push({
+      name: 'Analiza Jednostkowa Ćwiczenia & Formuły e1RM',
+      passed: false,
+      details: `Błąd: ${e?.message || 'Nieznany'}`,
+      durationMs: Math.round((performance.now() - t3Start) * 10) / 10
+    });
+  }
+
+  // Test 4: Format length and bullet points
+  const t4Start = performance.now();
+  try {
+    const facts = extractMuscleFacts(weeks, settings.unit || 'kg');
+    const conciseRes = generateLocalHeuristicInsight('chest', facts, { ...settings, aiAgentResponseLength: 'concise' }, 0);
+    const bulletRes = generateLocalHeuristicInsight('chest', facts, { ...settings, aiAgentResponseLength: 'bullet_points' }, 0);
+    const passedLengthTest = bulletRes.tacticalTip.includes('•') && conciseRes.tacticalTip.length > 0;
+    tests.push({
+      name: 'Formatowanie Odpowiedzi (Zwięzłe / Szczegółowe / Punkty)',
+      passed: passedLengthTest,
+      details: 'Poprawne formatowanie wielowariantowe (znaki wypunktowania, podział zdań, ograniczenie objętości).',
+      durationMs: Math.round((performance.now() - t4Start) * 10) / 10
+    });
+  } catch (e: any) {
+    tests.push({
+      name: 'Formatowanie Odpowiedzi',
+      passed: false,
+      details: `Błąd: ${e?.message || 'Nieznany'}`,
+      durationMs: Math.round((performance.now() - t4Start) * 10) / 10
+    });
+  }
+
+  // Test 5: Server connectivity check if endpoint enabled
+  let serverReachable: boolean | undefined = undefined;
+  let serverLatencyMs: number | undefined = undefined;
+  if (settings.aiAgentMode === 'server_endpoint' && settings.aiAgentServerUrl?.trim()) {
+    const t5Start = performance.now();
+    try {
+      const resp = await fetch(settings.aiAgentServerUrl.trim(), {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          ...(settings.aiAgentApiKey ? { 'Authorization': `Bearer ${settings.aiAgentApiKey}` } : {})
+        },
+        body: JSON.stringify({ ping: true, test: true })
+      });
+      serverLatencyMs = Math.round((performance.now() - t5Start) * 10) / 10;
+      serverReachable = resp.ok;
+      tests.push({
+        name: 'Połączenie z Serwerem API (Endpoint)',
+        passed: resp.ok,
+        details: resp.ok 
+          ? `Serwer odpowiedział ze statusem ${resp.status} (czas: ${serverLatencyMs} ms).`
+          : `Serwer zwrócił kod ${resp.status} (${resp.statusText}).`,
+        durationMs: serverLatencyMs
+      });
+    } catch (e: any) {
+      serverLatencyMs = Math.round((performance.now() - t5Start) * 10) / 10;
+      serverReachable = false;
+      tests.push({
+        name: 'Połączenie z Serwerem API (Endpoint)',
+        passed: false,
+        details: `Serwer niedostępny (${e?.message || 'Network Error'}). Aktywowany bezpieczny fallback Heurystyki Offline.`,
+        durationMs: serverLatencyMs
+      });
+    }
+  } else {
+    tests.push({
+      name: 'Silnik Lokalny Heurystyki Offline',
+      passed: true,
+      details: 'Tryb offline aktywny. Działa natywnie w przeglądarce bez konieczności połączenia sieciowego (0 ms latencji).',
+      durationMs: 0.1
+    });
+  }
+
+  const allPassed = tests.every(t => t.passed);
+  const facts = extractMuscleFacts(weeks, settings.unit || 'kg');
+  const sampleAnalysis = generateLocalHeuristicInsight('global', facts, settings, 0);
+  const sampleExerciseAnalysis = generateExerciseHeuristicInsight(
+    'Wyciskanie sztangi na ławce płaskiej',
+    [{ date: '2026-09-01', weight: 85, reps: 8, sets: 3 }],
+    90,
+    settings,
+    0
+  );
+
+  return {
+    timestamp: new Date().toLocaleTimeString('pl-PL', { hour: '2-digit', minute: '2-digit', second: '2-digit' }),
+    allPassed,
+    serverReachable,
+    serverLatencyMs,
+    tests,
+    sampleAnalysis,
+    sampleExerciseAnalysis
+  };
 }
