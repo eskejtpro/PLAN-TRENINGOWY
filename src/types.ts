@@ -177,14 +177,12 @@ export interface AthletePersonalRecord {
   notes?: string;
 }
 
-export interface BloodworkMarker {
+export interface HealthBloodworkEntry {
   id: string;
-  name: string;
-  value: string;
-  unit: string;
-  referenceRange: string;
-  status: 'normal' | 'low' | 'high';
-  testDate: string;
+  date: string;
+  notes?: string;
+  jsonFileName?: string;
+  jsonData?: string;
 }
 
 export interface UserProfile {
@@ -206,11 +204,8 @@ export interface UserProfile {
   fatsGrams?: number;
   // Feature 2: Official PRs
   manualPRs?: AthletePersonalRecord[];
-  // Feature 3: Health & Bloodwork Sentinel
-  bloodworkDate?: string;
-  bloodworkClinic?: string;
-  bloodworkNotes?: string;
-  bloodMarkers?: BloodworkMarker[];
+  // Feature 3: Health & Bloodwork (Daty z notatką i plikami JSON)
+  healthBloodworkEntries?: HealthBloodworkEntry[];
   isPinned?: boolean;
 }
 

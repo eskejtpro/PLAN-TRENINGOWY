@@ -8,7 +8,6 @@ import {
   Copy,
   RefreshCw,
   Wifi,
-  WifiOff,
   Smartphone,
   Monitor,
   Shield,
@@ -19,14 +18,19 @@ import {
   Plus,
   AlertTriangle,
   QrCode,
-  FileText,
   Clock,
-  HardDrive,
-  Target,
-  Dumbbell,
-  ArrowUpDown
+  ArrowUpDown,
+  FileJson,
+  Download,
+  BookOpen,
+  Calendar,
+  ChevronDown,
+  ChevronUp,
+  Terminal,
+  Info,
+  Target
 } from 'lucide-react';
-import { GymData, UserProfile, SyncServerConfig, SyncLogEntry, AthletePersonalRecord, BloodworkMarker } from '../types';
+import { GymData, UserProfile, SyncServerConfig, SyncLogEntry, AthletePersonalRecord, HealthBloodworkEntry } from '../types';
 
 interface UserProfileViewProps {
   data: GymData;
@@ -96,19 +100,20 @@ export const UserProfileView: React.FC<UserProfileViewProps> = ({
   const syncLogs = data.syncLogs || [];
 
   // Active subtab
-  const [activeTab, setActiveTab] = useState<'profile' | 'sync' | 'nutrition' | 'records' | 'bloodwork' | 'dossier'>('profile');
+  const [activeTab, setActiveTab] = useState<'profile' | 'sync' | 'nutrition' | 'records' | 'bloodwork'>('profile');
 
   // Avatar file upload input ref
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [uploadError, setUploadError] = useState<string>('');
   const [copiedToken, setCopiedToken] = useState(false);
   const [copiedCode, setCopiedCode] = useState(false);
-  const [copiedDossier, setCopiedDossier] = useState(false);
 
-  // Sync state
+  // Sync state & connection guide
   const [isPinging, setIsPinging] = useState(false);
   const [isSyncing, setIsSyncing] = useState(false);
   const [syncFeedback, setSyncFeedback] = useState<string>('');
+  const [isGuideOpen, setIsGuideOpen] = useState(true);
+  const [copiedFirewallCmd, setCopiedFirewallCmd] = useState(false);
 
   // New profile modal state
   const [isNewProfileModalOpen, setIsNewProfileModalOpen] = useState(false);
@@ -122,13 +127,16 @@ export const UserProfileView: React.FC<UserProfileViewProps> = ({
   const [newPRDate, setNewPRDate] = useState(new Date().toISOString().slice(0, 10));
   const [newPRNotes, setNewPRNotes] = useState('');
 
-  // New Bloodwork marker modal state
-  const [isNewMarkerModalOpen, setIsNewMarkerModalOpen] = useState(false);
-  const [newMarkerName, setNewMarkerName] = useState('');
-  const [newMarkerValue, setNewMarkerValue] = useState('');
-  const [newMarkerUnit, setNewMarkerUnit] = useState('ng/dl');
-  const [newMarkerRange, setNewMarkerRange] = useState('');
-  const [newMarkerStatus, setNewMarkerStatus] = useState<'normal' | 'low' | 'high'>('normal');
+  // Feature 3: Health & Bloodwork (tylko daty, notatki oraz pliki JSON)
+  const [isNewHealthModalOpen, setIsNewHealthModalOpen] = useState(false);
+  const [newHealthDate, setNewHealthDate] = useState(new Date().toISOString().slice(0, 10));
+  const [newHealthNotes, setNewHealthNotes] = useState('');
+  const [newHealthJsonName, setNewHealthJsonName] = useState('');
+  const [newHealthJsonContent, setNewHealthJsonContent] = useState('');
+  const [healthJsonError, setHealthJsonError] = useState('');
+  const newHealthJsonFileRef = useRef<HTMLInputElement>(null);
+  const [viewingJsonEntry, setViewingJsonEntry] = useState<HealthBloodworkEntry | null>(null);
+  const [copiedJsonView, setCopiedJsonView] = useState(false);
 
   // Latest weight from entries
   const latestWeight = useMemo(() => {
@@ -335,66 +343,80 @@ export const UserProfileView: React.FC<UserProfileViewProps> = ({
     onUpdateProfile({ manualPRs: updated });
   };
 
-  // Feature 3: Bloodwork marker handlers
-  const bloodMarkers = profile.bloodMarkers || [];
+  // Feature 3: Health & Bloodwork (Tylko daty, notatki oraz pliki JSON)
+  const healthEntries = useMemo(() => {
+    const list: HealthBloodworkEntry[] = profile.healthBloodworkEntries ? [...profile.healthBloodworkEntries] : [];
+    // Sort descending by date
+    return list.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+  }, [profile.healthBloodworkEntries]);
 
-  const handleAddMarker = () => {
-    if (!newMarkerName.trim() || !newMarkerValue.trim()) return;
-    const newMarker: BloodworkMarker = {
-      id: `bm-${Date.now()}`,
-      name: newMarkerName.trim(),
-      value: newMarkerValue.trim(),
-      unit: newMarkerUnit.trim(),
-      referenceRange: newMarkerRange.trim() || 'N/A',
-      status: newMarkerStatus,
-      testDate: new Date().toISOString().slice(0, 10),
+  const handleAddHealthEntry = () => {
+    if (!newHealthDate) return;
+    const newEntry: HealthBloodworkEntry = {
+      id: `hb-${Date.now()}`,
+      date: newHealthDate,
+      notes: newHealthNotes.trim() || undefined,
+      jsonFileName: newHealthJsonName || undefined,
+      jsonData: newHealthJsonContent || undefined,
     };
-    onUpdateProfile({ bloodMarkers: [...bloodMarkers, newMarker] });
-    setIsNewMarkerModalOpen(false);
-    setNewMarkerName('');
-    setNewMarkerValue('');
-    setNewMarkerRange('');
+    onUpdateProfile({ healthBloodworkEntries: [newEntry, ...healthEntries] });
+    setIsNewHealthModalOpen(false);
+    setNewHealthNotes('');
+    setNewHealthJsonName('');
+    setNewHealthJsonContent('');
+    setHealthJsonError('');
   };
 
-  const handleDeleteMarker = (id: string) => {
-    onUpdateProfile({ bloodMarkers: bloodMarkers.filter((m) => m.id !== id) });
+  const handleUpdateHealthEntry = (id: string, updates: Partial<HealthBloodworkEntry>) => {
+    const updated = healthEntries.map((e) => (e.id === id ? { ...e, ...updates } : e));
+    onUpdateProfile({ healthBloodworkEntries: updated });
   };
 
-  // Feature 4: Athlete Dossier Summary
-  const dossierText = useMemo(() => {
-    return `# GymTracker Pro - Raport & Karta Zawodnika
-Data wygenerowania: ${new Date().toLocaleDateString('pl-PL')} ${new Date().toLocaleTimeString('pl-PL')}
-Autor programu: Pasik92 (GymTracker Pro Windows Desktop)
+  const handleDeleteHealthEntry = (id: string) => {
+    if (!window.confirm('Czy na pewno chcesz usunąć ten wpis badania?')) return;
+    const updated = healthEntries.filter((e) => e.id !== id);
+    onUpdateProfile({ healthBloodworkEntries: updated });
+  };
 
-## 1. DANE ZAWODNIKA
-- Imię / Identyfikator: ${profile.name} (${profile.athleteTag || 'Brak'})
-- Wiek: ${profile.age || 'Nie podano'} lat | Wzrost: ${profile.heightCm || 'Nie podano'} cm
-- Aktualna masa ciała: ${latestWeight} ${unit} | Cel wagowy: ${profile.targetWeight || '-'} ${unit}
-- Staż treningowy: ${profile.experienceLevel || 'Zaawansowany'}
-- Główny cel sylwetkowy: ${profile.primaryGoal?.toUpperCase() || 'HIPERTROFIA'}
-- Filozofia: ${profile.bio || 'Trening siłowy & periodyzacja'}
+  const handleAttachJsonToEntry = (entryId: string, file: File) => {
+    if (!file.name.toLowerCase().endsWith('.json') && file.type !== 'application/json') {
+      alert('Wybierz poprawny plik JSON (.json).');
+      return;
+    }
+    const reader = new FileReader();
+    reader.onload = (ev) => {
+      try {
+        const text = ev.target?.result as string;
+        // Validate JSON structure
+        JSON.parse(text);
+        handleUpdateHealthEntry(entryId, {
+          jsonFileName: file.name,
+          jsonData: text,
+        });
+      } catch {
+        alert('Wybrany plik nie jest poprawnym plikiem JSON.');
+      }
+    };
+    reader.readAsText(file);
+  };
 
-## 2. REKORDY SIŁOWE (SBD TOTAL: ${sbdScore.total} ${unit} / ${sbdScore.relative}x wagi)
-${personalRecordsList.map((p) => `- ${p.exerciseName}: ${p.weight} ${unit} x ${p.reps} powt. (1RM szacowane: ${p.estimated1RM} ${unit}, data: ${p.date})`).join('\n') || '- Brak wpisów'}
+  const handleDownloadJson = (entry: HealthBloodworkEntry) => {
+    if (!entry.jsonData) return;
+    const blob = new Blob([entry.jsonData], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = entry.jsonFileName || `badania_${entry.date}.json`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+  };
 
-## 3. CELE ŻYWIENIOWE
-- Kalorie: ${profile.dailyCalories || nutritionCalculations.targetCalories} kcal / dzień
-- Białko: ${profile.proteinGrams || nutritionCalculations.proteinGrams} g (${((profile.proteinGrams || nutritionCalculations.proteinGrams) / latestWeight).toFixed(1)} g/kg)
-- Węglowodany: ${profile.carbsGrams || nutritionCalculations.carbsGrams} g
-- Tłuszcze: ${profile.fatsGrams || nutritionCalculations.fatsGrams} g
-
-## 4. STATUS SYNCHRONIZACJI ANDROID ↔ WINDOWS
-- Węzeł serwera: ${syncConfig.serverUrl}:${syncConfig.port}
-- Identyfikator urządzenia: ${syncConfig.deviceId}
-- Kod parowania: ${syncConfig.pairingCode}
-- Ostatnia synchronizacja: ${syncConfig.lastSyncAt || 'Brak'}
-`;
-  }, [profile, latestWeight, unit, sbdScore, personalRecordsList, nutritionCalculations, syncConfig]);
-
-  const handleCopyDossier = () => {
-    navigator.clipboard.writeText(dossierText);
-    setCopiedDossier(true);
-    setTimeout(() => setCopiedDossier(false), 2000);
+  const handleCopyFirewallCmd = () => {
+    navigator.clipboard.writeText('netsh advfirewall firewall add rule name="GymTracker Sync" dir=in action=allow protocol=TCP localport=8080');
+    setCopiedFirewallCmd(true);
+    setTimeout(() => setCopiedFirewallCmd(false), 2000);
   };
 
   // Render Avatar
@@ -637,19 +659,6 @@ ${personalRecordsList.map((p) => `- ${p.exerciseName}: ${p.weight} ${unit} x ${p
         >
           <HeartPulse className="w-4 h-4" />
           <span>Badania Krwi & Zdrowie</span>
-        </button>
-
-        <button
-          type="button"
-          onClick={() => setActiveTab('dossier')}
-          className={`px-3.5 py-2 rounded-xl transition-colors flex items-center gap-2 shrink-0 ${
-            activeTab === 'dossier'
-              ? 'bg-emerald-600 text-white font-bold shadow-xs'
-              : 'bg-slate-900 text-slate-400 hover:text-slate-200 hover:bg-slate-800 border border-slate-800'
-          }`}
-        >
-          <FileText className="w-4 h-4" />
-          <span>Karta Zawodnika (Eksport)</span>
         </button>
       </div>
 
@@ -1022,6 +1031,136 @@ ${personalRecordsList.map((p) => `- ${p.exerciseName}: ${p.weight} ${unit} x ${p
                 </li>
               </ul>
             </div>
+
+            {/* Guide: How to connect Windows <-> Android (Etap 5 / Na później) */}
+            <div className="rounded-xl border border-slate-800 bg-slate-950 overflow-hidden transition-all">
+              <button
+                type="button"
+                onClick={() => setIsGuideOpen(!isGuideOpen)}
+                className="w-full p-4 flex items-center justify-between text-left hover:bg-slate-900/60 transition-colors"
+                id="btn-toggle-sync-guide"
+              >
+                <div className="flex items-center gap-2.5">
+                  <div className="w-8 h-8 rounded-lg bg-emerald-950/80 border border-emerald-800/80 flex items-center justify-center text-emerald-400 shrink-0">
+                    <BookOpen className="w-4 h-4" />
+                  </div>
+                  <div>
+                    <h4 className="text-xs font-bold text-slate-100 flex items-center gap-2">
+                      <span>Instrukcja: Jak połączyć aplikację Android z Windows 10</span>
+                      <span className="text-[10px] font-normal px-2 py-0.5 rounded-full bg-emerald-950 border border-emerald-800/80 text-emerald-300">
+                        Przewodnik na później
+                      </span>
+                    </h4>
+                    <p className="text-[11px] text-slate-400 mt-0.5">
+                      Podręczna pomoc do konfiguracji lokalnego połączenia i odblokowania portu w zaporze Windows.
+                    </p>
+                  </div>
+                </div>
+
+                <div className="flex items-center gap-2 text-slate-400">
+                  <span className="text-xs font-medium hidden sm:inline">
+                    {isGuideOpen ? 'Zwiń instrukcję' : 'Rozwiń instrukcję'}
+                  </span>
+                  {isGuideOpen ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+                </div>
+              </button>
+
+              {isGuideOpen && (
+                <div className="p-4 pt-0 border-t border-slate-800/80 space-y-4 text-xs">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3 pt-3">
+                    {/* Krok 1 */}
+                    <div className="p-3.5 rounded-xl bg-slate-900/80 border border-slate-800 space-y-1.5">
+                      <div className="flex items-center gap-2">
+                        <span className="w-5 h-5 rounded-full bg-emerald-900/60 text-emerald-300 border border-emerald-700/60 flex items-center justify-center text-[11px] font-bold">
+                          1
+                        </span>
+                        <span className="font-bold text-slate-200">Ta sama sieć lokalna (Wi-Fi)</span>
+                      </div>
+                      <p className="text-[11px] text-slate-400 leading-relaxed pl-7">
+                        Komputer stacjonarny z Windows 10 oraz smartfon z Androidem muszą być podłączone do tej samej sieci Wi-Fi (tego samego routera w domu lub na siłowni) albo telefon może być połączony z mobilnym hotspotem komputera.
+                      </p>
+                    </div>
+
+                    {/* Krok 2 */}
+                    <div className="p-3.5 rounded-xl bg-slate-900/80 border border-slate-800 space-y-1.5">
+                      <div className="flex items-center gap-2">
+                        <span className="w-5 h-5 rounded-full bg-emerald-900/60 text-emerald-300 border border-emerald-700/60 flex items-center justify-center text-[11px] font-bold">
+                          2
+                        </span>
+                        <span className="font-bold text-slate-200">Sprawdzenie adresu IP komputera</span>
+                      </div>
+                      <p className="text-[11px] text-slate-400 leading-relaxed pl-7">
+                        Na komputerze naciśnij <kbd className="px-1.5 py-0.5 rounded bg-slate-800 border border-slate-700 text-slate-300 font-mono text-[10px]">Win + R</kbd>, wpisz <code className="text-emerald-400 font-mono">cmd</code>, a następnie w konsoli wpisz <code className="text-emerald-400 font-mono">ipconfig</code>. Odszukaj pole <strong>IPv4 Address</strong> (np. <span className="font-mono text-slate-200">192.168.1.100</span>) i wpisz je w pole Adresu Węzła z portem 8080.
+                      </p>
+                    </div>
+
+                    {/* Krok 3 */}
+                    <div className="p-3.5 rounded-xl bg-slate-900/80 border border-slate-800 space-y-1.5">
+                      <div className="flex items-center gap-2">
+                        <span className="w-5 h-5 rounded-full bg-emerald-900/60 text-emerald-300 border border-emerald-700/60 flex items-center justify-center text-[11px] font-bold">
+                          3
+                        </span>
+                        <span className="font-bold text-slate-200">Zapora Windows Defender (Firewall)</span>
+                      </div>
+                      <p className="text-[11px] text-slate-400 leading-relaxed pl-7">
+                        Windows domyślnie zabezpiecza porty przed obcymi urządzeniami. Przy pierwszym monicie zezwól na dostęp w sieciach prywatnych. Możesz też dodać regułę wierszem poleceń (patrz poniżej).
+                      </p>
+                    </div>
+
+                    {/* Krok 4 */}
+                    <div className="p-3.5 rounded-xl bg-slate-900/80 border border-slate-800 space-y-1.5">
+                      <div className="flex items-center gap-2">
+                        <span className="w-5 h-5 rounded-full bg-emerald-900/60 text-emerald-300 border border-emerald-700/60 flex items-center justify-center text-[11px] font-bold">
+                          4
+                        </span>
+                        <span className="font-bold text-slate-200">Wprowadzenie danych w aplikacji Android</span>
+                      </div>
+                      <p className="text-[11px] text-slate-400 leading-relaxed pl-7">
+                        W aplikacji GymTracker na telefonie wejdź w <em>Ustawienia → Synchronizacja z PC</em>. Wpisz Adres serwera (np. <span className="font-mono text-emerald-400">{syncConfig.serverUrl}</span>) oraz Kod Parowania (<span className="font-mono text-amber-300 font-bold">{syncConfig.pairingCode}</span>) lub wklej Token.
+                      </p>
+                    </div>
+                  </div>
+
+                  {/* Firewall command helper */}
+                  <div className="p-3 rounded-xl bg-slate-900 border border-slate-800 space-y-2">
+                    <div className="flex items-center justify-between">
+                      <span className="text-[11px] font-semibold text-slate-300 flex items-center gap-1.5">
+                        <Terminal className="w-3.5 h-3.5 text-sky-400" />
+                        <span>Komenda odblokowania portu 8080 w Windows Defender (CMD jako Administrator):</span>
+                      </span>
+                      <button
+                        type="button"
+                        onClick={handleCopyFirewallCmd}
+                        className="text-[10px] text-emerald-400 hover:text-emerald-300 flex items-center gap-1 font-semibold cursor-pointer"
+                      >
+                        {copiedFirewallCmd ? <Check className="w-3 h-3" /> : <Copy className="w-3 h-3" />}
+                        <span>{copiedFirewallCmd ? 'Skopiowano polecenie!' : 'Kopiuj polecenie'}</span>
+                      </button>
+                    </div>
+                    <code className="block p-2 rounded-lg bg-black/60 font-mono text-[11px] text-slate-300 border border-slate-800/80 overflow-x-auto select-all">
+                      netsh advfirewall firewall add rule name=&quot;GymTracker Sync&quot; dir=in action=allow protocol=TCP localport=8080
+                    </code>
+                  </div>
+
+                  {/* Diagnostic hints */}
+                  <div className="p-3 rounded-xl bg-slate-900/60 border border-slate-800 text-[11px] text-slate-400 space-y-1">
+                    <span className="font-bold text-slate-300 flex items-center gap-1">
+                      <Info className="w-3.5 h-3.5 text-amber-400" />
+                      <span>Szybka diagnostyka (Troubleshooting):</span>
+                    </span>
+                    <p>
+                      • Aby sprawdzić, czy telefon widzi komputer, wpisz w przeglądarce w telefonie: <code className="text-emerald-400 font-mono">{syncConfig.serverUrl}/api/v1/health</code>. Powinien pojawić się komunikat o statusie serwera.
+                    </p>
+                    <p>
+                      • Jeśli połączenie nie dochodzi do skutku, sprawdź czy sieć Wi-Fi nie ma włączonej funkcji &quot;AP Isolation&quot; (izolacji klientów na routerze).
+                    </p>
+                    <p>
+                      • W razie zmiany IP komputera po restarcie routera, wystarczy zaktualizować pole adresu powyżej.
+                    </p>
+                  </div>
+                </div>
+              )}
+            </div>
           </div>
 
           {/* Sync History Logs Table */}
@@ -1282,140 +1421,172 @@ ${personalRecordsList.map((p) => `- ${p.exerciseName}: ${p.weight} ${unit} x ${p
         </div>
       )}
 
-      {/* TAB 5: Bloodwork & Health Sentinel */}
+      {/* TAB 5: Badania Krwi & Zdrowie (Tylko daty, notatki oraz pliki JSON) */}
       {activeTab === 'bloodwork' && (
         <div className="space-y-6">
-          <div className="bg-slate-900 border border-slate-800 rounded-2xl p-5 shadow-sm space-y-4">
-            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 border-b border-slate-800 pb-3">
+          <div className="bg-slate-900 border border-slate-800 rounded-2xl p-5 sm:p-6 shadow-sm space-y-5">
+            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 border-b border-slate-800 pb-4">
               <div>
-                <h3 className="text-sm font-bold text-slate-100 flex items-center gap-2">
-                  <HeartPulse className="w-4 h-4 text-rose-400" />
-                  <span>Karta Badań Laboratoryjnych &amp; Markery Zdrowia</span>
+                <h3 className="text-base font-bold text-slate-100 flex items-center gap-2">
+                  <HeartPulse className="w-5 h-5 text-rose-400" />
+                  <span>Badania Krwi &amp; Zdrowie</span>
                 </h3>
-                <p className="text-xs text-slate-400 mt-0.5">
-                  Monitorowanie kluczowych markerów krwi (morfologia, próby wątrobowe, hormony, lipidogram).
+                <p className="text-xs text-slate-400 mt-1">
+                  Rejestr wpisów według dat z możliwością dodawania notatek oraz załączania plików JSON z wynikami.
                 </p>
               </div>
 
               <button
                 type="button"
-                onClick={() => setIsNewMarkerModalOpen(true)}
-                className="px-3.5 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold flex items-center gap-1.5 border border-slate-700 transition-colors"
+                onClick={() => {
+                  setNewHealthDate(new Date().toISOString().slice(0, 10));
+                  setNewHealthNotes('');
+                  setNewHealthJsonName('');
+                  setNewHealthJsonContent('');
+                  setHealthJsonError('');
+                  setIsNewHealthModalOpen(true);
+                }}
+                className="px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold flex items-center gap-1.5 transition-colors shadow-xs cursor-pointer"
+                id="btn-add-health-entry"
               >
-                <Plus className="w-4 h-4 text-emerald-400" />
-                <span>Dodaj Wynik Badania</span>
+                <Plus className="w-4 h-4" />
+                <span>Dodaj Wpis z Datą</span>
               </button>
             </div>
 
-            {/* Lab details strip */}
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs">
-              <div className="p-3 rounded-xl bg-slate-950 border border-slate-800 space-y-1">
-                <span className="text-[10px] text-slate-500 font-bold uppercase">Data Ostatniego Badania</span>
-                <input
-                  type="date"
-                  value={profile.bloodworkDate || ''}
-                  onChange={(e) => onUpdateProfile({ bloodworkDate: e.target.value })}
-                  className="w-full px-2 py-1 rounded bg-slate-900 border border-slate-700 text-slate-200 text-xs font-mono"
-                />
-              </div>
-
-              <div className="p-3 rounded-xl bg-slate-950 border border-slate-800 space-y-1">
-                <span className="text-[10px] text-slate-500 font-bold uppercase">Laboratorium / Klinika</span>
-                <input
-                  type="text"
-                  value={profile.bloodworkClinic || ''}
-                  onChange={(e) => onUpdateProfile({ bloodworkClinic: e.target.value })}
-                  className="w-full px-2 py-1 rounded bg-slate-900 border border-slate-700 text-slate-200 text-xs"
-                  placeholder="np. Diagnostyka Lab"
-                />
-              </div>
-
-              <div className="p-3 rounded-xl bg-slate-950 border border-slate-800 space-y-1">
-                <span className="text-[10px] text-slate-500 font-bold uppercase">Wnioski Lekarskie</span>
-                <input
-                  type="text"
-                  value={profile.bloodworkNotes || ''}
-                  onChange={(e) => onUpdateProfile({ bloodworkNotes: e.target.value })}
-                  className="w-full px-2 py-1 rounded bg-slate-900 border border-slate-700 text-slate-200 text-xs truncate"
-                  placeholder="np. Wszystko w normie"
-                />
-              </div>
-            </div>
-
-            {/* Blood markers cards */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 pt-2">
-              {bloodMarkers.map((marker) => (
-                <div
-                  key={marker.id}
-                  className="p-3.5 rounded-xl bg-slate-950 border border-slate-800 space-y-2 relative group hover:border-slate-700 transition-colors"
+            {/* List of health entries */}
+            {healthEntries.length === 0 ? (
+              <div className="p-8 rounded-xl bg-slate-950 border border-slate-800 text-center space-y-3">
+                <Calendar className="w-8 h-8 text-slate-600 mx-auto" />
+                <div className="text-xs text-slate-400 max-w-sm mx-auto">
+                  Brak zarejestrowanych badań krwi. Kliknij przycisk powyżej, aby dodać wpis z datą, wpisać notatkę i opcjonalnie dołączyć plik JSON.
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setIsNewHealthModalOpen(true)}
+                  className="px-3.5 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold border border-slate-700 cursor-pointer"
                 >
-                  <div className="flex items-start justify-between gap-2">
-                    <span className="text-xs font-bold text-slate-200 truncate">{marker.name}</span>
-                    <button
-                      type="button"
-                      onClick={() => handleDeleteMarker(marker.id)}
-                      className="p-1 rounded text-slate-500 hover:text-red-400 hover:bg-slate-800"
-                      title="Usuń marker"
-                    >
-                      <Trash2 className="w-3 h-3" />
-                    </button>
-                  </div>
+                  Dodaj pierwszy wpis
+                </button>
+              </div>
+            ) : (
+              <div className="space-y-3">
+                {healthEntries.map((entry) => (
+                  <div
+                    key={entry.id}
+                    className="p-4 rounded-xl bg-slate-950 border border-slate-800 space-y-3 hover:border-slate-700/80 transition-colors"
+                  >
+                    {/* Header: Date + Delete */}
+                    <div className="flex items-center justify-between gap-3 border-b border-slate-800/80 pb-2.5">
+                      <div className="flex items-center gap-2">
+                        <div className="w-7 h-7 rounded-lg bg-emerald-950/60 border border-emerald-800/60 flex items-center justify-center text-emerald-400">
+                          <Calendar className="w-4 h-4" />
+                        </div>
+                        <div>
+                          <span className="text-xs font-bold text-slate-200 font-mono">
+                            {entry.date}
+                          </span>
+                        </div>
+                      </div>
 
-                  <div className="flex items-baseline justify-between">
-                    <div className="text-lg font-black font-mono text-slate-100">
-                      {marker.value} <span className="text-xs text-slate-400 font-normal">{marker.unit}</span>
+                      <button
+                        type="button"
+                        onClick={() => handleDeleteHealthEntry(entry.id)}
+                        className="p-1.5 rounded-lg text-slate-500 hover:text-red-400 hover:bg-slate-800 transition-colors cursor-pointer"
+                        title="Usuń ten wpis"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </button>
                     </div>
 
-                    <span
-                      className={`text-[10px] font-bold px-2 py-0.5 rounded-full uppercase ${
-                        marker.status === 'normal'
-                          ? 'bg-emerald-950/60 text-emerald-300 border border-emerald-800/60'
-                          : marker.status === 'high'
-                          ? 'bg-amber-950/60 text-amber-300 border border-amber-800/60'
-                          : 'bg-rose-950/60 text-rose-300 border border-rose-800/60'
-                      }`}
-                    >
-                      {marker.status === 'normal' ? 'Norma' : marker.status === 'high' ? 'Wyższy' : 'Niższy'}
-                    </span>
+                    {/* Notes Section */}
+                    <div className="space-y-1">
+                      <label className="text-[11px] font-semibold text-slate-400 block">
+                        Notatka / Opis badania:
+                      </label>
+                      <textarea
+                        value={entry.notes || ''}
+                        onChange={(e) => handleUpdateHealthEntry(entry.id, { notes: e.target.value })}
+                        rows={2}
+                        placeholder="Wpisz notatkę do tego badania krwi..."
+                        className="w-full px-3 py-2 rounded-lg bg-slate-900 border border-slate-800 text-slate-200 text-xs focus:border-emerald-500 focus:outline-hidden resize-none"
+                      />
+                    </div>
+
+                    {/* JSON File Section */}
+                    <div className="pt-1">
+                      {entry.jsonData ? (
+                        <div className="p-3 rounded-lg bg-slate-900/90 border border-slate-800 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+                          <div className="flex items-center gap-2.5">
+                            <div className="w-8 h-8 rounded-lg bg-amber-950/50 border border-amber-800/50 flex items-center justify-center text-amber-400 shrink-0">
+                              <FileJson className="w-4 h-4" />
+                            </div>
+                            <div>
+                              <span className="text-xs font-semibold text-slate-200 block truncate max-w-xs sm:max-w-md">
+                                {entry.jsonFileName || 'plik_badania.json'}
+                              </span>
+                              <span className="text-[10px] text-slate-400">
+                                Załączony plik danych JSON ({(new Blob([entry.jsonData]).size / 1024).toFixed(1)} KB)
+                              </span>
+                            </div>
+                          </div>
+
+                          <div className="flex items-center gap-2 w-full sm:w-auto justify-end">
+                            <button
+                              type="button"
+                              onClick={() => setViewingJsonEntry(entry)}
+                              className="px-2.5 py-1 rounded-md bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-medium border border-slate-700 flex items-center gap-1.5 transition-colors cursor-pointer"
+                            >
+                              <span>Podgląd</span>
+                            </button>
+
+                            <button
+                              type="button"
+                              onClick={() => handleDownloadJson(entry)}
+                              className="px-2.5 py-1 rounded-md bg-emerald-950/60 hover:bg-emerald-900/80 text-emerald-300 text-xs font-medium border border-emerald-800/60 flex items-center gap-1.5 transition-colors cursor-pointer"
+                            >
+                              <Download className="w-3.5 h-3.5" />
+                              <span>Pobierz</span>
+                            </button>
+
+                            <button
+                              type="button"
+                              onClick={() => {
+                                if (window.confirm('Czy na pewno chcesz usunąć załączony plik JSON?')) {
+                                  handleUpdateHealthEntry(entry.id, { jsonFileName: undefined, jsonData: undefined });
+                                }
+                              }}
+                              className="p-1 rounded-md text-slate-500 hover:text-red-400 hover:bg-slate-800 transition-colors cursor-pointer"
+                              title="Usuń plik JSON"
+                            >
+                              <Trash2 className="w-3.5 h-3.5" />
+                            </button>
+                          </div>
+                        </div>
+                      ) : (
+                        <div className="flex items-center gap-2">
+                          <label className="px-3 py-1.5 rounded-lg bg-slate-900 hover:bg-slate-850 text-slate-300 text-xs font-medium border border-slate-800 flex items-center gap-2 cursor-pointer transition-colors">
+                            <Upload className="w-3.5 h-3.5 text-emerald-400" />
+                            <span>Dodaj plik JSON (.json)</span>
+                            <input
+                              type="file"
+                              accept=".json,application/json"
+                              className="hidden"
+                              onChange={(e) => {
+                                const file = e.target.files?.[0];
+                                if (file) handleAttachJsonToEntry(entry.id, file);
+                                e.target.value = '';
+                              }}
+                            />
+                          </label>
+                          <span className="text-[11px] text-slate-500">Brak załączonego pliku JSON</span>
+                        </div>
+                      )}
+                    </div>
                   </div>
-
-                  <div className="text-[10px] text-slate-500 font-mono border-t border-slate-800/80 pt-1.5 flex items-center justify-between">
-                    <span>Norma: {marker.referenceRange}</span>
-                    <span>{marker.testDate}</span>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* TAB 6: Athlete Dossier Summary & Export */}
-      {activeTab === 'dossier' && (
-        <div className="bg-slate-900 border border-slate-800 rounded-2xl p-5 sm:p-6 shadow-sm space-y-4">
-          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 border-b border-slate-800 pb-3">
-            <div>
-              <h3 className="text-base font-bold text-slate-100 flex items-center gap-2">
-                <FileText className="w-4 h-4 text-emerald-400" />
-                <span>Karta Zawodnika &amp; Podsumowanie Profilu (Markdown / Dossier)</span>
-              </h3>
-              <p className="text-xs text-slate-400 mt-0.5">
-                Gotowe podsumowanie danych profilu do skopiowania dla trenera, dietetyka lub archiwum.
-              </p>
-            </div>
-
-            <button
-              type="button"
-              onClick={handleCopyDossier}
-              className="px-3.5 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold flex items-center gap-1.5 transition-colors shadow-xs"
-            >
-              {copiedDossier ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
-              <span>{copiedDossier ? 'Skopiowano raport!' : 'Kopiuj Raport (Markdown)'}</span>
-            </button>
-          </div>
-
-          <div className="p-4 rounded-xl bg-slate-950 border border-slate-800 font-mono text-xs text-slate-300 whitespace-pre-wrap leading-relaxed max-h-[420px] overflow-y-auto">
-            {dossierText}
+                ))}
+              </div>
+            )}
           </div>
         </div>
       )}
@@ -1562,72 +1733,104 @@ ${personalRecordsList.map((p) => `- ${p.exerciseName}: ${p.weight} ${unit} x ${p
         </div>
       )}
 
-      {/* MODAL: Add New Blood Marker */}
-      {isNewMarkerModalOpen && (
+      {/* MODAL: Add New Health & Bloodwork Entry */}
+      {isNewHealthModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-xs">
           <div className="bg-slate-900 border border-slate-800 rounded-2xl max-w-md w-full p-5 space-y-4 shadow-xl">
             <h3 className="text-base font-bold text-slate-100 flex items-center gap-2">
-              <HeartPulse className="w-5 h-5 text-rose-400" />
-              <span>Dodaj Marker Laboratoryjny</span>
+              <Calendar className="w-5 h-5 text-emerald-400" />
+              <span>Dodaj Wpis Badania Krwi</span>
             </h3>
 
-            <div className="space-y-3 text-xs">
+            <div className="space-y-3.5 text-xs">
               <div>
-                <label className="block font-semibold text-slate-300 mb-1">Nazwa badania / wskaźnika:</label>
+                <label className="block font-semibold text-slate-300 mb-1">Data badania:</label>
                 <input
-                  type="text"
-                  value={newMarkerName}
-                  onChange={(e) => setNewMarkerName(e.target.value)}
-                  placeholder="np. Testosteron Całkowity, ALT, Żelazo"
-                  className="w-full px-3 py-2 rounded-xl bg-slate-950 border border-slate-700 text-slate-200 text-xs"
+                  type="date"
+                  value={newHealthDate}
+                  onChange={(e) => setNewHealthDate(e.target.value)}
+                  className="w-full px-3 py-2 rounded-xl bg-slate-950 border border-slate-700 text-slate-200 text-xs font-mono focus:border-emerald-500 focus:outline-hidden"
                 />
               </div>
 
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="block font-semibold text-slate-300 mb-1">Wartość wyniku:</label>
-                  <input
-                    type="text"
-                    value={newMarkerValue}
-                    onChange={(e) => setNewMarkerValue(e.target.value)}
-                    placeholder="np. 950"
-                    className="w-full px-3 py-2 rounded-xl bg-slate-950 border border-slate-700 text-slate-200 text-xs font-bold"
-                  />
-                </div>
-                <div>
-                  <label className="block font-semibold text-slate-300 mb-1">Jednostka:</label>
-                  <input
-                    type="text"
-                    value={newMarkerUnit}
-                    onChange={(e) => setNewMarkerUnit(e.target.value)}
-                    placeholder="np. ng/dl, pg/ml, U/l"
-                    className="w-full px-3 py-2 rounded-xl bg-slate-950 border border-slate-700 text-slate-200 text-xs"
-                  />
-                </div>
+              <div>
+                <label className="block font-semibold text-slate-300 mb-1">Notatka (opcjonalnie):</label>
+                <textarea
+                  value={newHealthNotes}
+                  onChange={(e) => setNewHealthNotes(e.target.value)}
+                  placeholder="np. Badania kontrolne na czczo: morfologia, profil lipidowy, próby wątrobowe..."
+                  rows={3}
+                  className="w-full px-3 py-2 rounded-xl bg-slate-950 border border-slate-700 text-slate-200 text-xs focus:border-emerald-500 focus:outline-hidden resize-none"
+                />
               </div>
 
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="block font-semibold text-slate-300 mb-1">Zakres referencyjny (norma):</label>
-                  <input
-                    type="text"
-                    value={newMarkerRange}
-                    onChange={(e) => setNewMarkerRange(e.target.value)}
-                    placeholder="np. 280 - 800"
-                    className="w-full px-3 py-2 rounded-xl bg-slate-950 border border-slate-700 text-slate-200 text-xs"
-                  />
-                </div>
-                <div>
-                  <label className="block font-semibold text-slate-300 mb-1">Status:</label>
-                  <select
-                    value={newMarkerStatus}
-                    onChange={(e) => setNewMarkerStatus(e.target.value as 'normal' | 'low' | 'high')}
-                    className="w-full px-3 py-2 rounded-xl bg-slate-950 border border-slate-700 text-slate-200 text-xs"
-                  >
-                    <option value="normal">W normie</option>
-                    <option value="high">Podwyższony</option>
-                    <option value="low">Obniżony</option>
-                  </select>
+              <div>
+                <label className="block font-semibold text-slate-300 mb-1">Plik JSON (opcjonalnie):</label>
+                <div className="p-3 rounded-xl bg-slate-950 border border-slate-800 space-y-2">
+                  {newHealthJsonName ? (
+                    <div className="flex items-center justify-between gap-2">
+                      <div className="flex items-center gap-2 truncate">
+                        <FileJson className="w-4 h-4 text-amber-400 shrink-0" />
+                        <span className="text-slate-200 font-mono text-[11px] truncate">{newHealthJsonName}</span>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setNewHealthJsonName('');
+                          setNewHealthJsonContent('');
+                        }}
+                        className="text-slate-500 hover:text-red-400 p-1 cursor-pointer"
+                        title="Usuń wybrany plik"
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
+                      </button>
+                    </div>
+                  ) : (
+                    <div>
+                      <input
+                        ref={newHealthJsonFileRef}
+                        type="file"
+                        accept=".json,application/json"
+                        className="hidden"
+                        onChange={(e) => {
+                          const file = e.target.files?.[0];
+                          if (!file) return;
+                          if (!file.name.toLowerCase().endsWith('.json') && file.type !== 'application/json') {
+                            setHealthJsonError('Wybierz plik w formacie JSON (.json).');
+                            return;
+                          }
+                          const reader = new FileReader();
+                          reader.onload = (ev) => {
+                            try {
+                              const text = ev.target?.result as string;
+                              JSON.parse(text);
+                              setNewHealthJsonName(file.name);
+                              setNewHealthJsonContent(text);
+                              setHealthJsonError('');
+                            } catch {
+                              setHealthJsonError('Plik zawiera niepoprawny format JSON.');
+                            }
+                          };
+                          reader.readAsText(file);
+                        }}
+                      />
+                      <button
+                        type="button"
+                        onClick={() => newHealthJsonFileRef.current?.click()}
+                        className="w-full py-2 px-3 rounded-lg bg-slate-900 hover:bg-slate-850 border border-dashed border-slate-700 text-slate-300 text-xs flex items-center justify-center gap-2 transition-colors cursor-pointer"
+                      >
+                        <Upload className="w-3.5 h-3.5 text-emerald-400" />
+                        <span>Wybierz plik .json z dysku</span>
+                      </button>
+                    </div>
+                  )}
+
+                  {healthJsonError && (
+                    <div className="text-[11px] text-red-400 flex items-center gap-1">
+                      <AlertTriangle className="w-3 h-3 shrink-0" />
+                      <span>{healthJsonError}</span>
+                    </div>
+                  )}
                 </div>
               </div>
             </div>
@@ -1635,17 +1838,74 @@ ${personalRecordsList.map((p) => `- ${p.exerciseName}: ${p.weight} ${unit} x ${p
             <div className="flex items-center justify-end gap-2 pt-2 border-t border-slate-800">
               <button
                 type="button"
-                onClick={() => setIsNewMarkerModalOpen(false)}
-                className="px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-semibold"
+                onClick={() => setIsNewHealthModalOpen(false)}
+                className="px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-semibold cursor-pointer"
               >
                 Anuluj
               </button>
               <button
                 type="button"
-                onClick={handleAddMarker}
-                className="px-4 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold"
+                onClick={handleAddHealthEntry}
+                disabled={!newHealthDate}
+                className="px-4 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold disabled:opacity-50 cursor-pointer"
               >
-                Zapisz Marker
+                Zapisz Wpis
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* MODAL: View JSON Content */}
+      {viewingJsonEntry && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-xs">
+          <div className="bg-slate-900 border border-slate-800 rounded-2xl max-w-xl w-full p-5 space-y-4 shadow-xl">
+            <div className="flex items-center justify-between border-b border-slate-800 pb-3">
+              <div className="flex items-center gap-2">
+                <FileJson className="w-5 h-5 text-amber-400" />
+                <h3 className="text-sm font-bold text-slate-100">
+                  Podgląd pliku: <span className="font-mono text-emerald-400">{viewingJsonEntry.jsonFileName || 'badania.json'}</span>
+                </h3>
+              </div>
+
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (viewingJsonEntry.jsonData) {
+                      navigator.clipboard.writeText(viewingJsonEntry.jsonData);
+                      setCopiedJsonView(true);
+                      setTimeout(() => setCopiedJsonView(false), 2000);
+                    }
+                  }}
+                  className="px-2.5 py-1 rounded-md bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs flex items-center gap-1 transition-colors cursor-pointer"
+                >
+                  {copiedJsonView ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5" />}
+                  <span>{copiedJsonView ? 'Skopiowano!' : 'Kopiuj'}</span>
+                </button>
+              </div>
+            </div>
+
+            <div className="p-3.5 rounded-xl bg-slate-950 border border-slate-800 font-mono text-xs text-slate-300 max-h-96 overflow-y-auto whitespace-pre-wrap">
+              {viewingJsonEntry.jsonData || 'Pusty plik'}
+            </div>
+
+            <div className="flex items-center justify-between pt-2 border-t border-slate-800">
+              <button
+                type="button"
+                onClick={() => handleDownloadJson(viewingJsonEntry)}
+                className="px-3 py-1.5 rounded-lg bg-emerald-950/70 hover:bg-emerald-900 text-emerald-300 text-xs font-semibold border border-emerald-800/60 flex items-center gap-1.5 transition-colors cursor-pointer"
+              >
+                <Download className="w-3.5 h-3.5" />
+                <span>Pobierz plik</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setViewingJsonEntry(null)}
+                className="px-4 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold cursor-pointer"
+              >
+                Zamknij
               </button>
             </div>
           </div>

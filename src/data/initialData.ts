@@ -654,16 +654,14 @@ export const initialGymData: GymData = {
         notes: 'Ścisły lockout'
       }
     ],
-    bloodworkDate: '2026-08-10',
-    bloodworkClinic: 'Diagnostyka Lab (Panel Męski)',
-    bloodworkNotes: 'Wszystkie enzymy wątrobowe i nerki w normie. Estrogen pod kontrolą.',
-    bloodMarkers: [
-      { id: 'bm-1', name: 'Testosteron Całkowity', value: '1150', unit: 'ng/dl', referenceRange: '280 - 800', status: 'high', testDate: '2026-08-10' },
-      { id: 'bm-2', name: 'Estradiol (E2)', value: '38.4', unit: 'pg/ml', referenceRange: '11.3 - 43.2', status: 'normal', testDate: '2026-08-10' },
-      { id: 'bm-3', name: 'Prolaktyna', value: '11.2', unit: 'ng/ml', referenceRange: '4.0 - 15.2', status: 'normal', testDate: '2026-08-10' },
-      { id: 'bm-4', name: 'ALT (Aminotransferaza)', value: '31', unit: 'U/l', referenceRange: '< 50', status: 'normal', testDate: '2026-08-10' },
-      { id: 'bm-5', name: 'AST (Aminotransferaza)', value: '28', unit: 'U/l', referenceRange: '< 50', status: 'normal', testDate: '2026-08-10' },
-      { id: 'bm-6', name: 'Morfologia (Hematokryt)', value: '47.8', unit: '%', referenceRange: '40.0 - 52.0', status: 'normal', testDate: '2026-08-10' }
+    healthBloodworkEntries: [
+      {
+        id: 'hb-1',
+        date: '2026-08-10',
+        notes: 'Komplet badań krwi: profil hormonalny, próby wątrobowe ALT/AST i morfologia w normie.',
+        jsonFileName: 'badania_krwi_2026_08_10.json',
+        jsonData: '{\n  "data": "2026-08-10",\n  "testosteron": "1150 ng/dl",\n  "estradiol": "38.4 pg/ml",\n  "alt": "31 U/l",\n  "ast": "28 U/l",\n  "hematokryt": "47.8%"\n}'
+      }
     ]
   },
   profilesList: [
