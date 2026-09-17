@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Settings, Save, Download, Upload, RotateCcw, Folder, Check, Copy, ShieldCheck, Archive, Clock, RefreshCw, Trash2, HardDrive, Smartphone, Wifi, ArrowRight, Shield } from 'lucide-react';
+import { Settings, Save, Download, Upload, RotateCcw, Folder, Check, Copy, ShieldCheck, Archive, Clock, RefreshCw, Trash2, HardDrive, Smartphone, Wifi, ArrowRight, Shield, Sparkles, Info } from 'lucide-react';
 import { GymData, AppSettings, BackupEntry, SyncServerConfig } from '../types';
 import { initialGymData } from '../data/initialData';
 
@@ -216,67 +216,860 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
           </div>
           <label className="flex items-center gap-3 text-xs font-semibold text-slate-300"><input id="chk-reduced-motion" type="checkbox" checked={data.settings.reducedMotion === true} onChange={e=>onUpdateSettings({reducedMotion:e.target.checked})} className="accent-emerald-500" /> Ogranicz animacje i przejścia</label>
 
-          <div className="pt-3 border-t border-slate-800 space-y-3">
-            <h4 className="text-xs font-bold text-slate-200">Ustawienia analiz (v{__APP_VERSION__})</h4>
-            <button type="button" id="btn-reset-analysis-settings" onClick={resetAnalysisSettings} className="inline-flex items-center gap-2 px-3 py-1.5 rounded-lg bg-slate-800 text-slate-200 text-[11px] font-semibold hover:bg-slate-700"><RotateCcw className="w-3.5 h-3.5" /> Przywróć domyślne analizy</button>
-            <div className="p-3 rounded-lg bg-emerald-950/30 border border-emerald-800/40 text-[11px] text-slate-300 space-y-1">
-              <p className="font-bold text-emerald-300">Jak działa analiza?</p>
-              <p>1. Zlicza tylko zatwierdzone dni i zapisane serie.</p>
-              <p>2. Liczy tonaż z ciężaru × powtórzeń × serii.</p>
-              <p>3. Porównuje progres od pierwszego do ostatniego wykonanego tygodnia.</p>
-              <p>4. Pomija partie i ćwiczenia bez wykonania.</p>
-              <p>5. Pokazuje wykonane serie, 1RM, tonaż i balans Push/Pull/Legs.</p>
-              <p>6. Odświeża wyniki po zapisaniu zmiany planu.</p>
+          <div className="pt-3 border-t border-slate-800 space-y-3.5">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+              <div>
+                <h4 className="text-xs font-bold text-slate-200">Ustawienia analiz IBCA (v{__APP_VERSION__})</h4>
+                <p className="text-[11px] text-slate-400">
+                  Precyzyjna konfiguracja algorytmów obliczania tonażu, szacowania 1RM i wskaźników mezocyklu.
+                </p>
+              </div>
+              <button
+                type="button"
+                id="btn-reset-analysis-settings"
+                onClick={resetAnalysisSettings}
+                data-annotation-title="Przywróć Domyślne Ustawienia Analiz"
+                data-annotation-desc="Resetuje wszystkie wskaźniki i filtry analityczne do zalecanych wartości domyślnych."
+                data-annotation-category="Ustawienia Analiz IBCA"
+                className="inline-flex items-center gap-2 px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 text-[11px] font-semibold transition-colors cursor-pointer shrink-0"
+              >
+                <RotateCcw className="w-3.5 h-3.5 text-emerald-400" />
+                <span>Przywróć domyślne analizy</span>
+              </button>
             </div>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-[11px]">
-              <label className="flex items-center gap-2 p-2 rounded-lg bg-slate-950 border border-slate-800"><input type="checkbox" checked={data.settings.analysisOnlyCompleted !== false} onChange={e=>onUpdateSettings({analysisOnlyCompleted:e.target.checked})} className="accent-emerald-500" /> Tylko zatwierdzone dni</label>
-              <label className="flex items-center gap-2 p-2 rounded-lg bg-slate-950 border border-slate-800"><input type="checkbox" checked={data.settings.analysisIncludePartialHistory === true} onChange={e=>onUpdateSettings({analysisIncludePartialHistory:e.target.checked})} className="accent-emerald-500" /> Uwzględniaj częściowe serie tylko po ich odhaczeniu</label>
-              <label className="flex items-center gap-2 p-2 rounded-lg bg-slate-950 border border-slate-800"><input type="checkbox" checked={data.settings.analysisHideEmptyGroups !== false} onChange={e=>onUpdateSettings({analysisHideEmptyGroups:e.target.checked})} className="accent-emerald-500" /> Ukrywaj puste partie</label>
-              <label className="flex items-center gap-2 p-2 rounded-lg bg-slate-950 border border-slate-800"><input type="checkbox" checked={data.settings.analysisShowAlerts !== false} onChange={e=>onUpdateSettings({analysisShowAlerts:e.target.checked})} className="accent-emerald-500" /> Pokazuj alerty balansu</label>
-              <label className="flex items-center gap-2 p-2 rounded-lg bg-slate-950 border border-slate-800"><input type="checkbox" checked={data.settings.analysisShowBodyWeight !== false} onChange={e=>onUpdateSettings({analysisShowBodyWeight:e.target.checked})} className="accent-emerald-500" /> Pokazuj zmianę masy ciała</label>
-              <label className="flex items-center gap-2 p-2 rounded-lg bg-slate-950 border border-slate-800"><input type="checkbox" checked={data.settings.analysisShow1RM !== false} onChange={e=>onUpdateSettings({analysisShow1RM:e.target.checked})} className="accent-emerald-500" /> Pokazuj szacowany 1RM</label>
-              <label className="flex items-center gap-2 p-2 rounded-lg bg-slate-950 border border-slate-800"><input type="checkbox" checked={data.settings.analysisRoundValues !== false} onChange={e=>onUpdateSettings({analysisRoundValues:e.target.checked})} className="accent-emerald-500" /> Zaokrąglaj wartości</label>
-              <label className="flex items-center gap-2 p-2 rounded-lg bg-slate-950 border border-slate-800"><input type="checkbox" checked={data.settings.analysisAutoRefresh !== false} onChange={e=>onUpdateSettings({analysisAutoRefresh:e.target.checked})} className="accent-emerald-500" /> Odświeżaj po zmianie danych</label>
-              <label className="flex items-center gap-2 p-2 rounded-lg bg-slate-950 border border-slate-800">Od tygodnia <input type="number" min="1" value={data.settings.analysisStartWeek || 1} onChange={e=>onUpdateSettings({analysisStartWeek:Math.max(1, Number(e.target.value)||1)})} className="w-14 px-1 py-1 rounded bg-slate-900 border border-slate-700" /></label>
-              <label className="flex items-center gap-2 p-2 rounded-lg bg-slate-950 border border-slate-800">Do tygodnia <input type="number" min="1" value={data.settings.analysisEndWeek || 999} onChange={e=>onUpdateSettings({analysisEndWeek:Math.max(1, Number(e.target.value)||999)})} className="w-14 px-1 py-1 rounded bg-slate-900 border border-slate-700" /></label>
+
+            <div className="p-3 rounded-xl bg-emerald-950/20 border border-emerald-800/40 text-[11px] text-slate-300 space-y-1">
+              <p className="font-bold text-emerald-300">Jak działa silnik analiz GymTracker Pro?</p>
+              <p>• <strong>Filtrowanie:</strong> Zlicza tylko zatwierdzone dni i faktycznie wykonane serie, zapobiegając zawyżaniu tonażu.</p>
+              <p>• <strong>Kalkulacja tonażu:</strong> Suma pracy mechanicznej: Ciężar × Powtórzenia dla każdej ukończonej serii.</p>
+              <p>• <strong>Szacowanie 1RM:</strong> Wzór Epleya: Ciężar × (1 + Powtórzenia / 30) wyznaczany z najcięższej serii dnia.</p>
+              <p>• <strong>Alerty balansu:</strong> Wykrywanie dysproporcji objętościowych pomiędzy ruchami Push, Pull i Legs.</p>
             </div>
-            <label className="block text-[11px] text-slate-300">Domyślna metryka wykresu
-              <select value={data.settings.analysisDefaultMetric || 'progressPct'} onChange={e=>onUpdateSettings({analysisDefaultMetric:e.target.value as AppSettings['analysisDefaultMetric']})} className="ml-2 px-2 py-1 rounded bg-slate-950 border border-slate-700"><option value="progressPct">Procent progresu</option><option value="volume">Tonaż</option><option value="executedSets">Wykonane serie</option></select>
-            </label>
-            <div className="pt-2 border-t border-slate-800 grid grid-cols-1 sm:grid-cols-2 gap-2 text-[11px]">
-              <label className="flex items-center gap-2 p-2 rounded-lg bg-slate-950 border border-slate-800"><input type="checkbox" checked={data.settings.analysisShowDataQualityWarnings !== false} onChange={e=>onUpdateSettings({analysisShowDataQualityWarnings:e.target.checked})} className="accent-emerald-500" /> Ostrzeżenia jakości danych</label>
-              <label className="flex items-center gap-2 p-2 rounded-lg bg-slate-950 border border-slate-800"><input type="checkbox" checked={data.settings.analysisRequireHistoryForCompleted !== false} onChange={e=>onUpdateSettings({analysisRequireHistoryForCompleted:e.target.checked})} className="accent-emerald-500" /> Wymagaj historii dla dnia ukończonego</label>
-              <label className="flex items-center gap-2 p-2 rounded-lg bg-slate-950 border border-slate-800"><input type="checkbox" checked={data.settings.analysisWarnMissingHistory !== false} onChange={e=>onUpdateSettings({analysisWarnMissingHistory:e.target.checked})} className="accent-emerald-500" /> Ostrzegaj o brakującej historii</label>
-              <label className="flex items-center gap-2 p-2 rounded-lg bg-slate-950 border border-slate-800"><input type="checkbox" checked={data.settings.analysisShowExecutionSummary !== false} onChange={e=>onUpdateSettings({analysisShowExecutionSummary:e.target.checked})} className="accent-emerald-500" /> Pokaż podsumowanie wykonania</label>
-              <label className="flex items-center gap-2 p-2 rounded-lg bg-slate-950 border border-slate-800"><input id="chk-analysis-week-comparison" type="checkbox" checked={data.settings.analysisShowWeekComparison !== false} onChange={e=>onUpdateSettings({analysisShowWeekComparison:e.target.checked})} className="accent-emerald-500" /> Pokaż porównanie tygodni</label>
-              <label className="flex items-center gap-2 p-2 rounded-lg bg-slate-950 border border-slate-800"><input id="chk-analysis-weekly-tonnage" type="checkbox" checked={data.settings.analysisShowWeeklyTonnage !== false} onChange={e=>onUpdateSettings({analysisShowWeeklyTonnage:e.target.checked})} className="accent-emerald-500" /> Pokaż tonaż tygodniowy</label>
-              <label className="flex items-center gap-2 p-2 rounded-lg bg-slate-950 border border-slate-800"><input id="chk-analysis-weekly-metrics" type="checkbox" checked={data.settings.analysisShowWeeklyMetrics !== false} onChange={e=>onUpdateSettings({analysisShowWeeklyMetrics:e.target.checked})} className="accent-emerald-500" /> Pokaż metryki tygodniowe</label>
-              <label className="flex items-center gap-2 p-2 rounded-lg bg-slate-950 border border-slate-800"><input id="chk-analysis-executed-days" type="checkbox" checked={data.settings.analysisShowExecutedDays !== false} onChange={e=>onUpdateSettings({analysisShowExecutedDays:e.target.checked})} className="accent-emerald-500" /> Kolumna wykonanych dni</label>
-              <label className="flex items-center gap-2 p-2 rounded-lg bg-slate-950 border border-slate-800"><input id="chk-analysis-executed-exercises" type="checkbox" checked={data.settings.analysisShowExecutedExercises !== false} onChange={e=>onUpdateSettings({analysisShowExecutedExercises:e.target.checked})} className="accent-emerald-500" /> Kolumna ćwiczeń</label>
-              <label className="flex items-center gap-2 p-2 rounded-lg bg-slate-950 border border-slate-800"><input id="chk-analysis-executed-sets" type="checkbox" checked={data.settings.analysisShowExecutedSets !== false} onChange={e=>onUpdateSettings({analysisShowExecutedSets:e.target.checked})} className="accent-emerald-500" /> Kolumna serii</label>
-              <label className="flex items-center gap-2 p-2 rounded-lg bg-slate-950 border border-slate-800"><input id="chk-analysis-executed-reps" type="checkbox" checked={data.settings.analysisShowExecutedReps !== false} onChange={e=>onUpdateSettings({analysisShowExecutedReps:e.target.checked})} className="accent-emerald-500" /> Kolumna powtórzeń</label>
-              <label className="flex items-center gap-2 p-2 rounded-lg bg-slate-950 border border-slate-800"><input id="chk-analysis-volume-delta" type="checkbox" checked={data.settings.analysisShowVolumeDelta !== false} onChange={e=>onUpdateSettings({analysisShowVolumeDelta:e.target.checked})} className="accent-emerald-500" /> Zmiana tonażu tygodnia</label>
-              <label className="flex items-center gap-2 p-2 rounded-lg bg-slate-950 border border-slate-800"><input id="chk-analysis-data-confidence" type="checkbox" checked={data.settings.analysisShowDataConfidence !== false} onChange={e=>onUpdateSettings({analysisShowDataConfidence:e.target.checked})} className="accent-emerald-500" /> Wiarygodność danych</label>
-              <label className="flex items-center gap-2 p-2 rounded-lg bg-slate-950 border border-slate-800"><input id="chk-analysis-best-e1rm" type="checkbox" checked={data.settings.analysisShowBestE1RM !== false} onChange={e=>onUpdateSettings({analysisShowBestE1RM:e.target.checked})} className="accent-emerald-500" /> Najlepszy e1RM</label>
-              <label className="flex items-center gap-2 p-2 rounded-lg bg-slate-950 border border-slate-800"><input id="chk-analysis-latest-result" type="checkbox" checked={data.settings.analysisShowLatestResult !== false} onChange={e=>onUpdateSettings({analysisShowLatestResult:e.target.checked})} className="accent-emerald-500" /> Ostatni wynik</label>
-              <label className="flex items-center gap-2 p-2 rounded-lg bg-slate-950 border border-slate-800"><input id="chk-analysis-trend-line" type="checkbox" checked={data.settings.analysisShowTrendLine !== false} onChange={e=>onUpdateSettings({analysisShowTrendLine:e.target.checked})} className="accent-emerald-500" /> Trend siły</label>
-              <label className="flex items-center gap-2 p-2 rounded-lg bg-slate-950 border border-slate-800"><input id="chk-analysis-pr-markers" type="checkbox" checked={data.settings.analysisShowPRMarkers !== false} onChange={e=>onUpdateSettings({analysisShowPRMarkers:e.target.checked})} className="accent-emerald-500" /> Markery rekordów PR</label>
-              <label className="flex items-center gap-2 p-2 rounded-lg bg-slate-950 border border-slate-800">Metryka PR <select id="select-analysis-pr-metric" value={data.settings.analysisPRMetric || 'e1RM'} onChange={e=>onUpdateSettings({analysisPRMetric:e.target.value as AppSettings['analysisPRMetric']})} className="px-1 py-1 rounded bg-slate-900 border border-slate-700"><option value="e1RM">Szacowany e1RM</option><option value="weight">Ciężar</option><option value="volume">Tonaż</option></select></label>
-              <label className="flex items-center gap-2 p-2 rounded-lg bg-slate-950 border border-slate-800">Okno stagnacji <input id="input-analysis-stagnation-window" type="number" min="2" max="52" value={data.settings.analysisStagnationWindow || 4} onChange={e=>onUpdateSettings({analysisStagnationWindow:Math.max(2,Math.min(52,Number(e.target.value)||4))})} className="w-14 px-1 py-1 rounded bg-slate-900 border border-slate-700" /> tyg./pkt</label>
-              <label className="flex items-center gap-2 p-2 rounded-lg bg-slate-950 border border-slate-800">Min. sesji stagnacji <input id="input-analysis-stagnation-min" type="number" min="2" max="52" value={data.settings.analysisStagnationMinSessions || 3} onChange={e=>onUpdateSettings({analysisStagnationMinSessions:Math.max(2,Math.min(52,Number(e.target.value)||3))})} className="w-14 px-1 py-1 rounded bg-slate-900 border border-slate-700" /></label>
-              <label className="flex items-center gap-2 p-2 rounded-lg bg-slate-950 border border-slate-800"><input id="chk-analysis-regularity" type="checkbox" checked={data.settings.analysisShowRegularity !== false} onChange={e=>onUpdateSettings({analysisShowRegularity:e.target.checked})} className="accent-emerald-500" /> Wykres regularności tygodniowej</label>
-              <label className="flex items-center gap-2 p-2 rounded-lg bg-slate-950 border border-slate-800">Cel regularności (%) <input id="input-analysis-regularity-target" type="number" min="1" max="100" value={data.settings.analysisRegularityTargetPct || 80} onChange={e=>onUpdateSettings({analysisRegularityTargetPct:Math.max(1,Math.min(100,Number(e.target.value)||80))})} className="w-14 px-1 py-1 rounded bg-slate-900 border border-slate-700" /></label>
-              <label className="flex items-center gap-2 p-2 rounded-lg bg-slate-950 border border-slate-800"><input id="chk-analysis-muscle-frequency" type="checkbox" checked={data.settings.analysisShowMuscleFrequency !== false} onChange={e=>onUpdateSettings({analysisShowMuscleFrequency:e.target.checked})} className="accent-emerald-500" /> Częstotliwość partii mięśniowych</label>
-              <label className="flex items-center gap-2 p-2 rounded-lg bg-slate-950 border border-slate-800"><input id="chk-analysis-monthly-comparison" type="checkbox" checked={data.settings.analysisShowMonthlyComparison !== false} onChange={e=>onUpdateSettings({analysisShowMonthlyComparison:e.target.checked})} className="accent-emerald-500" /> Porównanie miesięczne</label>
-              <label className="flex items-center gap-2 p-2 rounded-lg bg-slate-950 border border-slate-800">Metryka miesięczna <select id="select-analysis-monthly-metric" value={data.settings.analysisMonthlyMetric || 'volume'} onChange={e=>onUpdateSettings({analysisMonthlyMetric:e.target.value as AppSettings['analysisMonthlyMetric']})} className="px-1 py-1 rounded bg-slate-900 border border-slate-700"><option value="volume">Tonaż</option><option value="executedSets">Serie</option><option value="executedReps">Powtórzenia</option></select></label>
-              <label className="flex items-center gap-2 p-2 rounded-lg bg-slate-950 border border-slate-800"><input id="chk-analysis-period-comparison" type="checkbox" checked={data.settings.analysisShowPeriodComparison !== false} onChange={e=>onUpdateSettings({analysisShowPeriodComparison:e.target.checked})} className="accent-emerald-500" /> Porównanie okresów</label>
-              <label className="flex items-center gap-2 p-2 rounded-lg bg-slate-950 border border-slate-800">Metryka okresów <select id="select-analysis-period-metric" value={data.settings.analysisPeriodComparisonMetric || 'volume'} onChange={e=>onUpdateSettings({analysisPeriodComparisonMetric:e.target.value as AppSettings['analysisPeriodComparisonMetric']})} className="px-1 py-1 rounded bg-slate-900 border border-slate-700"><option value="volume">Tonaż</option><option value="executedSets">Serie</option><option value="executedReps">Powtórzenia</option><option value="executedDays">Dni</option></select></label>
-              <label className="flex items-center gap-2 p-2 rounded-lg bg-slate-950 border border-slate-800">Minimum serii <input type="number" min="1" max="100" value={data.settings.analysisMinExecutedSets || 1} onChange={e=>onUpdateSettings({analysisMinExecutedSets:Math.max(1,Math.min(100,Number(e.target.value)||1))})} className="w-14 px-1 py-1 rounded bg-slate-900 border border-slate-700" /></label>
-              <label className="flex items-center gap-2 p-2 rounded-lg bg-slate-950 border border-slate-800">Skok tonażu (%) <input type="number" min="1" max="500" value={data.settings.analysisWarnVolumeJumpPct || 30} onChange={e=>onUpdateSettings({analysisWarnVolumeJumpPct:Math.max(1,Math.min(500,Number(e.target.value)||30))})} className="w-14 px-1 py-1 rounded bg-slate-900 border border-slate-700" /></label>
-              <label className="flex items-center gap-2 p-2 rounded-lg bg-slate-950 border border-slate-800">Okno trendu (tyg.) <input type="number" min="1" max="52" value={data.settings.analysisTrendWindowWeeks || 4} onChange={e=>onUpdateSettings({analysisTrendWindowWeeks:Math.max(1,Math.min(52,Number(e.target.value)||4))})} className="w-14 px-1 py-1 rounded bg-slate-900 border border-slate-700" /></label>
-              <label className="flex items-center gap-2 p-2 rounded-lg bg-slate-950 border border-slate-800"><input type="checkbox" checked={data.settings.confirmBeforeDelete !== false} onChange={e=>onUpdateSettings({confirmBeforeDelete:e.target.checked})} className="accent-emerald-500" /> Potwierdzaj usuwanie</label>
-              <label className="flex items-center gap-2 p-2 rounded-lg bg-slate-950 border border-slate-800"><input type="checkbox" checked={data.settings.rememberLastView === true} onChange={e=>onUpdateSettings({rememberLastView:e.target.checked})} className="accent-emerald-500" /> Zapamiętaj ostatni widok</label>
-              <label className="flex items-center gap-2 p-2 rounded-lg bg-slate-950 border border-slate-800">Widok startowy <select value={data.settings.startupView || 'plan'} onChange={e=>onUpdateSettings({startupView:e.target.value as AppSettings['startupView']})} className="px-1 py-1 rounded bg-slate-900 border border-slate-700"><option value="plan">Plan</option><option value="stats">Progres</option><option value="muscle">Partie</option><option value="weight">Waga</option><option value="settings">Ustawienia</option></select></label>
+
+            {/* Podgrupa 1: Filtry Serii i Dni Roboczych */}
+            <div className="space-y-1.5">
+              <span className="text-[10px] font-bold uppercase tracking-wider text-emerald-400">1. Filtry Serii i Dni Roboczych</span>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-[11px]">
+                <label
+                  id="chk-analysis-only-completed"
+                  data-annotation-title="Tylko Zatwierdzone Dni"
+                  data-annotation-desc="Wyklucza z wykresów przyszłe, jeszcze nieodbyte treningi, zapobiegając zafałszowaniu realnego tonażu."
+                  data-annotation-category="Filtry Danych"
+                  className="flex items-center gap-2 p-2 rounded-lg bg-slate-950 border border-slate-800 hover:border-slate-700 transition-colors cursor-pointer"
+                >
+                  <input
+                    type="checkbox"
+                    checked={data.settings.analysisOnlyCompleted !== false}
+                    onChange={(e) => onUpdateSettings({ analysisOnlyCompleted: e.target.checked })}
+                    className="accent-emerald-500 cursor-pointer"
+                  />
+                  <span>Tylko zatwierdzone dni</span>
+                </label>
+
+                <label
+                  id="chk-analysis-include-partial-history"
+                  data-annotation-title="Częściowe Serie po Odhaczeniu"
+                  data-annotation-desc="Gdy odznaczysz 2 z 4 serii, system natychmiast doliczy je do tonażu dnia bez czekania na koniec sesji."
+                  data-annotation-category="Filtry Danych"
+                  className="flex items-center gap-2 p-2 rounded-lg bg-slate-950 border border-slate-800 hover:border-slate-700 transition-colors cursor-pointer"
+                >
+                  <input
+                    type="checkbox"
+                    checked={data.settings.analysisIncludePartialHistory === true}
+                    onChange={(e) => onUpdateSettings({ analysisIncludePartialHistory: e.target.checked })}
+                    className="accent-emerald-500 cursor-pointer"
+                  />
+                  <span>Uwzględniaj częściowe serie po odhaczeniu</span>
+                </label>
+
+                <label
+                  id="chk-analysis-hide-empty"
+                  data-annotation-title="Ukrywaj Puste Partie"
+                  data-annotation-desc="Usuwa z wykresów grupy mięśniowe, dla których w danym okresie nie zarejestrowano żadnej serii."
+                  data-annotation-category="Filtry Danych"
+                  className="flex items-center gap-2 p-2 rounded-lg bg-slate-950 border border-slate-800 hover:border-slate-700 transition-colors cursor-pointer"
+                >
+                  <input
+                    type="checkbox"
+                    checked={data.settings.analysisHideEmptyGroups !== false}
+                    onChange={(e) => onUpdateSettings({ analysisHideEmptyGroups: e.target.checked })}
+                    className="accent-emerald-500 cursor-pointer"
+                  />
+                  <span>Ukrywaj puste partie mięśniowe</span>
+                </label>
+
+                <label
+                  id="chk-analysis-require-history-for-completed"
+                  data-annotation-title="Wymagaj Historii dla Dnia Ukończonego"
+                  data-annotation-desc="Dzień treningowy uznawany jest za wykonany tylko wtedy, gdy zawiera faktycznie zapisane serie."
+                  data-annotation-category="Filtry Danych"
+                  className="flex items-center gap-2 p-2 rounded-lg bg-slate-950 border border-slate-800 hover:border-slate-700 transition-colors cursor-pointer"
+                >
+                  <input
+                    type="checkbox"
+                    checked={data.settings.analysisRequireHistoryForCompleted !== false}
+                    onChange={(e) => onUpdateSettings({ analysisRequireHistoryForCompleted: e.target.checked })}
+                    className="accent-emerald-500 cursor-pointer"
+                  />
+                  <span>Wymagaj historii dla dnia ukończonego</span>
+                </label>
+
+                <label
+                  id="input-analysis-min-executed-sets"
+                  data-annotation-title="Minimum Wykonanych Serii"
+                  data-annotation-desc="Próg serii roboczych w ćwiczeniu, aby sesja była uwzględniona w analizie (odrzuca rozgrzewki)."
+                  data-annotation-category="Filtry Danych"
+                  className="flex items-center justify-between gap-2 p-2 rounded-lg bg-slate-950 border border-slate-800 hover:border-slate-700 transition-colors"
+                >
+                  <span>Min. serii w ćwiczeniu</span>
+                  <input
+                    type="number"
+                    min="1"
+                    max="50"
+                    value={data.settings.analysisMinExecutedSets || 1}
+                    onChange={(e) => onUpdateSettings({ analysisMinExecutedSets: Math.max(1, Math.min(50, Number(e.target.value) || 1)) })}
+                    className="w-14 px-1.5 py-0.5 rounded bg-slate-900 border border-slate-700 text-center text-xs text-slate-100"
+                  />
+                </label>
+              </div>
+            </div>
+
+            {/* Podgrupa 2: Wskaźniki Siły i Wykresy Progresji */}
+            <div className="space-y-1.5 pt-2 border-t border-slate-800/60">
+              <span className="text-[10px] font-bold uppercase tracking-wider text-emerald-400">2. Wskaźniki Siły i Wykresy Progresji</span>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-[11px]">
+                <label
+                  id="chk-analysis-show-1rm"
+                  data-annotation-title="Szacowany 1RM (Epley)"
+                  data-annotation-desc="Pokazuje maksymalny teoretyczny ciężar na 1 powtórzenie wg formuły Epleya na podstawie najcięższej serii."
+                  data-annotation-category="Wskaźniki Siły"
+                  className="flex items-center gap-2 p-2 rounded-lg bg-slate-950 border border-slate-800 hover:border-slate-700 transition-colors cursor-pointer"
+                >
+                  <input
+                    type="checkbox"
+                    checked={data.settings.analysisShow1RM !== false}
+                    onChange={(e) => onUpdateSettings({ analysisShow1RM: e.target.checked })}
+                    className="accent-emerald-500 cursor-pointer"
+                  />
+                  <span>Pokazuj szacowany 1RM (Epley)</span>
+                </label>
+
+                <label
+                  id="chk-analysis-show-bodyweight"
+                  data-annotation-title="Zmiana Masy Ciała"
+                  data-annotation-desc="Nakłada wykres wagi ciała na wykresy siły, ułatwiając kalkulację siły względnej."
+                  data-annotation-category="Korelacja Sylwetkowa"
+                  className="flex items-center gap-2 p-2 rounded-lg bg-slate-950 border border-slate-800 hover:border-slate-700 transition-colors cursor-pointer"
+                >
+                  <input
+                    type="checkbox"
+                    checked={data.settings.analysisShowBodyWeight !== false}
+                    onChange={(e) => onUpdateSettings({ analysisShowBodyWeight: e.target.checked })}
+                    className="accent-emerald-500 cursor-pointer"
+                  />
+                  <span>Pokazuj zmianę masy ciała</span>
+                </label>
+
+                <label
+                  id="chk-analysis-weekly-tonnage"
+                  data-annotation-title="Wykres Tonażu Tygodniowego"
+                  data-annotation-desc="Wizualizuje sumę podniesionych kilogramów w całym tygodniu w formie słupków."
+                  data-annotation-category="Wykresy Objętości"
+                  className="flex items-center gap-2 p-2 rounded-lg bg-slate-950 border border-slate-800 hover:border-slate-700 transition-colors cursor-pointer"
+                >
+                  <input
+                    type="checkbox"
+                    checked={data.settings.analysisShowWeeklyTonnage !== false}
+                    onChange={(e) => onUpdateSettings({ analysisShowWeeklyTonnage: e.target.checked })}
+                    className="accent-emerald-500 cursor-pointer"
+                  />
+                  <span>Pokaż tonaż tygodniowy</span>
+                </label>
+
+                <label
+                  id="chk-analysis-week-comparison"
+                  data-annotation-title="Porównanie Tygodni"
+                  data-annotation-desc="Włącza tabelę porównującą tonaż i serie pomiędzy dwoma dowolnymi tygodniami mezocyklu."
+                  data-annotation-category="Porównania"
+                  className="flex items-center gap-2 p-2 rounded-lg bg-slate-950 border border-slate-800 hover:border-slate-700 transition-colors cursor-pointer"
+                >
+                  <input
+                    type="checkbox"
+                    checked={data.settings.analysisShowWeekComparison !== false}
+                    onChange={(e) => onUpdateSettings({ analysisShowWeekComparison: e.target.checked })}
+                    className="accent-emerald-500 cursor-pointer"
+                  />
+                  <span>Pokaż porównanie tygodni</span>
+                </label>
+
+                <label
+                  id="chk-analysis-trend-line"
+                  data-annotation-title="Trend Siły"
+                  data-annotation-desc="Wykreśla linię regresji liniowej pokazującą długoterminowy wektor wzrostu siły."
+                  data-annotation-category="Wskaźniki Siły"
+                  className="flex items-center gap-2 p-2 rounded-lg bg-slate-950 border border-slate-800 hover:border-slate-700 transition-colors cursor-pointer"
+                >
+                  <input
+                    type="checkbox"
+                    checked={data.settings.analysisShowTrendLine !== false}
+                    onChange={(e) => onUpdateSettings({ analysisShowTrendLine: e.target.checked })}
+                    className="accent-emerald-500 cursor-pointer"
+                  />
+                  <span>Trend siły (linia regresji)</span>
+                </label>
+
+                <label
+                  id="chk-analysis-pr-markers"
+                  data-annotation-title="Markery Rekordów PR"
+                  data-annotation-desc="Wyróżnia na wykresach punkty, w których pobito dotychczasowy rekord życiowy."
+                  data-annotation-category="Rekordy Życiowe"
+                  className="flex items-center gap-2 p-2 rounded-lg bg-slate-950 border border-slate-800 hover:border-slate-700 transition-colors cursor-pointer"
+                >
+                  <input
+                    type="checkbox"
+                    checked={data.settings.analysisShowPRMarkers !== false}
+                    onChange={(e) => onUpdateSettings({ analysisShowPRMarkers: e.target.checked })}
+                    className="accent-emerald-500 cursor-pointer"
+                  />
+                  <span>Markery rekordów PR</span>
+                </label>
+
+                <label
+                  id="select-analysis-pr-metric"
+                  data-annotation-title="Metryka Rekordu PR"
+                  data-annotation-desc="Kryterium uznawania rekordu: Szacowany 1RM, Ciężar bezwzględny czy Tonaż serii."
+                  data-annotation-category="Kryteria Rekordów"
+                  className="flex items-center justify-between gap-2 p-2 rounded-lg bg-slate-950 border border-slate-800 hover:border-slate-700 transition-colors"
+                >
+                  <span>Metryka PR</span>
+                  <select
+                    value={data.settings.analysisPRMetric || 'e1RM'}
+                    onChange={(e) => onUpdateSettings({ analysisPRMetric: e.target.value as AppSettings['analysisPRMetric'] })}
+                    className="px-2 py-0.5 rounded bg-slate-900 border border-slate-700 text-xs text-slate-200"
+                  >
+                    <option value="e1RM">Szacowany e1RM</option>
+                    <option value="weight">Ciężar (kg)</option>
+                    <option value="volume">Tonaż (kg)</option>
+                  </select>
+                </label>
+
+                <label
+                  id="chk-analysis-weekly-metrics"
+                  data-annotation-title="Kafelki Metryk Tygodniowych"
+                  data-annotation-desc="Wyświetla zbiorcze kafelki z liczbą sesji, zróżnicowaniem ćwiczeń i średnią objętością."
+                  data-annotation-category="Wskaźniki Tygodniowe"
+                  className="flex items-center gap-2 p-2 rounded-lg bg-slate-950 border border-slate-800 hover:border-slate-700 transition-colors cursor-pointer"
+                >
+                  <input
+                    type="checkbox"
+                    checked={data.settings.analysisShowWeeklyMetrics !== false}
+                    onChange={(e) => onUpdateSettings({ analysisShowWeeklyMetrics: e.target.checked })}
+                    className="accent-emerald-500 cursor-pointer"
+                  />
+                  <span>Pokaż metryki tygodniowe</span>
+                </label>
+              </div>
+            </div>
+
+            {/* Podgrupa 3: Kolumny Tabeli Wykonania */}
+            <div className="space-y-1.5 pt-2 border-t border-slate-800/60">
+              <span className="text-[10px] font-bold uppercase tracking-wider text-emerald-400">3. Kolumny Tabeli Wykonania</span>
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2 text-[11px]">
+                <label
+                  id="chk-analysis-executed-days"
+                  data-annotation-title="Kolumna: Wykonane Dni"
+                  data-annotation-desc="Pokazuje w tabeli liczbę zaliczonych dni treningowych w danym tygodniu."
+                  data-annotation-category="Kolumny Tabeli"
+                  className="flex items-center gap-2 p-2 rounded-lg bg-slate-950 border border-slate-800 hover:border-slate-700 transition-colors cursor-pointer"
+                >
+                  <input
+                    type="checkbox"
+                    checked={data.settings.analysisShowExecutedDays !== false}
+                    onChange={(e) => onUpdateSettings({ analysisShowExecutedDays: e.target.checked })}
+                    className="accent-emerald-500 cursor-pointer"
+                  />
+                  <span>Kolumna wykonanych dni</span>
+                </label>
+
+                <label
+                  id="chk-analysis-executed-exercises"
+                  data-annotation-title="Kolumna: Liczba Ćwiczeń"
+                  data-annotation-desc="Pokazuje w tabeli liczbę unikalnych ćwiczeń faktycznie wykonanych w tygodniu."
+                  data-annotation-category="Kolumny Tabeli"
+                  className="flex items-center gap-2 p-2 rounded-lg bg-slate-950 border border-slate-800 hover:border-slate-700 transition-colors cursor-pointer"
+                >
+                  <input
+                    type="checkbox"
+                    checked={data.settings.analysisShowExecutedExercises !== false}
+                    onChange={(e) => onUpdateSettings({ analysisShowExecutedExercises: e.target.checked })}
+                    className="accent-emerald-500 cursor-pointer"
+                  />
+                  <span>Kolumna ćwiczeń</span>
+                </label>
+
+                <label
+                  id="chk-analysis-executed-sets"
+                  data-annotation-title="Kolumna: Wykonane Serie"
+                  data-annotation-desc="Pokazuje sumę zrealizowanych serii roboczych z wyłączeniem rozgrzewek."
+                  data-annotation-category="Kolumny Tabeli"
+                  className="flex items-center gap-2 p-2 rounded-lg bg-slate-950 border border-slate-800 hover:border-slate-700 transition-colors cursor-pointer"
+                >
+                  <input
+                    type="checkbox"
+                    checked={data.settings.analysisShowExecutedSets !== false}
+                    onChange={(e) => onUpdateSettings({ analysisShowExecutedSets: e.target.checked })}
+                    className="accent-emerald-500 cursor-pointer"
+                  />
+                  <span>Kolumna serii</span>
+                </label>
+
+                <label
+                  id="chk-analysis-executed-reps"
+                  data-annotation-title="Kolumna: Wykonane Powtórzenia"
+                  data-annotation-desc="Prezentuje łączną sumę poprawnie zaliczonych powtórzeń w danym tygodniu."
+                  data-annotation-category="Kolumny Tabeli"
+                  className="flex items-center gap-2 p-2 rounded-lg bg-slate-950 border border-slate-800 hover:border-slate-700 transition-colors cursor-pointer"
+                >
+                  <input
+                    type="checkbox"
+                    checked={data.settings.analysisShowExecutedReps !== false}
+                    onChange={(e) => onUpdateSettings({ analysisShowExecutedReps: e.target.checked })}
+                    className="accent-emerald-500 cursor-pointer"
+                  />
+                  <span>Kolumna powtórzeń</span>
+                </label>
+
+                <label
+                  id="chk-analysis-volume-delta"
+                  data-annotation-title="Kolumna: Zmiana Tonażu (Δ)"
+                  data-annotation-desc="Oblicza różnicę tonażu w stosunku do poprzedniego tygodnia (+/- kg)."
+                  data-annotation-category="Kolumny Tabeli"
+                  className="flex items-center gap-2 p-2 rounded-lg bg-slate-950 border border-slate-800 hover:border-slate-700 transition-colors cursor-pointer"
+                >
+                  <input
+                    type="checkbox"
+                    checked={data.settings.analysisShowVolumeDelta !== false}
+                    onChange={(e) => onUpdateSettings({ analysisShowVolumeDelta: e.target.checked })}
+                    className="accent-emerald-500 cursor-pointer"
+                  />
+                  <span>Zmiana tonażu (Volume Delta)</span>
+                </label>
+
+                <label
+                  id="chk-analysis-data-confidence"
+                  data-annotation-title="Kolumna: Wiarygodność Danych"
+                  data-annotation-desc="Ocenia stopień kompletności wpisów treningowych w procentach."
+                  data-annotation-category="Kolumny Tabeli"
+                  className="flex items-center gap-2 p-2 rounded-lg bg-slate-950 border border-slate-800 hover:border-slate-700 transition-colors cursor-pointer"
+                >
+                  <input
+                    type="checkbox"
+                    checked={data.settings.analysisShowDataConfidence !== false}
+                    onChange={(e) => onUpdateSettings({ analysisShowDataConfidence: e.target.checked })}
+                    className="accent-emerald-500 cursor-pointer"
+                  />
+                  <span>Wiarygodność danych</span>
+                </label>
+
+                <label
+                  id="chk-analysis-best-e1rm"
+                  data-annotation-title="Kolumna: Najlepszy e1RM"
+                  data-annotation-desc="Prezentuje najwyższy zarejestrowany wynik szacowanego 1RM w całym planie."
+                  data-annotation-category="Kolumny Tabeli"
+                  className="flex items-center gap-2 p-2 rounded-lg bg-slate-950 border border-slate-800 hover:border-slate-700 transition-colors cursor-pointer"
+                >
+                  <input
+                    type="checkbox"
+                    checked={data.settings.analysisShowBestE1RM !== false}
+                    onChange={(e) => onUpdateSettings({ analysisShowBestE1RM: e.target.checked })}
+                    className="accent-emerald-500 cursor-pointer"
+                  />
+                  <span>Najlepszy e1RM</span>
+                </label>
+
+                <label
+                  id="chk-analysis-latest-result"
+                  data-annotation-title="Kolumna: Ostatni Wynik"
+                  data-annotation-desc="Prezentuje ostatni zarejestrowany wpis roboczy (ciężar × powtórzenia)."
+                  data-annotation-category="Kolumny Tabeli"
+                  className="flex items-center gap-2 p-2 rounded-lg bg-slate-950 border border-slate-800 hover:border-slate-700 transition-colors cursor-pointer"
+                >
+                  <input
+                    type="checkbox"
+                    checked={data.settings.analysisShowLatestResult !== false}
+                    onChange={(e) => onUpdateSettings({ analysisShowLatestResult: e.target.checked })}
+                    className="accent-emerald-500 cursor-pointer"
+                  />
+                  <span>Ostatni wynik roboczy</span>
+                </label>
+
+                <label
+                  id="chk-analysis-show-execution-summary"
+                  data-annotation-title="Podsumowanie Wykonania Mezocyklu"
+                  data-annotation-desc="Karta syntetycznego podsumowania zrealizowanych jednostek i łącznego tonażu."
+                  data-annotation-category="Podsumowanie"
+                  className="flex items-center gap-2 p-2 rounded-lg bg-slate-950 border border-slate-800 hover:border-slate-700 transition-colors cursor-pointer"
+                >
+                  <input
+                    type="checkbox"
+                    checked={data.settings.analysisShowExecutionSummary !== false}
+                    onChange={(e) => onUpdateSettings({ analysisShowExecutionSummary: e.target.checked })}
+                    className="accent-emerald-500 cursor-pointer"
+                  />
+                  <span>Podsumowanie wykonania</span>
+                </label>
+              </div>
+            </div>
+
+            {/* Podgrupa 4: Prewencja, Alerty i Diagnostyka */}
+            <div className="space-y-1.5 pt-2 border-t border-slate-800/60">
+              <span className="text-[10px] font-bold uppercase tracking-wider text-emerald-400">4. Prewencja, Alerty i Diagnostyka</span>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-[11px]">
+                <label
+                  id="chk-analysis-show-alerts"
+                  data-annotation-title="Alerty Balansu Objętości"
+                  data-annotation-desc="Weryfikuje proporcje Push vs. Pull i zgłasza ostrzeżenie w razie dysbalansu mięśniowego."
+                  data-annotation-category="Prewencja Kontuzji"
+                  className="flex items-center gap-2 p-2 rounded-lg bg-slate-950 border border-slate-800 hover:border-slate-700 transition-colors cursor-pointer"
+                >
+                  <input
+                    type="checkbox"
+                    checked={data.settings.analysisShowAlerts !== false}
+                    onChange={(e) => onUpdateSettings({ analysisShowAlerts: e.target.checked })}
+                    className="accent-emerald-500 cursor-pointer"
+                  />
+                  <span>Pokazuj alerty balansu Push/Pull/Legs</span>
+                </label>
+
+                <label
+                  id="chk-analysis-show-data-quality-warnings"
+                  data-annotation-title="Ostrzeżenia Jakości Danych"
+                  data-annotation-desc="Komunikaty diagnostyczne w razie wykrycia brakujących serii lub nietypowych skoków."
+                  data-annotation-category="Diagnostyka"
+                  className="flex items-center gap-2 p-2 rounded-lg bg-slate-950 border border-slate-800 hover:border-slate-700 transition-colors cursor-pointer"
+                >
+                  <input
+                    type="checkbox"
+                    checked={data.settings.analysisShowDataQualityWarnings !== false}
+                    onChange={(e) => onUpdateSettings({ analysisShowDataQualityWarnings: e.target.checked })}
+                    className="accent-emerald-500 cursor-pointer"
+                  />
+                  <span>Ostrzeżenia jakości i spójności danych</span>
+                </label>
+
+                <label
+                  id="chk-analysis-warn-missing-history"
+                  data-annotation-title="Ostrzegaj o Brakującej Historii"
+                  data-annotation-desc="Wskazuje ćwiczenia zaplanowane w treningu, ale nieodznaczone seriami w historii."
+                  data-annotation-category="Diagnostyka"
+                  className="flex items-center gap-2 p-2 rounded-lg bg-slate-950 border border-slate-800 hover:border-slate-700 transition-colors cursor-pointer"
+                >
+                  <input
+                    type="checkbox"
+                    checked={data.settings.analysisWarnMissingHistory !== false}
+                    onChange={(e) => onUpdateSettings({ analysisWarnMissingHistory: e.target.checked })}
+                    className="accent-emerald-500 cursor-pointer"
+                  />
+                  <span>Ostrzegaj o brakującej historii ćwiczenia</span>
+                </label>
+
+                <label
+                  id="input-analysis-warn-volume-jump-pct"
+                  data-annotation-title="Próg Skoku Tonażu (%)"
+                  data-annotation-desc="Ostrzega, gdy tonaż wzrośnie z tygodnia na tydzień powyżej zadanego procentu (ochrona ścięgien)."
+                  data-annotation-category="Prewencja Kontuzji"
+                  className="flex items-center justify-between gap-2 p-2 rounded-lg bg-slate-950 border border-slate-800 hover:border-slate-700 transition-colors"
+                >
+                  <span>Skok tonażu (%)</span>
+                  <input
+                    type="number"
+                    min="5"
+                    max="300"
+                    value={data.settings.analysisWarnVolumeJumpPct || 30}
+                    onChange={(e) => onUpdateSettings({ analysisWarnVolumeJumpPct: Math.max(5, Math.min(300, Number(e.target.value) || 30)) })}
+                    className="w-14 px-1.5 py-0.5 rounded bg-slate-900 border border-slate-700 text-center text-xs text-slate-100"
+                  />
+                </label>
+
+                <label
+                  id="input-analysis-stagnation-window"
+                  data-annotation-title="Okno Stagnacji (Tygodnie)"
+                  data-annotation-desc="Liczba kolejnych tygodni bez progresu, po których program sugeruje deload lub zmianę ćwiczenia."
+                  data-annotation-category="Autoregulacja"
+                  className="flex items-center justify-between gap-2 p-2 rounded-lg bg-slate-950 border border-slate-800 hover:border-slate-700 transition-colors"
+                >
+                  <span>Okno stagnacji (tyg.)</span>
+                  <input
+                    type="number"
+                    min="2"
+                    max="20"
+                    value={data.settings.analysisStagnationWindow || 4}
+                    onChange={(e) => onUpdateSettings({ analysisStagnationWindow: Math.max(2, Math.min(20, Number(e.target.value) || 4)) })}
+                    className="w-14 px-1.5 py-0.5 rounded bg-slate-900 border border-slate-700 text-center text-xs text-slate-100"
+                  />
+                </label>
+
+                <label
+                  id="input-analysis-stagnation-min"
+                  data-annotation-title="Minimalna Liczba Sesji Stagnacji"
+                  data-annotation-desc="Wymagana minimalna liczba powtórzonych sesji boju do potwierdzenia plateau."
+                  data-annotation-category="Autoregulacja"
+                  className="flex items-center justify-between gap-2 p-2 rounded-lg bg-slate-950 border border-slate-800 hover:border-slate-700 transition-colors"
+                >
+                  <span>Min. sesji stagnacji</span>
+                  <input
+                    type="number"
+                    min="2"
+                    max="20"
+                    value={data.settings.analysisStagnationMinSessions || 3}
+                    onChange={(e) => onUpdateSettings({ analysisStagnationMinSessions: Math.max(2, Math.min(20, Number(e.target.value) || 3)) })}
+                    className="w-14 px-1.5 py-0.5 rounded bg-slate-900 border border-slate-700 text-center text-xs text-slate-100"
+                  />
+                </label>
+              </div>
+            </div>
+
+            {/* Podgrupa 5: Regularność, Częstotliwość i Długie Okresy */}
+            <div className="space-y-1.5 pt-2 border-t border-slate-800/60">
+              <span className="text-[10px] font-bold uppercase tracking-wider text-emerald-400">5. Regularność, Częstotliwość i Długie Okresy</span>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-[11px]">
+                <label
+                  id="chk-analysis-regularity"
+                  data-annotation-title="Wykres Regularności Treningowej"
+                  data-annotation-desc="Wykres systematyczności treningów w ujęciu tygodniowym (odbyte sesje vs zaplanowane)."
+                  data-annotation-category="Dyscyplina"
+                  className="flex items-center gap-2 p-2 rounded-lg bg-slate-950 border border-slate-800 hover:border-slate-700 transition-colors cursor-pointer"
+                >
+                  <input
+                    type="checkbox"
+                    checked={data.settings.analysisShowRegularity !== false}
+                    onChange={(e) => onUpdateSettings({ analysisShowRegularity: e.target.checked })}
+                    className="accent-emerald-500 cursor-pointer"
+                  />
+                  <span>Wykres regularności tygodniowej</span>
+                </label>
+
+                <label
+                  id="input-analysis-regularity-target"
+                  data-annotation-title="Docelowy Procent Regularności (%)"
+                  data-annotation-desc="Poziom realizacji planu uważany za sukces (domyślnie 80% = np. 4 z 5 treningów)."
+                  data-annotation-category="Dyscyplina"
+                  className="flex items-center justify-between gap-2 p-2 rounded-lg bg-slate-950 border border-slate-800 hover:border-slate-700 transition-colors"
+                >
+                  <span>Cel regularności (%)</span>
+                  <input
+                    type="number"
+                    min="10"
+                    max="100"
+                    value={data.settings.analysisRegularityTargetPct || 80}
+                    onChange={(e) => onUpdateSettings({ analysisRegularityTargetPct: Math.max(10, Math.min(100, Number(e.target.value) || 80)) })}
+                    className="w-14 px-1.5 py-0.5 rounded bg-slate-900 border border-slate-700 text-center text-xs text-slate-100"
+                  />
+                </label>
+
+                <label
+                  id="chk-analysis-muscle-frequency"
+                  data-annotation-title="Częstotliwość Trenowania Partii"
+                  data-annotation-desc="Sprawdza ile razy w tygodniu każda grupa mięśniowa otrzymuje bodziec hipertroficzny."
+                  data-annotation-category="Hipertrofia"
+                  className="flex items-center gap-2 p-2 rounded-lg bg-slate-950 border border-slate-800 hover:border-slate-700 transition-colors cursor-pointer"
+                >
+                  <input
+                    type="checkbox"
+                    checked={data.settings.analysisShowMuscleFrequency !== false}
+                    onChange={(e) => onUpdateSettings({ analysisShowMuscleFrequency: e.target.checked })}
+                    className="accent-emerald-500 cursor-pointer"
+                  />
+                  <span>Częstotliwość partii mięśniowych</span>
+                </label>
+
+                <label
+                  id="chk-analysis-monthly-comparison"
+                  data-annotation-title="Zestawienie Miesięczne"
+                  data-annotation-desc="Grupowanie wyników w ujęciu miesięcy kalendarzowych ułatwiające ewaluację makrocyklu."
+                  data-annotation-category="Makrocykl"
+                  className="flex items-center gap-2 p-2 rounded-lg bg-slate-950 border border-slate-800 hover:border-slate-700 transition-colors cursor-pointer"
+                >
+                  <input
+                    type="checkbox"
+                    checked={data.settings.analysisShowMonthlyComparison !== false}
+                    onChange={(e) => onUpdateSettings({ analysisShowMonthlyComparison: e.target.checked })}
+                    className="accent-emerald-500 cursor-pointer"
+                  />
+                  <span>Porównanie miesięczne</span>
+                </label>
+
+                <label
+                  id="select-analysis-monthly-metric"
+                  data-annotation-title="Metryka Zestawienia Miesięcznego"
+                  data-annotation-desc="Wskaźnik porównywany między miesiącami: Tonaż (kg), Serie lub Powtórzenia."
+                  data-annotation-category="Makrocykl"
+                  className="flex items-center justify-between gap-2 p-2 rounded-lg bg-slate-950 border border-slate-800 hover:border-slate-700 transition-colors"
+                >
+                  <span>Metryka miesięczna</span>
+                  <select
+                    value={data.settings.analysisMonthlyMetric || 'volume'}
+                    onChange={(e) => onUpdateSettings({ analysisMonthlyMetric: e.target.value as AppSettings['analysisMonthlyMetric'] })}
+                    className="px-2 py-0.5 rounded bg-slate-900 border border-slate-700 text-xs text-slate-200"
+                  >
+                    <option value="volume">Tonaż (kg)</option>
+                    <option value="executedSets">Serie</option>
+                    <option value="executedReps">Powtórzenia</option>
+                  </select>
+                </label>
+
+                <label
+                  id="chk-analysis-period-comparison"
+                  data-annotation-title="Porównanie Bloków Treningowych"
+                  data-annotation-desc="Pozwala zestawić dowolne bloki mezocykli (np. blok objętościowy vs intensyfikacyjny)."
+                  data-annotation-category="Periodyzacja"
+                  className="flex items-center gap-2 p-2 rounded-lg bg-slate-950 border border-slate-800 hover:border-slate-700 transition-colors cursor-pointer"
+                >
+                  <input
+                    type="checkbox"
+                    checked={data.settings.analysisShowPeriodComparison !== false}
+                    onChange={(e) => onUpdateSettings({ analysisShowPeriodComparison: e.target.checked })}
+                    className="accent-emerald-500 cursor-pointer"
+                  />
+                  <span>Porównanie okresów/bloków</span>
+                </label>
+
+                <label
+                  id="select-analysis-period-metric"
+                  data-annotation-title="Metryka Porównania Bloków"
+                  data-annotation-desc="Wskaźnik porównawczy: Tonaż, Serie, Powtórzenia lub Dni Treningowe."
+                  data-annotation-category="Periodyzacja"
+                  className="flex items-center justify-between gap-2 p-2 rounded-lg bg-slate-950 border border-slate-800 hover:border-slate-700 transition-colors"
+                >
+                  <span>Metryka okresów</span>
+                  <select
+                    value={data.settings.analysisPeriodComparisonMetric || 'volume'}
+                    onChange={(e) => onUpdateSettings({ analysisPeriodComparisonMetric: e.target.value as AppSettings['analysisPeriodComparisonMetric'] })}
+                    className="px-2 py-0.5 rounded bg-slate-900 border border-slate-700 text-xs text-slate-200"
+                  >
+                    <option value="volume">Tonaż (kg)</option>
+                    <option value="executedSets">Serie</option>
+                    <option value="executedReps">Powtórzenia</option>
+                    <option value="executedDays">Dni</option>
+                  </select>
+                </label>
+              </div>
+            </div>
+
+            {/* Podgrupa 6: Zakres Czasowy & Formatowanie Wykresów */}
+            <div className="space-y-1.5 pt-2 border-t border-slate-800/60">
+              <span className="text-[10px] font-bold uppercase tracking-wider text-emerald-400">6. Zakres Czasowy & Formatowanie Wykresów</span>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-[11px]">
+                <label
+                  id="input-analysis-start-week"
+                  data-annotation-title="Od Tygodnia (Początek Zakresu)"
+                  data-annotation-desc="Numer pierwszego tygodnia branego pod uwagę w wykresach i statystykach."
+                  data-annotation-category="Zakres Analizy"
+                  className="flex items-center justify-between gap-2 p-2 rounded-lg bg-slate-950 border border-slate-800 hover:border-slate-700 transition-colors"
+                >
+                  <span>Od tygodnia:</span>
+                  <input
+                    type="number"
+                    min="1"
+                    value={data.settings.analysisStartWeek || 1}
+                    onChange={(e) => onUpdateSettings({ analysisStartWeek: Math.max(1, Number(e.target.value) || 1) })}
+                    className="w-14 px-1.5 py-0.5 rounded bg-slate-900 border border-slate-700 text-center text-xs text-slate-100"
+                  />
+                </label>
+
+                <label
+                  id="input-analysis-end-week"
+                  data-annotation-title="Do Tygodnia (Koniec Zakresu)"
+                  data-annotation-desc="Numer ostatniego tygodnia zakresu analizy (999 = wszystkie dostępne tygodnie)."
+                  data-annotation-category="Zakres Analizy"
+                  className="flex items-center justify-between gap-2 p-2 rounded-lg bg-slate-950 border border-slate-800 hover:border-slate-700 transition-colors"
+                >
+                  <span>Do tygodnia:</span>
+                  <input
+                    type="number"
+                    min="1"
+                    value={data.settings.analysisEndWeek || 999}
+                    onChange={(e) => onUpdateSettings({ analysisEndWeek: Math.max(1, Number(e.target.value) || 999) })}
+                    className="w-14 px-1.5 py-0.5 rounded bg-slate-900 border border-slate-700 text-center text-xs text-slate-100"
+                  />
+                </label>
+
+                <label
+                  id="select-analysis-default-metric"
+                  data-annotation-title="Domyślna Metryka Wykresu"
+                  data-annotation-desc="Główny parametr prezentowany na osi wykresu: Procent Progresu, Tonaż lub Serie."
+                  data-annotation-category="Konfiguracja Wykresu"
+                  className="flex items-center justify-between gap-2 p-2 rounded-lg bg-slate-950 border border-slate-800 hover:border-slate-700 transition-colors"
+                >
+                  <span>Domyślna metryka</span>
+                  <select
+                    value={data.settings.analysisDefaultMetric || 'progressPct'}
+                    onChange={(e) => onUpdateSettings({ analysisDefaultMetric: e.target.value as AppSettings['analysisDefaultMetric'] })}
+                    className="px-2 py-0.5 rounded bg-slate-900 border border-slate-700 text-xs text-slate-200"
+                  >
+                    <option value="progressPct">Procent progresu (%)</option>
+                    <option value="volume">Tonaż (kg)</option>
+                    <option value="executedSets">Wykonane serie</option>
+                  </select>
+                </label>
+
+                <label
+                  id="chk-analysis-round-values"
+                  data-annotation-title="Zaokrąglaj Wartości Wyników"
+                  data-annotation-desc="Zaokrągla wartości tonażu i procentów do liczb całkowitych, poprawiając przejrzystość."
+                  data-annotation-category="Formatowanie"
+                  className="flex items-center gap-2 p-2 rounded-lg bg-slate-950 border border-slate-800 hover:border-slate-700 transition-colors cursor-pointer"
+                >
+                  <input
+                    type="checkbox"
+                    checked={data.settings.analysisRoundValues !== false}
+                    onChange={(e) => onUpdateSettings({ analysisRoundValues: e.target.checked })}
+                    className="accent-emerald-500 cursor-pointer"
+                  />
+                  <span>Zaokrąglaj wartości wyników</span>
+                </label>
+
+                <label
+                  id="chk-analysis-auto-refresh"
+                  data-annotation-title="Automatyczne Odświeżanie"
+                  data-annotation-desc="Automatycznie przelicza wykresy i statystyki w tle po każdej zapisanej serii."
+                  data-annotation-category="Wydajność"
+                  className="flex items-center gap-2 p-2 rounded-lg bg-slate-950 border border-slate-800 hover:border-slate-700 transition-colors cursor-pointer"
+                >
+                  <input
+                    type="checkbox"
+                    checked={data.settings.analysisAutoRefresh !== false}
+                    onChange={(e) => onUpdateSettings({ analysisAutoRefresh: e.target.checked })}
+                    className="accent-emerald-500 cursor-pointer"
+                  />
+                  <span>Odświeżaj po zmianie danych</span>
+                </label>
+
+                <label
+                  id="input-analysis-trend-window-weeks"
+                  data-annotation-title="Okno Ruchomego Trendu"
+                  data-annotation-desc="Liczba ostatnich tygodni brana do wygładzania wahań i kalkulacji lokalnej średniej siły."
+                  data-annotation-category="Wygładzanie Statystyczne"
+                  className="flex items-center justify-between gap-2 p-2 rounded-lg bg-slate-950 border border-slate-800 hover:border-slate-700 transition-colors"
+                >
+                  <span>Okno trendu (tyg.)</span>
+                  <input
+                    type="number"
+                    min="1"
+                    max="20"
+                    value={data.settings.analysisTrendWindowWeeks || 4}
+                    onChange={(e) => onUpdateSettings({ analysisTrendWindowWeeks: Math.max(1, Math.min(20, Number(e.target.value) || 4)) })}
+                    className="w-14 px-1.5 py-0.5 rounded bg-slate-900 border border-slate-700 text-center text-xs text-slate-100"
+                  />
+                </label>
+
+                <label
+                  id="chk-confirm-before-delete"
+                  data-annotation-title="Wymagaj Potwierdzenia Przy Usuwaniu"
+                  data-annotation-desc="Wyświetla okno dialogowe z pytaniem przed usunięciem ćwiczenia, serii lub tygodnia."
+                  data-annotation-category="Bezpieczeństwo Danych"
+                  className="flex items-center gap-2 p-2 rounded-lg bg-slate-950 border border-slate-800 hover:border-slate-700 transition-colors cursor-pointer"
+                >
+                  <input
+                    type="checkbox"
+                    checked={data.settings.confirmBeforeDelete !== false}
+                    onChange={(e) => onUpdateSettings({ confirmBeforeDelete: e.target.checked })}
+                    className="accent-emerald-500 cursor-pointer"
+                  />
+                  <span>Potwierdzaj usuwanie</span>
+                </label>
+
+                <label
+                  id="chk-hover-annotations"
+                  data-annotation-title="Adnotacje po Najechaniu Myszką"
+                  data-annotation-desc="Włącza lub wyłącza wyskakujące karty informacyjne po najechaniu kursorem na dowolny element. Znika po 5 sekundach bezruchu."
+                  data-annotation-category="Ustawienia Interfejsu"
+                  className="flex items-center gap-2 p-2 rounded-lg bg-slate-950 border border-slate-800 hover:border-slate-700 transition-colors cursor-pointer"
+                >
+                  <input
+                    type="checkbox"
+                    checked={data.settings.showHoverAnnotations !== false}
+                    onChange={(e) => onUpdateSettings({ showHoverAnnotations: e.target.checked })}
+                    className="accent-emerald-500 cursor-pointer"
+                  />
+                  <span>Pokaż adnotacje po najechaniu myszką</span>
+                </label>
+
+                <label
+                  id="chk-remember-last-view"
+                  data-annotation-title="Zapamiętaj Ostatni Widok"
+                  data-annotation-desc="Przywraca po ponownym uruchomieniu ekran, na którym zakończyłeś poprzednią sesję."
+                  data-annotation-category="Wygoda Użytkowania"
+                  className="flex items-center gap-2 p-2 rounded-lg bg-slate-950 border border-slate-800 hover:border-slate-700 transition-colors cursor-pointer"
+                >
+                  <input
+                    type="checkbox"
+                    checked={data.settings.rememberLastView === true}
+                    onChange={(e) => onUpdateSettings({ rememberLastView: e.target.checked })}
+                    className="accent-emerald-500 cursor-pointer"
+                  />
+                  <span>Zapamiętaj ostatni widok</span>
+                </label>
+
+                <label
+                  id="select-startup-view"
+                  data-annotation-title="Domyślny Widok Startowy"
+                  data-annotation-desc="Ekran otwierany przy starcie aplikacji (jeśli nie włączono zapamiętywania ostatniego widoku)."
+                  data-annotation-category="Uruchamianie Programu"
+                  className="flex items-center justify-between gap-2 p-2 rounded-lg bg-slate-950 border border-slate-800 hover:border-slate-700 transition-colors"
+                >
+                  <span>Widok startowy:</span>
+                  <select
+                    value={data.settings.startupView || 'plan'}
+                    onChange={(e) => onUpdateSettings({ startupView: e.target.value as AppSettings['startupView'] })}
+                    className="px-2 py-0.5 rounded bg-slate-900 border border-slate-700 text-xs text-slate-200"
+                  >
+                    <option value="plan">Plan Treningowy</option>
+                    <option value="stats">Progres & Wykresy</option>
+                    <option value="muscle">Partie Mięśniowe</option>
+                    <option value="weight">Dziennik Wagi</option>
+                    <option value="cycles">Kalendarz Cyklu</option>
+                    <option value="exercises">Katalog Ćwiczeń</option>
+                    <option value="profile">Centrum Synchronizacji &amp; Badania</option>
+                    <option value="settings">Ustawienia</option>
+                  </select>
+                </label>
+              </div>
+            </div>
+          </div>
+
+          {/* 💡 HOVER ANNOTATIONS CONFIGURATION */}
+          <div className="pt-3 border-t border-slate-800 space-y-3.5">
+            <div className="flex items-center justify-between">
+              <h4 className="text-xs font-bold text-slate-200 flex items-center gap-1.5">
+                <Info className="w-4 h-4 text-emerald-400" />
+                <span>Podpowiedzi / Adnotacje po Najechaniu Myszką</span>
+              </h4>
+              <label className="flex items-center gap-2 cursor-pointer">
+                <span className="text-[11px] text-slate-400 font-medium">Aktywne adnotacje:</span>
+                <input
+                  type="checkbox"
+                  checked={data.settings.showHoverAnnotations !== false}
+                  onChange={(e) => onUpdateSettings({ showHoverAnnotations: e.target.checked })}
+                  className="w-4 h-4 accent-emerald-500 cursor-pointer"
+                  id="chk-hover-annotations-main"
+                />
+              </label>
+            </div>
+
+            <div className="p-3 rounded-xl bg-slate-950 border border-slate-800 text-xs space-y-2">
+              <div className="flex items-start gap-2 text-slate-300">
+                <Info className="w-4 h-4 text-emerald-400 shrink-0 mt-0.5" />
+                <p className="leading-relaxed">
+                  Gdy funkcja jest włączona, najechanie kursorem myszy na dowolny przycisk, parametr treningowy (RPE, e1RM, tonaż) lub opcję analiz natychmiast wyświetla kartę z precyzyjnym wyjaśnieniem do czego służy. <strong>Karta znika automatycznie po 5 sekundach braku ruchu myszki.</strong>
+                </p>
+              </div>
+              <div className="flex items-center justify-between pt-1 text-[11px] text-slate-400 border-t border-slate-800/60">
+                <span>Czas zniknięcia: <strong className="text-emerald-400 font-mono">5 sekund bezruchu myszki</strong></span>
+                <span className={data.settings.showHoverAnnotations !== false ? 'text-emerald-400 font-semibold' : 'text-slate-500'}>
+                  {data.settings.showHoverAnnotations !== false ? '● Podpowiedzi Włączone' : '○ Podpowiedzi Wyłączone'}
+                </span>
+              </div>
             </div>
           </div>
 
@@ -429,7 +1222,7 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
                   className="w-full py-2 px-3 rounded-lg bg-slate-800 hover:bg-slate-700 text-emerald-300 hover:text-emerald-200 text-xs font-bold flex items-center justify-center gap-2 border border-slate-700 transition-colors"
                   id="btn-navigate-to-profile-from-settings"
                 >
-                  <span>Otwórz pełny Panel Profilu &amp; Testu Połączenia</span>
+                  <span>Otwórz Centrum Synchronizacji &amp; Badania Krwi</span>
                   <ArrowRight className="w-3.5 h-3.5" />
                 </button>
               )}

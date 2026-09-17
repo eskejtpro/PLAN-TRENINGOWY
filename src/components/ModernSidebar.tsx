@@ -9,6 +9,7 @@ import {
   Code2, 
   ShieldCheck, 
   User, 
+  Smartphone,
   Moon, 
   Sun,
   ChevronLeft,
@@ -177,6 +178,10 @@ export const ModernSidebar: React.FC<ModernSidebarProps> = ({
                   key={item.id}
                   type="button"
                   id={`sidebar-nav-${item.id}`}
+                  data-view={item.id}
+                  data-annotation-title={item.label}
+                  data-annotation-desc={item.description}
+                  data-annotation-category="Trening & Analityka"
                   onClick={() => onSelectView(item.id)}
                   title={isCollapsed ? item.label : undefined}
                   className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-xs font-semibold transition-all group relative ${
@@ -237,6 +242,10 @@ export const ModernSidebar: React.FC<ModernSidebarProps> = ({
                   key={item.id}
                   type="button"
                   id={`sidebar-nav-${item.id}`}
+                  data-view={item.id}
+                  data-annotation-title={item.label}
+                  data-annotation-desc={item.description}
+                  data-annotation-category="System & Narzędzia"
                   onClick={() => onSelectView(item.id)}
                   title={isCollapsed ? item.label : undefined}
                   className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-xs font-semibold transition-all group relative ${
@@ -296,10 +305,10 @@ export const ModernSidebar: React.FC<ModernSidebarProps> = ({
             }`}>
               <button 
                 type="button"
-                id="sidebar-athlete-profile-button"
+                id="sidebar-sync-bloodwork-button"
                 onClick={() => onSelectView('profile')}
                 className="flex items-center gap-2 overflow-hidden cursor-pointer group text-left flex-1 min-w-0 mr-2 py-0.5"
-                title="Kliknij, aby otworzyć Profil zawodnika, cele i status serwera"
+                title="Kliknij, aby otworzyć Centrum synchronizacji Windows ↔ Android oraz rejestr badań krwi"
               >
                 <div className={`w-7 h-7 rounded-lg flex items-center justify-center font-bold text-xs shrink-0 transition-all ${
                   activeView === 'profile'
@@ -308,7 +317,7 @@ export const ModernSidebar: React.FC<ModernSidebarProps> = ({
                       ? 'bg-emerald-500/20 text-emerald-400 group-hover:bg-emerald-500/30' 
                       : 'bg-emerald-100 text-emerald-700 group-hover:bg-emerald-200'
                 }`}>
-                  <User className="w-3.5 h-3.5" />
+                  <Smartphone className="w-3.5 h-3.5" />
                 </div>
                 <div className="truncate min-w-0">
                   <span className={`text-xs font-bold block truncate transition-colors ${
@@ -318,11 +327,11 @@ export const ModernSidebar: React.FC<ModernSidebarProps> = ({
                         ? 'text-slate-200 group-hover:text-emerald-400' 
                         : 'text-slate-800 group-hover:text-emerald-600'
                   }`}>
-                    {settings.athleteName || 'Zawodnik'}
+                    Synchronizacja
                   </span>
                   <span className="text-[10px] text-emerald-400 font-medium flex items-center gap-1">
                     <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
-                    <span>Profil &amp; Sync</span>
+                    <span>Android &amp; Badania</span>
                   </span>
                 </div>
               </button>
@@ -382,7 +391,7 @@ export const ModernSidebar: React.FC<ModernSidebarProps> = ({
           <div className="flex flex-col items-center gap-2">
             <button
               type="button"
-              id="sidebar-athlete-profile-collapsed-btn"
+              id="sidebar-sync-collapsed-btn"
               onClick={() => onSelectView('profile')}
               className={`p-2 rounded-xl border flex items-center justify-center transition-all cursor-pointer ${
                 activeView === 'profile'
@@ -393,9 +402,9 @@ export const ModernSidebar: React.FC<ModernSidebarProps> = ({
                     ? 'bg-slate-900 border-slate-800 text-slate-300 hover:text-emerald-400 hover:border-slate-700'
                     : 'bg-white border-slate-200 text-slate-700 hover:text-emerald-600 shadow-xs'
               }`}
-              title={`Profil zawodnika: ${settings.athleteName || 'Zawodnik'} (kliknij, aby otworzyć)`}
+              title="Centrum synchronizacji Windows ↔ Android & Badania krwi (kliknij, aby otworzyć)"
             >
-              <User className="w-4 h-4" />
+              <Smartphone className="w-4 h-4" />
             </button>
 
             <button

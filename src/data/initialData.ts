@@ -32,6 +32,7 @@ export const initialGymData: GymData = {
     analysisWarnVolumeJumpPct: 30,
     analysisTrendWindowWeeks: 4,
     confirmBeforeDelete: true,
+    showHoverAnnotations: true,
     startupView: 'plan',
     rememberLastView: false,
     analysisShowExecutionSummary: true,

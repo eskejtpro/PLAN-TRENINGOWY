@@ -8,8 +8,9 @@ import {
   HardDrive, 
   ShieldCheck, 
   Sun, 
-  Moon,
-  Dumbbell
+  Moon, 
+  Dumbbell,
+  Sparkles
 } from 'lucide-react';
 import { AppSettings } from '../types';
 
@@ -60,8 +61,8 @@ export const ModernHeader: React.FC<ModernHeaderProps> = ({
       subtitle: 'Monitorowanie wagi, średnie kroczące i trendy'
     },
     profile: {
-      title: 'Profil Zawodnika & Status Serwera',
-      subtitle: 'Edycja danych, awatar, cele kaloryczne, galeria PR i synchronizacja Android ↔ Windows'
+      title: 'Centrum Synchronizacji & Badania Krwi',
+      subtitle: 'Lokalna synchronizacja Windows ↔ Android oraz rejestr badań zdrowotnych z plikami JSON'
     },
     cycles: {
       title: 'Kalendarz Dawek & Historia Cykli',

@@ -10,6 +10,7 @@ import { PythonCodeView } from './components/PythonCodeView';
 import { ExerciseManagerView } from './components/ExerciseManagerView';
 import { CycleProtocolView } from './components/CycleProtocolView';
 import { UserProfileView } from './components/UserProfileView';
+import { HoverAnnotationSystem } from './components/HoverAnnotationSystem';
 import { ExerciseModal } from './components/ExerciseModal';
 import { ExerciseHistoryModal } from './components/ExerciseHistoryModal';
 import { GymData, TrainingWeek, TrainingDay, Exercise, ExerciseHistoryPoint, BodyWeightEntry, CircumferenceEntry, BodyPartMeasurement, AppSettings, LoggedSet, BackupEntry, ProtocolEntry, UserProfile, SyncServerConfig, SyncLogEntry } from './types';
@@ -1147,6 +1148,13 @@ export default function App() {
         exercise={historyExercise}
         onUpdateHistory={handleUpdateExerciseHistory}
         unit={data.settings.unit}
+      />
+
+      {/* Global Interactive Hover Annotation System */}
+      <HoverAnnotationSystem
+        enabled={data.settings.showHoverAnnotations !== false}
+        onOpenSettings={() => setActiveView('settings')}
+        isDark={isDark}
       />
     </div>
   );

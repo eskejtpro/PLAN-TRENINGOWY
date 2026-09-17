@@ -119,6 +119,8 @@ export interface AppSettings {
   analysisWarnVolumeJumpPct?: number;
   analysisTrendWindowWeeks?: number;
   confirmBeforeDelete?: boolean;
+  /** Hover annotation preview system for all UI elements and functions */
+  showHoverAnnotations?: boolean;
   startupView?: 'plan' | 'stats' | 'muscle' | 'weight' | 'cycles' | 'exercises' | 'settings' | 'python' | 'profile';
   rememberLastView?: boolean;
   reducedMotion?: boolean;
